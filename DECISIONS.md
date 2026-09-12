@@ -27,3 +27,26 @@ Two hosted Gemini CLI attempts exited before producing a review. Fixed-category 
 The diagnostic identified Gemini CLI workspace trust rejection before authentication. Pass --skip-trust only for the newly created empty temporary working directory, while retaining fresh HOME and wildcard deny-tool policy. Removed temporary raw diagnostic logging after identifying the cause.
 
 Validation: 15 orchestration tests passed; hosted Agent supervisor #4 passed using Gemini after the trust fix. Gemini produced an unverified review artifact. Application source and scheduled paid execution remain outside this completed scaffold step.
+
+## Application development phase — 2026-09-12
+2026-09-12 | User authorized APPLICATION_DEVELOPMENT on branch claude/tender-radar-mvp-5pp4mn.
+Agent rule files updated from SCAFFOLD_ONLY. Merging to main, external deployment, paid
+schedules and CI write access remain prohibited.
+2026-09-12 | The cloud supervisor now reads prompts/CLOUD_REVIEW_PROMPT.md, a review-only
+prompt kept separate from the development rules, so widening development authorization can
+never widen what the hosted review job may do. ci/validate.py asserts that separation.
+2026-09-12 | Outbound access to xarid.uzex.uz is refused by the environment network policy
+(HTTP CONNECT 403). No endpoint, lot id or response was invented. Development proceeds on
+generated fixtures under samples/synthetic, labelled synthetic in file content, ids, customer
+names and in the stored `procedure.source` value.
+2026-09-12 | `procedure` is unique on (source, source_id) instead of source_id alone so that
+synthetic development rows can never be mistaken for, or collide with, real imported rows.
+2026-09-12 | The source contract lives in radar/source/uzex_mapping.yaml, a data file, so that
+verifying the real endpoint changes one mapping rather than parser code. UZEX_LIST_URL and
+UZEX_DETAIL_URL default to empty, making an accidental live import impossible.
+2026-09-12 | Importer transaction boundary is one list page: list snapshot, all detail
+snapshots, upserts and the cursor advance commit together. A crash rolls back the whole page,
+so the cursor never points past partially written data.
+2026-09-12 | Python 3.12 is provided by a local uv virtualenv (.venv) because the system
+interpreter is 3.11. PostgreSQL 16 runs as a local cluster since the container has no Docker
+daemon; docker-compose.yml stays the documented path for other machines.

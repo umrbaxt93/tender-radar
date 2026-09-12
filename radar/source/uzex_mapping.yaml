@@ -1,0 +1,42 @@
+# Field mapping between the source JSON and the normalized ProcedureRecord.
+# STATUS: UNVERIFIED against the live public xarid.uzex.uz API (network access to
+# the source was blocked in the development environment, see docs/SOURCE_API.md).
+# The synthetic fixtures in samples/synthetic/ follow exactly this shape. When
+# sanitized real responses become available, only this file (and possibly
+# radar/source/parser.py) needs adjusting; the importer, storage and tests stay.
+list:
+  items_path: data.items          # dotted path to the array of list entries
+  total_path: data.total          # dotted path to the total count (optional)
+  page_param: page                # query parameter name for the page number
+  page_size_param: size           # query parameter name for the page size
+  page_size: 50
+  first_page: 1
+  id_field: id                    # list entry field holding the source id
+  completed_at_field: completed_at
+detail:
+  id: id
+  source_url_template: "https://xarid.uzex.uz/lot/{source_id}"   # UNVERIFIED display URL
+  procedure_type: procedure_type
+  title: title
+  status: status
+  published_at: published_at
+  deadline_at: deadline_at
+  completed_at: completed_at
+  currency: currency
+  start_price: start_price
+  customer:
+    name: customer.name
+    stir: customer.stir
+    region: customer.region
+  items:
+    path: items
+    name: name
+    quantity: quantity
+    unit: unit
+    unit_price: unit_price
+  award:
+    path: award                   # optional; absent when the source has no award data
+    supplier_name: supplier.name
+    supplier_stir: supplier.stir
+    amount: amount
+    awarded_at: awarded_at

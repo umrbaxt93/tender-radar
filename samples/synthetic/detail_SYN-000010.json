@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000010",
+ "procedure_type": "selection",
+ "title": "Google Workspace Business Starter obunasi",
+ "status": "completed",
+ "published_at": "2026-05-18T10:00:00Z",
+ "deadline_at": "2026-05-31T10:00:00Z",
+ "completed_at": "2026-06-06T10:00:00Z",
+ "currency": "UZS",
+ "start_price": 25000000,
+ "customer": {
+  "name": "Samarqand viloyati tibbiyot birlashmasi (SYNTHETIC)",
+  "stir": "900000001",
+  "region": "Samarqand viloyati"
+ },
+ "items": [
+  {
+   "name": "Google Workspace Business Starter",
+   "quantity": 2,
+   "unit": "dona",
+   "unit_price": "12500000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 22449742.18,
+  "awarded_at": "2026-06-06T10:00:00Z"
+ }
+}

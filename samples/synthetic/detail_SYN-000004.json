@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000004",
+ "procedure_type": "tender",
+ "title": "Fortinet FortiGate 100F межсетевой экран с подпиской UTM 1 год",
+ "status": "completed",
+ "published_at": "2026-02-26T07:00:00Z",
+ "deadline_at": "2026-03-08T07:00:00Z",
+ "completed_at": "2026-03-26T07:00:00Z",
+ "currency": "UZS",
+ "start_price": 48000000,
+ "customer": {
+  "name": "Jizzax politexnika instituti (SYNTHETIC)",
+  "stir": "900000009",
+  "region": "Jizzax viloyati"
+ },
+ "items": [
+  {
+   "name": "FortiGate 100F UTP bundle",
+   "quantity": 1,
+   "unit": "шт",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 41456006.64,
+  "awarded_at": "2026-03-26T07:00:00Z"
+ }
+}

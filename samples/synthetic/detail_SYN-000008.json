@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000008",
+ "procedure_type": "selection",
+ "title": "ИБП APC Smart-UPS 3000VA",
+ "status": "completed",
+ "published_at": "2025-08-30T03:00:00Z",
+ "deadline_at": "2025-09-05T03:00:00Z",
+ "completed_at": "2025-09-08T03:00:00Z",
+ "currency": "UZS",
+ "start_price": 4750000000,
+ "customer": {
+  "name": "Xorazm viloyati soliq boshqarmasi (SYNTHETIC)",
+  "stir": "900000007",
+  "region": "Xorazm viloyati"
+ },
+ "items": [
+  {
+   "name": "APC SMT3000RMI2UC",
+   "quantity": 50,
+   "unit": "шт",
+   "unit_price": "95000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 3717030345.46,
+  "awarded_at": "2025-09-08T03:00:00Z"
+ }
+}
