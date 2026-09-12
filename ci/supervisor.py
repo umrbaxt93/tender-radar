@@ -92,11 +92,11 @@ def run_one(provider, model, secret_name, secret, prompt):
         try:
             proc = subprocess.Popen(cmd, cwd=cwd, env=child_env,
                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                    stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+                                    stderr=subprocess.PIPE, text=True, start_new_session=True)
         except OSError:
             return None, 'cli_unavailable'
         try:
-            raw, _ = proc.communicate(prompt, timeout=MAX_SECONDS)
+            raw, error = proc.communicate(prompt, timeout=MAX_SECONDS)
         except subprocess.TimeoutExpired:
             os.killpg(proc.pid, signal.SIGKILL)
             proc.communicate()
@@ -106,6 +106,21 @@ def run_one(provider, model, secret_name, secret, prompt):
             proc.communicate()
             raise
         if proc.returncode != 0:
+            # Emit fixed categories only; never provider text, headers, or secrets.
+            diagnostic = (raw + (error or '')).lower()
+            categories = (
+                ('invalid_api_key', ('api key not valid', 'api_key_invalid', 'invalid api key')),
+                ('authentication_failed', ('unauthenticated', 'authentication', '401')),
+                ('quota_exceeded', ('resource_exhausted', 'quota', '429')),
+                ('model_unavailable', ('model not found', 'not found for api version', '404')),
+                ('policy_configuration', ('policy', 'toml')),
+                ('runtime_dependency', ('cannot find module', 'module_not_found', 'enoent')),
+                ('permission_denied', ('permission_denied', '403')),
+                ('invalid_cli_option', ('unknown argument', 'unknown option')),
+            )
+            for category, markers in categories:
+                if any(marker in diagnostic for marker in markers):
+                    return None, category
             return None, 'cli_failed'
         try:
             return parse_output(provider, raw), 'success'

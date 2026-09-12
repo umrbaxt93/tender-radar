@@ -10,6 +10,8 @@ def write_status(status, attempts=()):
     (ROOT/'reports').mkdir(exist_ok=True)
     (ROOT/'reports/status.json').write_text(json.dumps({'status':status,'phase':'SCAFFOLD_ONLY','attempts':list(attempts)},indent=2)+'\n')
     print('Supervisor: '+status)
+    for attempt in attempts:
+        print('Provider: '+attempt['provider']+'; status: '+attempt['status'])
 
 def trusted(env):
     return env.get('GITHUB_ACTIONS')=='true' and env.get('GITHUB_REF')=='refs/heads/main' and env.get('GITHUB_EVENT_NAME') in ('workflow_dispatch','schedule')
