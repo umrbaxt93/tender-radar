@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tender}
+      POSTGRES_DB: ${POSTGRES_DB:-tender_radar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a runtime database password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+# No host port exposed. Cloud production credentials/backups are configured separately.
+volumes:
+  postgres_data:

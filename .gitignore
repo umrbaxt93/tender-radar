@@ -1,0 +1,27 @@
+# Credentials and sessions
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
+.credentials.json
+.gemini/
+.claude/
+.codex/
+# Runtime and tooling
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+.pytest_cache/
+.ruff_cache/
+logs/
+reports/
+.supervisor-state/
+.agent-tools/
+out/
+data/
+.DS_Store
+.idea/
+.vscode/
