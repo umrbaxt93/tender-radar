@@ -63,7 +63,7 @@ def command(provider, model, home):
         policy = home / '.gemini/policies/deny.toml'
         policy.parent.mkdir(parents=True)
         policy.write_text((ROOT / 'ci/gemini-deny.toml').read_text())
-        return ['gemini', '-p', 'Review the supplied text only; do not use tools.',
+        return ['gemini', '--skip-trust', '-p', 'Review the supplied text only; do not use tools.',
                 '--model', model, '--output-format', 'json']
     if provider == 'claude':
         return ['claude', '-p', '--bare', '--tools', '', '--disallowedTools', 'mcp__*',
@@ -121,7 +121,7 @@ def run_one(provider, model, secret_name, secret, prompt):
             for category, markers in categories:
                 if any(marker in diagnostic for marker in markers):
                     return None, category
-            print('Redacted CLI diagnostic: '+redact((error or raw)[-2000:], [secret]), flush=True)
+            # Unknown diagnostics stay private; only fixed categories leave the process.
             return None, 'cli_failed'
         try:
             return parse_output(provider, raw), 'success'
