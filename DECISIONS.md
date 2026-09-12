@@ -20,3 +20,10 @@
 2026-09-13 | Browser bulk upload completed staging but commit returned HTTP failure; repository remained empty. Switched to GitHub file editor to establish main before retrying grouped uploads.
 
 2026-09-13 | Recovery succeeded: initialized main using GitHub file editor, then committed grouped uploads. Hosted Scaffold checks #1 passed in 24s; no provider credentials or scheduled spending enabled. Node20 action-runtime deprecation produced a non-fatal warning (runner forced Node24); consider updating pinned action versions in a later maintenance change.
+
+## Cloud authentication diagnostic — 2026-09-13
+Two hosted Gemini CLI attempts exited before producing a review. Fixed-category diagnostics were inconclusive, so the next diagnostic emits a bounded stderr excerpt with the exact provider secret removed before logging; no additional provider credentials are inherited. Schedule remains disabled until a successful review.
+
+The diagnostic identified Gemini CLI workspace trust rejection before authentication. Pass --skip-trust only for the newly created empty temporary working directory, while retaining fresh HOME and wildcard deny-tool policy. Removed temporary raw diagnostic logging after identifying the cause.
+
+Validation: 15 orchestration tests passed; hosted Agent supervisor #4 passed using Gemini after the trust fix. Gemini produced an unverified review artifact. Application source and scheduled paid execution remain outside this completed scaffold step.
