@@ -18,3 +18,5 @@
 2026-09-13 | GitHub adapter uses Gemini/Claude CLI then official openai/codex-action for Codex. No GitLab secrets, token or runner required. GitHub Actions secrets are scoped to agent-review; schedule gated by ENABLE_AGENT_SCHEDULE, initially off. GitHub adapter does not use the historical cache deduplication.
 
 2026-09-13 | Browser bulk upload completed staging but commit returned HTTP failure; repository remained empty. Switched to GitHub file editor to establish main before retrying grouped uploads.
+
+2026-09-13 | Recovery succeeded: initialized main using GitHub file editor, then committed grouped uploads. Hosted Scaffold checks #1 passed in 24s; no provider credentials or scheduled spending enabled. Node20 action-runtime deprecation produced a non-fatal warning (runner forced Node24); consider updating pinned action versions in a later maintenance change.

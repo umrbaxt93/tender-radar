@@ -2,7 +2,7 @@
 
 ## Cloud setup
 - [x] Create private GitHub repository umrbaxt93/tender-radar.
-- [ ] Publish scaffold and verify Actions checks.
+- [x] Publish scaffold and verify Actions checks (#1, success).
 - [ ] Configure Gemini/Anthropic/OpenAI secrets in the agent-review environment and economical model IDs.
 - [ ] Set provider-side spending controls and verify one manual review.
 - [ ] Enable scheduled review only after verification.
