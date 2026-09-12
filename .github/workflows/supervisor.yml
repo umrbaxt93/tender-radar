@@ -1,0 +1,62 @@
+name: Agent supervisor
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */2 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: tender-radar-supervisor
+  cancel-in-progress: false
+jobs:
+  review:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_AGENT_SCHEDULE == 'true')
+    runs-on: ubuntu-latest
+    environment: agent-review
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned review CLIs without lifecycle scripts
+        run: npm install --ignore-scripts --no-audit --no-fund --prefix /tmp/agent-tools @google/gemini-cli@0.59.0 @anthropic-ai/claude-code@2.1.270
+      - name: Gemini then Claude
+        id: first
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          CODEX_CONFIGURED: ${{ secrets.OPENAI_API_KEY != '' && vars.CODEX_MODEL != '' }}
+        run: PATH="/tmp/agent-tools/node_modules/.bin:$PATH" bash supervisor.sh
+      - name: Codex fallback
+        id: codex
+        if: steps.first.outputs.codex_needed == 'true'
+        timeout-minutes: 5
+        continue-on-error: true
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: ${{ runner.temp }}/tender-review-context.md
+          output-file: reports/codex-review.md
+          model: ${{ vars.CODEX_MODEL }}
+          codex-version: '0.154.0'
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          codex-args: '["--ephemeral", "-c", "features.shell_tool=false", "-c", "features.unified_exec=false", "-c", "features.apps=false", "-c", "web_search=\"disabled\""]'
+      - name: Finalize review status
+        if: always() && steps.first.outcome == 'success'
+        env:
+          CODEX_OUTCOME: ${{ steps.codex.outcome }}
+        run: python3 ci/github_review.py --finalize
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: scaffold-review
+          retention-days: 7
+          path: |
+            reports/status.json
+            reports/review.md
