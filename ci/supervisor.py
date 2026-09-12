@@ -121,6 +121,7 @@ def run_one(provider, model, secret_name, secret, prompt):
             for category, markers in categories:
                 if any(marker in diagnostic for marker in markers):
                     return None, category
+            print('Redacted CLI diagnostic: '+redact((error or raw)[-2000:], [secret]), flush=True)
             return None, 'cli_failed'
         try:
             return parse_output(provider, raw), 'success'
