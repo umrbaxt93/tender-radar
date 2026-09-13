@@ -38,12 +38,40 @@ def cmd_import(args: argparse.Namespace) -> int:
         if args.reset_cursor:
             reset_cursor(session)
         stats = run_import(session, source, since=_since(args.since), limit=args.limit,
-                           refresh=args.refresh)
+                           refresh=args.refresh,
+                           match_threshold=settings.org_match_threshold)
     print(f"import: pages={stats.pages} listed={stats.listed} details={stats.fetched_details} "
           f"inserted={stats.inserted} updated={stats.updated} "
           f"skipped={stats.skipped_existing} stopped={stats.stopped_reason} "
           f"errors={len(stats.errors)}")
     return 0 if not (stats.stopped_reason or "").startswith("Source") else 3
+
+
+def cmd_reparse(args: argparse.Namespace) -> int:
+    from radar.importer import reparse_from_snapshots
+
+    settings = load_settings()
+    with session_scope() as session:
+        stats = reparse_from_snapshots(session, limit=args.limit, dry_run=args.dry_run,
+                                       match_threshold=settings.org_match_threshold)
+    print(stats.summary() + (" (dry run, nothing written)" if args.dry_run else ""))
+    for error in stats.errors[:10]:
+        print("  " + error)
+    return 1 if stats.checksum_failures else 0
+
+
+def cmd_worker(args: argparse.Namespace) -> int:
+    from radar.worker import run_cycle, run_forever
+
+    settings = load_settings()
+    kwargs = dict(fixtures=args.fixtures or "", limit=args.limit, mock_ai=args.mock_ai,
+                  skip_import=args.skip_import)
+    if args.interval:
+        run_forever(settings, interval_s=args.interval, **kwargs)
+        return 0
+    result = run_cycle(settings, **kwargs)
+    print(result.summary())
+    return 1 if result.failed_step else 0
 
 
 def cmd_classify(args: argparse.Namespace) -> int:
@@ -52,7 +80,8 @@ def cmd_classify(args: argparse.Namespace) -> int:
     settings = load_settings()
     with session_scope() as session:
         report = run_classification(session, settings, use_ai=not args.rules_only,
-                                    limit=args.limit, mock=args.mock_ai)
+                                    limit=args.limit, mock=args.mock_ai,
+                                    refresh=args.refresh)
     print(report.summary())
     return 0
 
@@ -130,9 +159,23 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--reset-cursor", action="store_true", help="start from page 1")
     s.set_defaults(func=cmd_import)
 
+    s = sub.add_parser("reparse", help="rebuild rows from stored snapshots, no network")
+    s.add_argument("--limit", type=int)
+    s.add_argument("--dry-run", action="store_true", help="report only, write nothing")
+    s.set_defaults(func=cmd_reparse)
+
+    s = sub.add_parser("worker", help="run one full cycle, or repeat on an interval")
+    s.add_argument("--interval", type=float, help="seconds between cycles; omit to run once")
+    s.add_argument("--fixtures", help="fixture directory instead of the live source")
+    s.add_argument("--limit", type=int)
+    s.add_argument("--mock-ai", action="store_true")
+    s.add_argument("--skip-import", action="store_true")
+    s.set_defaults(func=cmd_worker)
+
     s = sub.add_parser("classify", help="rules then Gemini classification")
     s.add_argument("--rules-only", action="store_true")
     s.add_argument("--mock-ai", action="store_true", help="deterministic offline mock model")
+    s.add_argument("--refresh", action="store_true", help="re-classify already classified lots")
     s.add_argument("--limit", type=int)
     s.set_defaults(func=cmd_classify)
 

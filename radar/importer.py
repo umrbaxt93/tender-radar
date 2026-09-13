@@ -23,8 +23,9 @@ from radar.models import (
     Organization,
     OrganizationAlias,
     Procedure,
+    RawSnapshot,
 )
-from radar.snapshots import store_snapshot
+from radar.snapshots import snapshot_body, store_snapshot
 from radar.source.client import Source, SourceError
 from radar.source.parser import ProcedureRecord, parse_detail, parse_list_page
 
@@ -48,8 +49,28 @@ def canonical_name(name: str) -> str:
     return " ".join(name.split()).strip()
 
 
+def find_similar_organization(session: Session, name: str,
+                              threshold: float) -> Organization | None:
+    """Best trigram match among organizations that carry no STIR.
+
+    Only STIR-less organizations are candidates. An organization with a STIR is already
+    identified, and merging two identified organizations because their names look alike
+    would corrupt the customer history that the whole Radar is built on.
+    """
+    similarity = func.similarity(func.lower(OrganizationAlias.name_raw), name.lower())
+    row = session.execute(
+        select(Organization, similarity.label("score"))
+        .join(OrganizationAlias, OrganizationAlias.org_id == Organization.id)
+        .where(Organization.stir.is_(None), similarity >= threshold)
+        .order_by(similarity.desc())
+        .limit(1)
+    ).first()
+    return row[0] if row else None
+
+
 def upsert_organization(session: Session, name: str | None, stir: str | None,
-                        region: str | None = None) -> Organization | None:
+                        region: str | None = None,
+                        match_threshold: float | None = None) -> Organization | None:
     if not name and not stir:
         return None
     name = canonical_name(name or stir or "")
@@ -60,10 +81,13 @@ def upsert_organization(session: Session, name: str | None, stir: str | None,
         alias = session.scalar(
             select(OrganizationAlias)
             .join(Organization)
-            .where(OrganizationAlias.name_raw == name,
+            .where(func.lower(OrganizationAlias.name_raw) == name.lower(),
                    (Organization.stir == stir) | (Organization.stir.is_(None)))
         )
         org = alias.organization if alias else None
+    if org is None and match_threshold:
+        # Same customer written slightly differently, with no STIR to tie them together.
+        org = find_similar_organization(session, name, match_threshold)
     if org is None:
         org = Organization(stir=stir, name_canonical=name, region=region)
         session.add(org)
@@ -73,16 +97,25 @@ def upsert_organization(session: Session, name: str | None, stir: str | None,
             org.stir = stir
         if region and not org.region:
             org.region = region
-    if name and not any(a.name_raw == name for a in org.aliases):
-        session.add(OrganizationAlias(org_id=org.id, name_raw=name))
-        session.flush()
+    if name:
+        # Query rather than reading org.aliases: the relationship can be stale within a
+        # session, and a stale read here means a unique-constraint crash mid-import.
+        known = session.scalar(
+            select(OrganizationAlias.id)
+            .where(OrganizationAlias.org_id == org.id,
+                   func.lower(OrganizationAlias.name_raw) == name.lower())
+        )
+        if not known:
+            session.add(OrganizationAlias(org_id=org.id, name_raw=name))
+            session.flush()
     return org
 
 
 def upsert_procedure(session: Session, rec: ProcedureRecord, snapshot_id: int | None,
-                     source: str = "uzex") -> tuple[Procedure, bool]:
+                     source: str = "uzex",
+                     match_threshold: float | None = None) -> tuple[Procedure, bool]:
     customer = upsert_organization(session, rec.customer_name, rec.customer_stir,
-                                   rec.customer_region)
+                                   rec.customer_region, match_threshold)
     values = dict(
         source=source, source_id=rec.source_id, source_url=rec.source_url,
         procedure_type=rec.procedure_type,
@@ -108,7 +141,8 @@ def upsert_procedure(session: Session, rec: ProcedureRecord, snapshot_id: int | 
         session.add(LotItem(procedure_id=proc.id, raw_name=item.raw_name, quantity=item.quantity,
                             unit=item.unit, unit_price_raw=item.unit_price_raw))
     if rec.award:
-        supplier = upsert_organization(session, rec.award.supplier_name, rec.award.supplier_stir)
+        supplier = upsert_organization(session, rec.award.supplier_name,
+                                       rec.award.supplier_stir, None, match_threshold)
         award = session.get(Award, proc.id)
         if award is None:
             award = Award(procedure_id=proc.id)
@@ -132,7 +166,7 @@ def get_cursor(session: Session, job_name: str = JOB_NAME) -> ImportCursor:
 def run_import(session: Session, source: Source, *, since: datetime | None = None,
                limit: int | None = None, refresh: bool = False,
                job_name: str = JOB_NAME, max_pages: int = 100_000,
-               first_page: int = 1) -> ImportStats:
+               first_page: int = 1, match_threshold: float | None = None) -> ImportStats:
     """Import completed procedures. Commits after every page; resumes from the cursor."""
     stats = ImportStats()
     cursor = get_cursor(session, job_name)
@@ -188,7 +222,8 @@ def run_import(session: Session, source: Source, *, since: datetime | None = Non
                 stats.errors.append(f"{entry.source_id}: {exc}")
                 log.warning("unparseable detail %s: %s", entry.source_id, exc)
                 continue
-            _, created = upsert_procedure(session, rec, snap.id, source=source.name)
+            _, created = upsert_procedure(session, rec, snap.id, source=source.name,
+                                          match_threshold=match_threshold)
             if created:
                 stats.inserted += 1
             else:
@@ -216,3 +251,60 @@ def reset_cursor(session: Session, job_name: str = JOB_NAME) -> None:
         cur.last_page = 0
         cur.last_source_id = None
         session.flush()
+
+
+@dataclass
+class ReparseStats:
+    """Result of rebuilding rows from stored snapshots without touching the network."""
+    considered: int = 0
+    reparsed: int = 0
+    checksum_failures: int = 0
+    parse_failures: int = 0
+    errors: list[str] = field(default_factory=list)
+
+    def summary(self) -> str:
+        return (f"reparse: considered={self.considered} reparsed={self.reparsed} "
+                f"checksum_failures={self.checksum_failures} "
+                f"parse_failures={self.parse_failures}")
+
+
+def reparse_from_snapshots(session: Session, limit: int | None = None,
+                           match_threshold: float | None = None,
+                           dry_run: bool = False) -> ReparseStats:
+    """Re-run parsing over stored raw snapshots.
+
+    docs/SPEC.md requires that parsing be re-runnable from snapshots, so a mapping or
+    parser fix never means re-fetching from the source. Checksums are verified on the way
+    in; a corrupted snapshot is reported and skipped rather than silently reparsed.
+    """
+    stats = ReparseStats()
+    stmt = (select(Procedure.id, Procedure.source, RawSnapshot)
+            .join(RawSnapshot, RawSnapshot.id == Procedure.raw_snapshot_id)
+            .order_by(Procedure.id))
+    if limit:
+        stmt = stmt.limit(limit)
+    for _pid, source, snap in session.execute(stmt).all():
+        stats.considered += 1
+        try:
+            body = snapshot_body(snap)
+        except ValueError as exc:
+            stats.checksum_failures += 1
+            stats.errors.append(f"snapshot {snap.id}: {exc}")
+            log.error("snapshot %s failed its checksum; skipping", snap.id)
+            continue
+        try:
+            rec = parse_detail(body)
+        except (ValueError, KeyError) as exc:
+            stats.parse_failures += 1
+            stats.errors.append(f"snapshot {snap.id}: {exc}")
+            continue
+        if not dry_run:
+            upsert_procedure(session, rec, snap.id, source=source,
+                             match_threshold=match_threshold)
+        stats.reparsed += 1
+    if dry_run:
+        session.rollback()
+    else:
+        session.commit()
+    log.info("%s", stats.summary())
+    return stats

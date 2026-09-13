@@ -9,7 +9,7 @@ importable right now comes from clearly labelled synthetic fixtures, and every o
 contains them says so.
 
 [Specification](docs/SPEC.md) · [Progress](PROGRESS.md) · [Database](docs/DATABASE.md) ·
-[Cloud workflow](docs/CLOUD_WORKFLOW.md)
+[Deployment](docs/DEPLOYMENT.md) · [Cloud workflow](docs/CLOUD_WORKFLOW.md)
 
 ## Run it
 
@@ -24,6 +24,8 @@ make web                     # http://127.0.0.1:8000/radar and /health
 
 `make demo` uses `--mock-ai`, a deterministic offline model, so it costs nothing and needs no
 API key. Individual steps are `make migrate import-synthetic classify renewal export web`.
+`make worker ARGS="--fixtures samples/synthetic --mock-ai"` runs the same chain as one cycle in
+a single process, which is how it is meant to run on a server.
 
 ## What each step does
 
@@ -43,9 +45,16 @@ completion date plus the category lifecycle, clamped to month ends. Contact date
 earlier. Scoring weights live in `radar/lifecycle.yaml` and reach 75, not 100; see
 DECISIONS.md.
 
-**export** writes `out/renewal_radar.xlsx` with Radar, IT_Lots and Stats sheets.
+**export** writes `out/renewal_radar.xlsx` with Radar, IT_Lots and Stats sheets. The Stats
+sheet carries coverage percentages: how many lots actually have a completion date, a customer,
+an amount, an award and a quantity. A Radar built on lots missing those would look full and
+mean nothing, so the numbers are published next to the results.
 
 **web** serves `/radar` and `/health` on a single worker.
+
+**reparse** rebuilds rows from stored snapshots after a parser or mapping fix, verifying each
+checksum and never touching the network. **worker** runs import, classify, renewal and export
+as one ordered cycle in one process, optionally repeating on an interval.
 
 ## Configuration
 

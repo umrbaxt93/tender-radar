@@ -8,13 +8,19 @@ from sqlalchemy.orm import Session
 from radar.models import (
     AiCache,
     AiCostLedger,
+    Award,
     Classification,
     ImportCursor,
+    LotItem,
     Organization,
     Procedure,
     RawSnapshot,
     RenewalOpportunity,
 )
+
+
+def _pct(part: int, whole: int) -> float:
+    return round(100.0 * part / whole, 1) if whole else 0.0
 
 
 def collect_stats(session: Session) -> dict[str, object]:
@@ -29,9 +35,27 @@ def collect_stats(session: Session) -> dict[str, object]:
     )
     by_source = dict(session.execute(
         select(Procedure.source, func.count()).group_by(Procedure.source)).all())
+    procedures = count(Procedure)
+    # Coverage tells you how much of the data the analysis can actually rely on. A Radar
+    # built on lots without amounts or completion dates would look full and mean nothing.
+    with_award = count(Award)
+    with_completed = count(Procedure, Procedure.completed_at.is_not(None))
+    with_amount = session.scalar(
+        select(func.count()).select_from(Procedure)
+        .outerjoin(Award, Award.procedure_id == Procedure.id)
+        .where(func.coalesce(Award.amount, Procedure.start_price).is_not(None))) or 0
+    with_customer = count(Procedure, Procedure.customer_org_id.is_not(None))
+    lots_with_quantity = session.scalar(
+        select(func.count(func.distinct(LotItem.procedure_id)))
+        .where(LotItem.quantity.is_not(None))) or 0
     return {
-        "procedures": count(Procedure),
+        "procedures": procedures,
         "procedures_by_source": by_source,
+        "coverage_completed_at_pct": _pct(with_completed, procedures),
+        "coverage_customer_pct": _pct(with_customer, procedures),
+        "coverage_amount_pct": _pct(with_amount, procedures),
+        "coverage_award_pct": _pct(with_award, procedures),
+        "coverage_quantity_pct": _pct(lots_with_quantity, procedures),
         "organizations": count(Organization),
         "raw_snapshots": count(RawSnapshot),
         "classified": count(Classification),

@@ -78,3 +78,24 @@ lifecycle because the lot text is better evidence than a table.
 2026-09-13 | Synthetic provenance is carried end to end: fixture content, lot ids, customer
 names, procedure.source, the Excel warning row and the /radar banner. Reports must never
 present these rows as real procurement results.
+
+## Reparse, organization identity and the worker — 2026-09-13
+2026-09-13 | `reparse` rebuilds rows from stored snapshots and verifies each checksum first. A
+snapshot that fails its checksum is reported and skipped, never reparsed, because silently
+importing corrupted bytes is worse than a visible gap. This is what makes the raw_snapshot
+requirement in docs/SPEC.md pay off: a parser or mapping fix never means re-fetching.
+2026-09-13 | Organization identity order: STIR, then an exact case-insensitive alias match,
+then a trigram match above ORG_MATCH_THRESHOLD (0.92). Organizations that already carry a STIR
+are excluded from fuzzy matching entirely. A duplicate customer is recoverable; a wrong merge
+destroys the purchase history the Radar is built on. Migration 0002 indexes lower(name_raw) so
+the matching query can use an index.
+2026-09-13 | Spellings differing only in case are one alias. Genuinely different spellings are
+all kept, since they are the raw material for later matching.
+2026-09-13 | Coverage percentages are published next to results in `stats` and the Excel Stats
+sheet. Without them a Radar built on lots that lack amounts or completion dates looks complete
+and means nothing.
+2026-09-13 | worker.py runs one ordered cycle in one process with no broker, per docs/SPEC.md.
+A failed import or a hit budget stop ends the cycle instead of publishing a Radar from
+half-imported data. SIGTERM finishes the cycle in flight rather than cutting a job in half.
+2026-09-13 | docs/DEPLOYMENT.md is written but has never been executed, and says so. Sizing is
+derived from measured row and snapshot sizes rather than assumed.

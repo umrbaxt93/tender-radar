@@ -32,6 +32,12 @@ class Settings:
     source_list_url: str = field(default_factory=lambda: _env("UZEX_LIST_URL"))
     source_detail_url: str = field(default_factory=lambda: _env("UZEX_DETAIL_URL"))
     source_fixture_dir: str = field(default_factory=lambda: _env("SOURCE_FIXTURE_DIR"))
+    # Trigram similarity above which two customer names are treated as the same
+    # organization when neither side carries a STIR. Deliberately strict: merging two
+    # real organizations is far worse than keeping a duplicate.
+    org_match_threshold: float = field(
+        default_factory=lambda: _float("ORG_MATCH_THRESHOLD", 0.92)
+    )
     request_interval_s: float = field(default_factory=lambda: _float("REQUEST_INTERVAL_S", 3.0))
     out_dir: Path = field(default_factory=lambda: ROOT / _env("OUT_DIR", "out"))
 

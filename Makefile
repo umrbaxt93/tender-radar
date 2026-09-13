@@ -1,5 +1,5 @@
-.PHONY: install validate supervisor up migrate import import-synthetic demo classify renewal \
-        export web stats health test lint
+.PHONY: install validate supervisor up migrate import import-synthetic reparse worker \
+        demo classify renewal export web stats health test lint
 VENV ?= .venv
 PY ?= $(VENV)/bin/python
 ARGS ?=
@@ -29,6 +29,14 @@ import:
 # Offline import from the labelled synthetic fixtures. Never real data.
 import-synthetic:
 	$(PY) -m radar import --fixtures samples/synthetic $(ARGS)
+
+# Rebuild rows from stored snapshots after a parser or mapping fix. No network access.
+reparse:
+	$(PY) -m radar reparse $(ARGS)
+
+# One process, one cycle: import, classify, renewal, export. Add --interval N to repeat.
+worker:
+	$(PY) -m radar worker $(ARGS)
 
 classify:
 	$(PY) -m radar classify $(ARGS)
