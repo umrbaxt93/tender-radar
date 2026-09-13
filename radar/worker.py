@@ -90,6 +90,9 @@ def run_cycle(settings: Settings | None = None, *, fixtures: str = "", limit: in
     return result
 
 
+SLEEP_SLICE_S = 1.0
+
+
 class Stopper:
     """Finishes the cycle in flight, then stops. No job is cut in half by a signal."""
 
@@ -102,6 +105,18 @@ class Stopper:
         log.info("signal %s received; finishing the current cycle", signum)
         self.stop = True
 
+    def wait(self, seconds: float, sleep=time.sleep, slice_s: float = SLEEP_SLICE_S) -> None:
+        """Idle in slices so a stop during the wait is noticed promptly.
+
+        One long sleep would swallow the signal until it expired, and the worker would then
+        start a whole extra cycle after having been asked to stop.
+        """
+        remaining = seconds
+        while remaining > 0 and not self.stop:
+            step = min(slice_s, remaining)
+            sleep(step)
+            remaining -= step
+
 
 def run_forever(settings: Settings | None = None, *, interval_s: float = 3600,
                 sleep=time.sleep, **cycle_kwargs) -> None:
@@ -113,4 +128,7 @@ def run_forever(settings: Settings | None = None, *, interval_s: float = 3600,
         if stopper.stop:
             log.info("worker stopping after a completed cycle")
             return
-        sleep(interval_s)
+        stopper.wait(interval_s, sleep)
+        if stopper.stop:
+            log.info("worker stopping while idle; no further cycle started")
+            return

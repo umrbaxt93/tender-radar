@@ -118,3 +118,7 @@ cycle in flight finish instead of cutting an import in half.
 2026-09-13 | The Docker path is validated (`docker compose config`) but has never been built or
 run: this development environment has no Docker daemon. The plain-host path was run end to end
 here. Both facts are stated in docs/DEPLOYMENT.md rather than implied.
+2026-09-13 | The worker idles in one second slices instead of one long sleep. Running the
+platform as a real process showed that a SIGTERM arriving during the wait was swallowed until
+the interval expired, and the worker then started a whole extra cycle after having been asked
+to stop. It now stops within a second when idle, and still finishes a cycle already in flight.

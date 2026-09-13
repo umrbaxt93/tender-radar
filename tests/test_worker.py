@@ -83,19 +83,52 @@ def test_run_forever_finishes_the_cycle_then_stops(wired, samples_dir, monkeypat
     assert "cycle 2026-09-13" in capsys.readouterr().out
 
 
-def test_run_forever_sleeps_between_cycles(wired, monkeypatch):
+def test_run_forever_repeats_until_stopped(wired, monkeypatch):
     calls = {"n": 0}
+    stopper = worker.Stopper()
+
+    def fake_cycle(settings, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            stopper.stop = True
+        return worker.CycleResult(started_at=NOW)
+
+    monkeypatch.setattr(worker, "Stopper", lambda: stopper)
+    monkeypatch.setattr(worker, "run_cycle", fake_cycle)
+    worker.run_forever(wired, interval_s=2, sleep=lambda s: None)
+    assert calls["n"] == 3
+
+
+def test_a_stop_while_idle_does_not_start_another_cycle(wired, monkeypatch):
+    """A signal arriving during the wait must not buy one more full cycle of work."""
+    calls = {"n": 0}
+    stopper = worker.Stopper()
 
     def fake_cycle(settings, **kwargs):
         calls["n"] += 1
         return worker.CycleResult(started_at=NOW)
 
-    stopper = worker.Stopper()
-    monkeypatch.setattr(worker, "Stopper", lambda: stopper)
-    monkeypatch.setattr(worker, "run_cycle", fake_cycle)
+    slept = []
 
     def sleep(seconds):
-        stopper.stop = True  # stop after the second cycle
+        slept.append(seconds)
+        if len(slept) == 3:      # the signal lands part way through the idle period
+            stopper.stop = True
 
-    worker.run_forever(wired, interval_s=5, sleep=sleep)
-    assert calls["n"] == 2
+    monkeypatch.setattr(worker, "Stopper", lambda: stopper)
+    monkeypatch.setattr(worker, "run_cycle", fake_cycle)
+    worker.run_forever(wired, interval_s=3600, sleep=sleep)
+    assert calls["n"] == 1
+    # It stopped after about three seconds of a one hour wait, not after the full hour.
+    assert sum(slept) <= 5
+
+
+def test_wait_sleeps_in_slices_and_never_overshoots():
+    stopper = worker.Stopper()
+    slept = []
+    stopper.wait(2.5, sleep=slept.append, slice_s=1.0)
+    assert slept == [1.0, 1.0, 0.5]
+    stopper.stop = True
+    slept.clear()
+    stopper.wait(60, sleep=slept.append)
+    assert slept == []

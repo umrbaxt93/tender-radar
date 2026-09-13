@@ -41,7 +41,9 @@ Definition of Done in docs/SPEC.md, which requires real imported lots.
 - DONE: systemd units for the web and worker processes and an nginx example that keeps the
   app behind TLS and basic auth.
 - DONE: the platform was run here as two long-lived processes, worker on an interval and web
-  on 127.0.0.1:8000, with /health returning ok and /radar serving.
+  on 127.0.0.1:8000, with /health returning ok and /radar serving. The worker completed a
+  second scheduled cycle on time, and SIGTERM while idle stopped it in one second without
+  starting another cycle.
 - BLOCKED: a real launch on a real host. No host, no verified source contract, and external
   deployment is outside what this phase authorizes.
 
