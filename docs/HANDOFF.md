@@ -138,6 +138,16 @@ what actually happened. Accept: `/health` ok from the server, worker cycles hour
 category → manager mapping, daily new-tender alerts, then competitor and price intelligence
 (product normalization first). See TODO.md.
 
+## Antigravity (on the owner's computer)
+
+Antigravity reads `.agents/rules/tender-radar.md` (identical to AGENTS.md) and the workflow
+`.agents/workflows/continue-tender-radar.md`; invoke the workflow to resume from the first
+unfinished task. Because it runs on the owner's machine it can open the source sites
+directly, which is exactly what T1 needs, still without logging in. It needs a local
+PostgreSQL 16: on Linux/WSL `bash scripts/agent_env_setup.sh`; on Windows, Docker Desktop and
+`docker compose up -d --wait postgres`, then `DATABASE_URL` in `.env`. The classifier still
+needs `GEMINI_API_KEY` in `.env`; the IDE's own Gemini login does not reach the application.
+
 ## Working without the owner present
 
 Codex or another hosted agent can drive T1–T7 alone under these conditions: the GitHub
