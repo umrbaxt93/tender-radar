@@ -49,6 +49,16 @@ The single thing that turns this into a working product is a verified source.
 
 ## Run it
 
+In a fresh agent sandbox (Codex, Claude Code, CI) one script prepares everything, including
+PostgreSQL 16 if it is missing, and runs the checks:
+
+```bash
+bash scripts/agent_env_setup.sh
+eval "$(bash scripts/agent_env_setup.sh --print-env)"
+```
+
+By hand:
+
 ```bash
 make install                                   # Python 3.12 virtualenv
 export DATABASE_URL=postgresql://tender:PASSWORD@localhost:5432/tender_radar   # PostgreSQL 16
@@ -127,6 +137,15 @@ what actually happened. Accept: `/health` ok from the server, worker cycles hour
 **T8. Phase 2, only after T1–T7.** Bitrix24 idempotent lead/task sync with a feedback loop,
 category → manager mapping, daily new-tender alerts, then competitor and price intelligence
 (product normalization first). See TODO.md.
+
+## Working without the owner present
+
+Codex or another hosted agent can drive T1–T7 alone under these conditions: the GitHub
+repository is connected to the agent (it stays private; public access is neither needed nor
+wanted), the sandbox may reach `xarid.uzex.uz` and `ebirja.uz` so the public pages can be
+inspected, and `scripts/agent_env_setup.sh` is used as the environment setup command. Two
+things still need a person: merging to `main`, and exporting data from any cabinet that
+requires a login. Everything else is the agent's.
 
 ## Conventions
 
