@@ -13,29 +13,38 @@ def count(session, model):
     return session.scalar(select(func.count()).select_from(model))
 
 
+def fixture_counts(samples_dir):
+    """Expected numbers derived from the files, so regenerating fixtures cannot rot tests."""
+    details = sorted(samples_dir.glob("detail_*.json"))
+    pages = sorted(samples_dir.glob("list_page_*.json"))
+    return len(details), len(pages)
+
+
 def test_import_samples_and_idempotency(session, samples_dir):
+    lots, pages = fixture_counts(samples_dir)
     src = FixtureSource(samples_dir)
     stats = run_import(session, src)
-    assert stats.pages == 1 and stats.inserted == 12 and stats.updated == 0
+    assert stats.pages == pages and stats.inserted == lots and stats.updated == 0
     assert stats.stopped_reason == "end_of_listing"
-    assert count(session, Procedure) == 12
-    assert count(session, RawSnapshot) == 13  # 1 list + 12 details
-    assert session.get(ImportCursor, "uzex_completed").last_page == 1
+    assert count(session, Procedure) == lots
+    assert count(session, RawSnapshot) == lots + pages
+    assert session.get(ImportCursor, "uzex_completed").last_page == pages
     orgs = count(session, Organization)
     items = count(session, LotItem)
     # second run: cursor is at the end, nothing changes
     again = run_import(session, src)
-    assert again.pages == 0 and count(session, Procedure) == 12
+    assert again.pages == 0 and count(session, Procedure) == lots
     # forced re-import with refresh from page 1: upserts, no duplicates
     cur = get_cursor(session)
     cur.last_page = 0
     session.commit()
     third = run_import(session, src, refresh=True)
-    assert third.updated == 12 and third.inserted == 0
-    assert count(session, Procedure) == 12
+    assert third.updated == lots and third.inserted == 0
+    assert count(session, Procedure) == lots
     assert count(session, Organization) == orgs
     assert count(session, LotItem) == items
-    assert count(session, RawSnapshot) == 13  # identical bodies are not duplicated
+    # identical bodies are not stored twice
+    assert count(session, RawSnapshot) == lots + pages
 
 
 def test_snapshot_roundtrip(session, samples_dir):
@@ -62,7 +71,8 @@ def test_limit_and_since(session, samples_dir):
     stats = run_import(session, FixtureSource(samples_dir), since=since, refresh=True)
     assert stats.stopped_reason == "since"
     newer = [c for c in session.scalars(select(Procedure.completed_at)) if c >= since]
-    assert stats.fetched_details == len(newer) and 0 < len(newer) < 12
+    lots, _ = fixture_counts(samples_dir)
+    assert stats.fetched_details == len(newer) and 0 < len(newer) < lots
 
 
 class CrashingSource(FixtureSource):
@@ -91,8 +101,9 @@ def test_resume_after_crash(session, samples_dir):
     assert count(session, Procedure) == 0
     # resume finishes the job
     stats = run_import(session, FixtureSource(samples_dir))
-    assert stats.inserted == 12
-    assert session.get(ImportCursor, "uzex_completed").last_page == 1
+    lots, pages = fixture_counts(samples_dir)
+    assert stats.inserted == lots
+    assert session.get(ImportCursor, "uzex_completed").last_page == pages
 
 
 def test_unexpected_exception_propagates(session, samples_dir):

@@ -1,0 +1,25 @@
+# Reviewed model pricing, USD per million tokens.
+#
+# Deliberately empty of real model prices: prices are not guessed here and runtime model
+# listing does not return them (DECISIONS.md, 2026-09-13). Before enabling paid AI
+# classification, add the model you configured in GEMINI_MODEL with prices copied from the
+# official Gemini API pricing page, and record the page and date you copied them from.
+#
+# Example shape (values must be the real, checked numbers, not these placeholders):
+#   gemini-2.5-flash-lite:
+#     input_usd_per_mtok: 0.00
+#     output_usd_per_mtok: 0.00
+#     source: https://ai.google.dev/gemini-api/docs/pricing
+#     reviewed_at: YYYY-MM-DD
+#
+# Alternatively set GEMINI_INPUT_USD_PER_MTOK and GEMINI_OUTPUT_USD_PER_MTOK in the
+# environment. Without one of the two, a paid classification run refuses to start.
+
+models:
+  # Offline deterministic model used by --mock-ai. Costs nothing but is priced so that the
+  # budget ledger and the $10 stop are exercised by tests exactly as in a paid run.
+  mock:
+    input_usd_per_mtok: 1.0
+    output_usd_per_mtok: 4.0
+    source: offline test double, not a real model
+    reviewed_at: 2026-09-13

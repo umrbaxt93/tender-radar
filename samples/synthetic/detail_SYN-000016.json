@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000016",
+ "procedure_type": "auction",
+ "title": "Коммутатор Cisco Catalyst 9200 48 портов",
+ "status": "completed",
+ "published_at": "2026-08-08T18:00:00Z",
+ "deadline_at": "2026-08-24T18:00:00Z",
+ "completed_at": "2026-08-31T18:00:00Z",
+ "currency": "UZS",
+ "start_price": 190000000,
+ "customer": {
+  "name": "Navoiy kon-metallurgiya kolleji (SYNTHETIC)",
+  "stir": "900000008",
+  "region": "Navoiy viloyati"
+ },
+ "items": [
+  {
+   "name": "Cisco Catalyst C9200-48P",
+   "quantity": 2,
+   "unit": "шт",
+   "unit_price": "95000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 186915418.47,
+  "awarded_at": "2026-08-31T18:00:00Z"
+ }
+}

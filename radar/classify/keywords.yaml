@@ -1,0 +1,312 @@
+# Keyword pre-filter over title + lot item names.
+# Languages: Uzbek-Latin, Uzbek-Cyrillic, Russian, English.
+# Matching is case-insensitive on a normalized string; entries are plain substrings
+# unless they start with "re:", which marks a regular expression.
+#
+# A category's keywords decide both "is this IT" and which category is proposed.
+# Anything matching not_it without an it hit is classified by rule as non-IT and is
+# NEVER sent to the AI, which is the main cost control.
+
+categories:
+  Server:
+    - server
+    - сервер
+    - serverlar
+    - proliant
+    - poweredge
+    - "re:\\bdl\\d{2,3}\\b"
+    - blade
+    - rack server
+  Storage:
+    - storage
+    - схд
+    - system xraneniya
+    - хранения данных
+    - powervault
+    - netapp
+    - "re:\\bsan\\b"
+    - "re:\\bnas\\b"
+    - disk massiv
+    - дисковый массив
+  Network:
+    - kommutator
+    - коммутатор
+    - switch
+    - router
+    - marshrutizator
+    - маршрутизатор
+    - "re:\\bwi-?fi\\b"
+    - access point
+    - tarmoq uskunalari
+    - сетевое оборудование
+    - patch panel
+    - optik kabel
+    - оптический кабель
+  Firewall:
+    - firewall
+    - fortigate
+    - межсетевой экран
+    - mejsetevoy ekran
+    - palo alto
+    - checkpoint
+    - check point
+    - "re:\\butm\\b"
+    - "re:\\bngfw\\b"
+  Antivirus/EDR:
+    - antivirus
+    - антивирус
+    - kaspersky
+    - касперский
+    - dr.web
+    - drweb
+    - eset
+    - "re:\\bedr\\b"
+    - endpoint security
+    - endpoint protection
+  DLP:
+    - "re:\\bdlp\\b"
+    - infowatch
+    - утечка данных
+    - ma'lumot sizib chiqishi
+  SIEM/SOC:
+    - "re:\\bsiem\\b"
+    - "re:\\bsoc\\b"
+    - splunk
+    - qradar
+    - arcsight
+    - мониторинг событий безопасности
+  Cybersecurity-Other:
+    - kiberxavfsizlik
+    - кибербезопасность
+    - axborot xavfsizligi
+    - информационная безопасность
+    - penetration test
+    - pentest
+    - "re:\\bwaf\\b"
+    - "re:\\bpki\\b"
+  Microsoft:
+    - microsoft
+    - майкрософт
+    - windows
+    - "re:\\boffice\\s*365\\b"
+    - "re:\\bm365\\b"
+    - "re:\\bsql server\\b"
+    - exchange server
+    - sharepoint
+    - azure
+  Google Workspace:
+    - google workspace
+    - g suite
+    - гугл воркспейс
+  Collaboration:
+    - zoom
+    - "re:\\bteams\\b"
+    - webex
+    - видеоконференц
+    - videokonferens
+    - vebinar
+    - вебинар
+  Software Licenses:
+    - litsenziya
+    - litsenziyalar
+    - лицензия
+    - лицензии
+    - dasturiy ta'minot
+    - dasturiy taminot
+    - программное обеспечение
+    - software
+    - "re:\\bпо\\s+для\\b"
+    - autocad
+    - adobe
+    - 1c
+    - "re:\\b1с\\b"
+  Cloud:
+    - hosting
+    - хостинг
+    - "re:\\bvps\\b"
+    - bulut xizmati
+    - облачн
+    - cloud
+    - дата-центр услуги
+    - domen
+    - домен
+  Computer/Notebook:
+    - kompyuter
+    - компьютер
+    - noutbuk
+    - ноутбук
+    - notebook
+    - laptop
+    - monoblok
+    - моноблок
+    - sistem blok
+    - системный блок
+    - monitor
+    - монитор
+    - thinkpad
+    - latitude
+    - probook
+    - planshet
+    - планшет
+  Printer/MFP:
+    - printer
+    - принтер
+    - "re:\\bmfp\\b"
+    - "re:\\bмфу\\b"
+    - skaner
+    - сканер
+    - kseroks
+    - ксерокс
+    - laserjet
+    - kartrij
+    - картридж
+  UPS:
+    - "re:\\bups\\b"
+    - "re:\\bибп\\b"
+    - uzluksiz quvvat
+    - источник бесперебойного питания
+    - smart-ups
+    - akkumulyator batareya
+  CCTV:
+    - videokuzatuv
+    - видеонаблюдени
+    - "re:\\bcctv\\b"
+    - hikvision
+    - dahua
+    - "re:\\bnvr\\b"
+    - "re:\\bdvr\\b"
+    - kamera tizimi
+    - камер видеонаблюдения
+  Data Center:
+    - data center
+    - дата-центр
+    - ma'lumotlar markazi
+    - serverxona
+    - серверная
+    - precision cooling
+    - shkaf serverniy
+  IT Services:
+    - texnik xizmat ko'rsatish axborot
+    - it xizmat
+    - ит услуги
+    - системная интеграция
+    - tizimli integratsiya
+    - texnik qo'llab-quvvatlash dasturiy
+    - техническая поддержка программного
+  Software Development:
+    - dasturiy ta'minotni ishlab chiqish
+    - разработка программного обеспечения
+    - veb-sayt yaratish
+    - разработка сайта
+    - mobil ilova ishlab chiqish
+    - информационной системы разработка
+  Telecom:
+    - internet xizmati
+    - услуги интернет
+    - aloqa xizmatlari
+    - услуги связи
+    - "re:\\batc\\b"
+    - "re:\\bатс\\b"
+    - telefon stansiya
+    - traffik
+  Other IT:
+    - axborot texnologiyalari
+    - информационные технологии
+    - "re:\\bit\\s+(?:uskuna|jihoz|oborudovani)"
+
+not_it:
+  - mebel
+  - мебель
+  # Furniture that borrows IT words. These must stay ahead of the IT keywords so a
+  # computer desk is never counted as a computer purchase.
+  - kompyuter stoli
+  - компьютерный стол
+  - stol va stul
+  - "re:stol\\s*,\\s*stul"
+  - стол и стул
+  - qurilish
+  - строительн
+  - ta'mirlash ishlari
+  - ремонт кровли
+  - ремонтные работы
+  - oziq-ovqat
+  - продукты питания
+  - продуктов питания
+  - продукты пит
+  - продовольств
+  - "re:\\bмук[аи]\\b"
+  - go'sht mahsulotlari
+  - avtomobil
+  - автомобил
+  - avtoulov
+  - kanselyariya
+  - канцеляр
+  - dori vosita
+  - лекарствен
+  - медикамент
+  - tibbiy sarf
+  - yoqilg'i
+  - топлив
+  - бензин
+  - benzin
+  - spetsodejda
+  - спецодежда
+  - kiyim-kechak
+  - elektr energiyasi
+  - электроэнергия
+  - kommunal xizmat
+  - коммунальные услуги
+  - suv ta'minoti
+  - водоснабжение
+  - o'g'it
+  - удобрен
+  - urug'lik
+  - семена
+  - mol go'shti
+  - ветеринар
+
+# Subscription / renewable purchase markers.
+subscription:
+  - litsenziya
+  - лицензия
+  - лицензии
+  - obuna
+  - подписка
+  - subscription
+  - prodlenie
+  - продление
+  - renewal
+  - uzaytirish
+  - "re:\\butp\\b"
+  - "re:\\butm\\s+bundle"
+  - texnik qo'llab-quvvatlash
+  - техническая поддержка
+  - support service
+  - maintenance
+  - hosting
+  - хостинг
+
+# Term detection: "12 oy", "1 yil", "1 год", "36 months".
+term_patterns:
+  - "re:(\\d{1,3})\\s*(?:oy|ой|month|месяц)"
+  - "re:(\\d{1,2})\\s*(?:yil|йил|год|года|лет|year)"
+
+# Brand extraction. Key is the canonical brand, values are aliases.
+brands:
+  Microsoft: [microsoft, майкрософт, windows, office 365, m365]
+  Kaspersky: [kaspersky, касперский]
+  Fortinet: [fortinet, fortigate, "re:\\bfg-?\\d{2,4}[a-z]?\\b"]
+  Cisco: [cisco, catalyst]
+  HPE: [hpe, hewlett, proliant]
+  Dell: [dell, poweredge, powervault, latitude]
+  Lenovo: [lenovo, thinkpad, thinkcentre]
+  Zoom: [zoom]
+  Google: [google workspace, g suite]
+  Hikvision: [hikvision]
+  Dahua: [dahua]
+  APC: [apc, smart-ups]
+  "Dr.Web": [dr.web, drweb]
+  ESET: [eset]
+  InfoWatch: [infowatch]
+  Adobe: [adobe]
+  Autodesk: [autocad, autodesk]

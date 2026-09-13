@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000035",
+ "procedure_type": "auction",
+ "title": "Kommunal xizmatlar: elektr energiyasi",
+ "status": "completed",
+ "published_at": "2026-03-02T07:00:00Z",
+ "deadline_at": "2026-03-15T07:00:00Z",
+ "completed_at": "2026-03-22T07:00:00Z",
+ "currency": "UZS",
+ "start_price": 30000000,
+ "customer": {
+  "name": "Toshkent shahar hokimligi axborot-kommunikatsiya boshqarmasi (SYNTHETIC)",
+  "stir": "900000000",
+  "region": "Toshkent shahri"
+ },
+ "items": [
+  {
+   "name": "Elektr energiyasi",
+   "quantity": 25,
+   "unit": "kVt·soat",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 29161695.47,
+  "awarded_at": "2026-03-22T07:00:00Z"
+ }
+}

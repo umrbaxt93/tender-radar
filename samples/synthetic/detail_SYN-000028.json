@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000028",
+ "procedure_type": "e-shop",
+ "title": "DLP tizimi litsenziyasi InfoWatch Traffic Monitor 1 yil",
+ "status": "completed",
+ "published_at": "2025-11-08T18:00:00Z",
+ "deadline_at": "2025-11-17T18:00:00Z",
+ "completed_at": "2025-11-29T18:00:00Z",
+ "currency": "UZS",
+ "start_price": 4500000,
+ "customer": {
+  "name": "Farg'ona shahar maktabgacha ta'lim bo'limi (SYNTHETIC)",
+  "stir": "900000004",
+  "region": "Farg'ona viloyati"
+ },
+ "items": [
+  {
+   "name": "InfoWatch Traffic Monitor",
+   "quantity": 10,
+   "unit": "dona",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 4025857.86,
+  "awarded_at": "2025-11-29T18:00:00Z"
+ }
+}

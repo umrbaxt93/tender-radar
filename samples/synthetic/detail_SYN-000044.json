@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000044",
+ "procedure_type": "auction",
+ "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)",
+ "status": "completed",
+ "published_at": "2026-01-06T01:00:00Z",
+ "deadline_at": "2026-01-15T01:00:00Z",
+ "completed_at": "2026-02-04T01:00:00Z",
+ "currency": "UZS",
+ "start_price": 1200000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "AI-92",
+   "quantity": 25,
+   "unit": "litr",
+   "unit_price": "48000000"
+  }
+ ]
+}

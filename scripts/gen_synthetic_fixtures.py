@@ -63,6 +63,14 @@ CUSTOMERS = [
     ("Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)", "Sirdaryo viloyati"),
     ("Surxondaryo viloyat kutubxonasi (SYNTHETIC)", "Surxondaryo viloyati"),
 ]
+# Deliberately ambiguous wording so a run exercises the AI fallback path, not only rules.
+AMBIGUOUS_TEMPLATES = [
+    ("Оказание услуг по сопровождению информационной системы", "Сопровождение ИС", "услуга"),
+    ("Ofis uchun jihozlar va sarf materiallari xarid qilish", "Jihozlar to'plami", "to'plam"),
+    ("Texnik jihozlarni modernizatsiya qilish ishlari", "Modernizatsiya", "xizmat"),
+    ("Приобретение оборудования для учебного кабинета", "Оборудование кабинета", "компл"),
+    ("Axborot tizimini qo'llab-quvvatlash bo'yicha xizmatlar", "Qo'llab-quvvatlash", "oy"),
+]
 SUPPLIERS = ["IT Solutions Group MChJ (SYNTHETIC)", "Uzbek Digital Systems OOO (SYNTHETIC)",
              "Secure Networks LLC (SYNTHETIC)", "Universal Trade MChJ (SYNTHETIC)"]
 
@@ -75,8 +83,10 @@ def build(count: int, seed: int, now: datetime) -> list[dict]:
     rng = random.Random(seed)
     lots = []
     for n in range(1, count + 1):
-        is_it = rng.random() < 0.55
-        if is_it:
+        roll = rng.random()
+        if roll < 0.08:
+            title, item, unit = rng.choice(AMBIGUOUS_TEMPLATES)
+        elif roll < 0.60:
             title, item, unit, _ = rng.choice(IT_TEMPLATES)
         else:
             title, item, unit = rng.choice(NON_IT_TEMPLATES)

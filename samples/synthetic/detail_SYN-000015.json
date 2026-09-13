@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000015",
+ "procedure_type": "auction",
+ "title": "Kommunal xizmatlar: elektr energiyasi",
+ "status": "completed",
+ "published_at": "2026-06-23T09:00:00Z",
+ "deadline_at": "2026-07-13T09:00:00Z",
+ "completed_at": "2026-07-14T09:00:00Z",
+ "currency": "UZS",
+ "start_price": 38000000,
+ "customer": {
+  "name": "Samarqand viloyati tibbiyot birlashmasi (SYNTHETIC)",
+  "stir": "900000001",
+  "region": "Samarqand viloyati"
+ },
+ "items": [
+  {
+   "name": "Elektr energiyasi",
+   "quantity": 10,
+   "unit": "kVt·soat",
+   "unit_price": "3800000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 34758670.49,
+  "awarded_at": "2026-07-14T09:00:00Z"
+ }
+}

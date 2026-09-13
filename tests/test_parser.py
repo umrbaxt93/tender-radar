@@ -10,9 +10,10 @@ from radar.source.parser import (
 
 
 def test_parse_list_page(samples_dir):
+    total_lots = len(list(samples_dir.glob("detail_*.json")))
     page = parse_list_page((samples_dir / "list_page_1.json").read_bytes())
-    assert page.total == 12
-    assert len(page.entries) == 12
+    assert page.total == total_lots
+    assert len(page.entries) == min(total_lots, 50)
     assert all(e.source_id.startswith("SYN-") for e in page.entries)
     assert page.entries[0].completed_at is not None
     # listing is newest first
@@ -26,7 +27,7 @@ def test_parse_detail(samples_dir):
     assert rec.source_url and rec.source_url.endswith("SYN-000001")
     assert rec.customer_stir == "900000006"
     assert "SYNTHETIC" in (rec.customer_name or "")
-    assert rec.completed_at == datetime(2025, 10, 1, 23, 0, tzinfo=UTC)
+    assert rec.completed_at == datetime(2025, 10, 13, 23, 0, tzinfo=UTC)
     assert rec.start_price == Decimal("240000000")
     assert len(rec.items) == 1 and rec.items[0].quantity == Decimal("5")
     assert rec.award is None

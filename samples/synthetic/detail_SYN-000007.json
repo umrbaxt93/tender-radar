@@ -4,9 +4,9 @@
  "procedure_type": "selection",
  "title": "Google Workspace Business Starter obunasi",
  "status": "completed",
- "published_at": "2026-08-01T03:00:00Z",
- "deadline_at": "2026-08-16T03:00:00Z",
- "completed_at": "2026-08-10T03:00:00Z",
+ "published_at": "2026-08-13T03:00:00Z",
+ "deadline_at": "2026-08-28T03:00:00Z",
+ "completed_at": "2026-08-22T03:00:00Z",
  "currency": "UZS",
  "start_price": 475000000,
  "customer": {
@@ -28,6 +28,6 @@
    "stir": "800000003"
   },
   "amount": 341972096.28,
-  "awarded_at": "2026-08-10T03:00:00Z"
+  "awarded_at": "2026-08-22T03:00:00Z"
  }
 }

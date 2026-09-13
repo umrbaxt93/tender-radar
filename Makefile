@@ -1,6 +1,8 @@
-.PHONY: install validate supervisor up migrate import import-synthetic classify renewal export web test lint stats
+.PHONY: install validate supervisor up migrate import import-synthetic demo classify renewal \
+        export web stats health test lint
 VENV ?= .venv
 PY ?= $(VENV)/bin/python
+ARGS ?=
 
 install:
 	uv venv --python 3.12 $(VENV) || python3.12 -m venv $(VENV)
@@ -19,16 +21,38 @@ up:
 migrate:
 	$(PY) -m radar migrate
 
-# Live import. Requires a verified public endpoint contract in docs/SOURCE_API.md
-# plus UZEX_LIST_URL / UZEX_DETAIL_URL / CONTACT_EMAIL in the environment.
+# Live import. Requires a verified public endpoint contract in docs/SOURCE_API.md plus
+# UZEX_LIST_URL / UZEX_DETAIL_URL / CONTACT_EMAIL. Refuses to start without them.
 import:
 	$(PY) -m radar import $(ARGS)
 
-# Offline import from the labelled synthetic fixtures (never real data).
+# Offline import from the labelled synthetic fixtures. Never real data.
 import-synthetic:
 	$(PY) -m radar import --fixtures samples/synthetic $(ARGS)
 
+classify:
+	$(PY) -m radar classify $(ARGS)
+
+renewal:
+	$(PY) -m radar renewal
+
+export:
+	$(PY) -m radar export
+
+web:
+	$(PY) -m radar web $(ARGS)
+
 stats:
+	$(PY) -m radar stats
+
+health:
+	$(PY) -m radar health
+
+# End-to-end offline run: schema, synthetic import, mock classification, renewal, Excel.
+demo: migrate import-synthetic
+	$(PY) -m radar classify --mock-ai
+	$(PY) -m radar renewal
+	$(PY) -m radar export
 	$(PY) -m radar stats
 
 test:
@@ -36,8 +60,3 @@ test:
 
 lint:
 	$(VENV)/bin/ruff check radar tests scripts
-
-# Not implemented yet; see PROGRESS.md for the tracked execution order.
-classify renewal export web:
-	@echo "Stage not implemented yet: $@. See PROGRESS.md."
-	@exit 2

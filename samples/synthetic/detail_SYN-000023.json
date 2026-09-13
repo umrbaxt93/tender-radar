@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000023",
+ "procedure_type": "selection",
+ "title": "Avtomobil Chevrolet Cobalt sotib olish",
+ "status": "completed",
+ "published_at": "2026-04-20T18:00:00Z",
+ "deadline_at": "2026-05-02T18:00:00Z",
+ "completed_at": "2026-05-06T18:00:00Z",
+ "currency": "UZS",
+ "start_price": 4800000000,
+ "customer": {
+  "name": "Toshkent shahar hokimligi axborot-kommunikatsiya boshqarmasi (SYNTHETIC)",
+  "stir": "900000000",
+  "region": "Toshkent shahri"
+ },
+ "items": [
+  {
+   "name": "Chevrolet Cobalt",
+   "quantity": 100,
+   "unit": "dona",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 4521199435.04,
+  "awarded_at": "2026-05-06T18:00:00Z"
+ }
+}

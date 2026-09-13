@@ -50,3 +50,31 @@ so the cursor never points past partially written data.
 2026-09-12 | Python 3.12 is provided by a local uv virtualenv (.venv) because the system
 interpreter is 3.11. PostgreSQL 16 runs as a local cluster since the container has no Docker
 daemon; docker-compose.yml stays the documented path for other machines.
+
+## Classification, renewal and presentation — 2026-09-13
+2026-09-13 | Model prices are never guessed. radar/classify/pricing.yaml holds reviewed
+figures and ships with no real model priced; a paid run refuses to start unless the model is
+priced there or GEMINI_INPUT_USD_PER_MTOK / GEMINI_OUTPUT_USD_PER_MTOK are set. The offline
+mock model is priced so tests exercise the same ledger path as a paid run.
+2026-09-13 | Cost control order: rules decide first, identical lot text is deduplicated within
+a run, ai_cache answers repeats across runs, then batches of 20 go to the model. On the 5000
+lot synthetic set this cut the model from 386 lots to 5 distinct texts in one batch.
+2026-09-13 | The ledger reserves estimated cost and commits before the call, so a crash during
+a call cannot hide spend. A call that returns nothing usable is marked failed and not charged.
+2026-09-13 | The rules layer may abstain but must never decide the wrong way. Keywords that
+borrow IT words for non-IT goods (a computer desk) are listed under not_it so they cannot be
+counted as IT. tests/test_rules.py enforces both directions against samples/synthetic/
+known_lots.md, which is a labelled synthetic golden set standing in for the real 5 IT + 5
+non-IT lots that were never supplied.
+2026-09-13 | Renewal window: a row stays on the Radar while the expected renewal is still
+ahead and the contact date is at most radar_contact_window_days away. A contact date that has
+already passed while the renewal is still ahead scores in the most urgent bucket rather than
+scoring nothing.
+2026-09-13 | Score weights are kept exactly as specified and reach 75, not 100. The page and
+the docs state the true range instead of silently rescaling.
+2026-09-13 | Hardware categories are excluded from the Radar unless the lot itself was
+classified is_subscription, and a term detected in the lot text overrides the category
+lifecycle because the lot text is better evidence than a table.
+2026-09-13 | Synthetic provenance is carried end to end: fixture content, lot ids, customer
+names, procedure.source, the Excel warning row and the /radar banner. Reports must never
+present these rows as real procurement results.

@@ -4,9 +4,9 @@
  "procedure_type": "selection",
  "title": "ИБП APC Smart-UPS 3000VA",
  "status": "completed",
- "published_at": "2025-08-30T03:00:00Z",
- "deadline_at": "2025-09-05T03:00:00Z",
- "completed_at": "2025-09-08T03:00:00Z",
+ "published_at": "2025-09-11T03:00:00Z",
+ "deadline_at": "2025-09-17T03:00:00Z",
+ "completed_at": "2025-09-20T03:00:00Z",
  "currency": "UZS",
  "start_price": 4750000000,
  "customer": {
@@ -28,6 +28,6 @@
    "stir": "800000003"
   },
   "amount": 3717030345.46,
-  "awarded_at": "2025-09-08T03:00:00Z"
+  "awarded_at": "2025-09-20T03:00:00Z"
  }
 }

@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000032",
+ "procedure_type": "selection",
+ "title": "Видеонаблюдение тизими (CCTV) kameralar va NVR",
+ "status": "completed",
+ "published_at": "2026-07-27T21:00:00Z",
+ "deadline_at": "2026-08-04T21:00:00Z",
+ "completed_at": "2026-08-10T21:00:00Z",
+ "currency": "UZS",
+ "start_price": 3800000,
+ "customer": {
+  "name": "Navoiy kon-metallurgiya kolleji (SYNTHETIC)",
+  "stir": "900000008",
+  "region": "Navoiy viloyati"
+ },
+ "items": [
+  {
+   "name": "Hikvision DS-2CD2043G2",
+   "quantity": 1,
+   "unit": "dona",
+   "unit_price": "3800000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 2958031.6,
+  "awarded_at": "2026-08-10T21:00:00Z"
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000014",
+ "procedure_type": "e-shop",
+ "title": "Компьютер в сборе (системный блок, монитор)",
+ "status": "completed",
+ "published_at": "2026-03-02T05:00:00Z",
+ "deadline_at": "2026-03-09T05:00:00Z",
+ "completed_at": "2026-03-09T05:00:00Z",
+ "currency": "UZS",
+ "start_price": 120000000,
+ "customer": {
+  "name": "Samarqand viloyati tibbiyot birlashmasi (SYNTHETIC)",
+  "stir": "900000001",
+  "region": "Samarqand viloyati"
+ },
+ "items": [
+  {
+   "name": "Kompyuter i5 16GB 512GB",
+   "quantity": 100,
+   "unit": "шт",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 117250287.23,
+  "awarded_at": "2026-03-09T05:00:00Z"
+ }
+}

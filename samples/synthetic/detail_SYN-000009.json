@@ -4,9 +4,9 @@
  "procedure_type": "tender",
  "title": "Антивирус Dr.Web Enterprise Security Suite продление на 1 год",
  "status": "completed",
- "published_at": "2025-12-25T13:00:00Z",
- "deadline_at": "2026-01-02T13:00:00Z",
- "completed_at": "2026-01-06T13:00:00Z",
+ "published_at": "2026-01-06T13:00:00Z",
+ "deadline_at": "2026-01-14T13:00:00Z",
+ "completed_at": "2026-01-18T13:00:00Z",
  "currency": "UZS",
  "start_price": 4500000,
  "customer": {
@@ -28,6 +28,6 @@
    "stir": "800000001"
   },
   "amount": 4113564.21,
-  "awarded_at": "2026-01-06T13:00:00Z"
+  "awarded_at": "2026-01-18T13:00:00Z"
  }
 }

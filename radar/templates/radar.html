@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Renewal Radar</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #16191d; --muted: #5b6472;
+    --line: #e3e6ea; --accent: #1f3864; --warn-bg: #fff4e5; --warn-ink: #8a4b00;
+    --hot: #b3261e; --warm: #b26a00; --cool: #43506b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --card: #1b1f26; --ink: #e9ecf1; --muted: #9aa4b2;
+      --line: #2a303a; --accent: #93b4ff; --warn-bg: #3a2a12; --warn-ink: #ffcf8f;
+      --hot: #ff8a80; --warm: #ffc266; --cool: #9fb0d0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px; padding-left: 20px;
+          padding-right: 20px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px;
+            padding: 12px 14px; margin-bottom: 20px; font-size: 14px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 12px 16px; min-width: 130px; flex: 1 1 130px; }
+  .card b { display: block; font-size: 22px; letter-spacing: -0.02em; }
+  .card span { color: var(--muted); font-size: 12px; text-transform: uppercase;
+               letter-spacing: 0.04em; }
+  .tablewrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line);
+               border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line);
+           white-space: nowrap; }
+  th { background: var(--accent); color: #fff; font-weight: 600; font-size: 13px;
+       position: sticky; top: 0; }
+  @media (prefers-color-scheme: dark) { th { color: #10141b; } }
+  td.wide { white-space: normal; min-width: 260px; }
+  tr:last-child td { border-bottom: none; }
+  .score { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .hot { color: var(--hot); } .warm { color: var(--warm); } .cool { color: var(--cool); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  a { color: var(--accent); }
+  footer { color: var(--muted); font-size: 13px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Renewal Radar</h1>
+  <p class="sub">IT purchases approaching their renewal window, highest score first.
+     Generated {{ generated_at }}.</p>
+
+  {% if synthetic_sources %}
+  <div class="banner"><strong>Synthetic data.</strong>
+    These rows come from generated fixtures ({{ synthetic_sources|join(', ') }}), not from real
+    procurement records. The public source contract is still unverified.</div>
+  {% endif %}
+
+  <div class="cards">
+    <div class="card"><span>Radar rows</span><b>{{ rows|length }}</b></div>
+    <div class="card"><span>Contact now</span><b>{{ due_now }}</b></div>
+    <div class="card"><span>IT lots</span><b>{{ stats.classified_it }}</b></div>
+    <div class="card"><span>Customers</span><b>{{ stats.organizations }}</b></div>
+    <div class="card"><span>AI spend</span><b>${{ '%.4f'|format(stats.ai_spent_usd) }}</b></div>
+  </div>
+
+  <div class="tablewrap">
+  {% if rows %}
+  <table>
+    <thead><tr>
+      <th>Customer</th><th class="num">Score</th><th>Contact by</th><th>Category</th>
+      <th>Brand</th><th class="num">Amount</th><th>Expected renewal</th>
+      <th>Last purchase</th><th>STIR</th><th>Region</th><th>Lot</th>
+    </tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="wide">{{ row.customer }}</td>
+        <td class="num score {{ 'hot' if row.score >= 60 else 'warm' if row.score >= 40
+                                else 'cool' }}">{{ row.score }}</td>
+        <td>{{ row.contact_by_at.strftime('%Y-%m-%d') if row.contact_by_at else '' }}</td>
+        <td>{{ row.category or '' }}</td>
+        <td>{{ row.brand or '' }}</td>
+        <td class="num">{{ '{:,.0f}'.format(row.amount) if row.amount is not none else '' }}</td>
+        <td>{{ row.expected_renewal_at.strftime('%Y-%m-%d') if row.expected_renewal_at }}</td>
+        <td>{{ row.last_purchase_at.strftime('%Y-%m-%d') if row.last_purchase_at else '' }}</td>
+        <td>{{ row.stir or '' }}</td>
+        <td>{{ row.region or '' }}</td>
+        <td class="wide">
+          {% if row.source_url %}<a href="{{ row.source_url }}" rel="nofollow noopener"
+             target="_blank">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No opportunities in the contact window.
+     Run <code>import</code>, <code>classify</code> and <code>renewal</code> first.</p>
+  {% endif %}
+  </div>
+
+  <footer>Score range is 0&ndash;{{ max_score }} using the weights in radar/lifecycle.yaml.
+    Contact window {{ window_days }} days.</footer>
+</div>
+</body>
+</html>

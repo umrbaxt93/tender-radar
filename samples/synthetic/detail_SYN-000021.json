@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000021",
+ "procedure_type": "auction",
+ "title": "Ремонт кровли административного здания",
+ "status": "completed",
+ "published_at": "2026-02-09T01:00:00Z",
+ "deadline_at": "2026-02-19T01:00:00Z",
+ "completed_at": "2026-02-18T01:00:00Z",
+ "currency": "UZS",
+ "start_price": 2400000,
+ "customer": {
+  "name": "Xorazm viloyati soliq boshqarmasi (SYNTHETIC)",
+  "stir": "900000007",
+  "region": "Xorazm viloyati"
+ },
+ "items": [
+  {
+   "name": "Кровельные работы",
+   "quantity": 2,
+   "unit": "м2",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 2241325.38,
+  "awarded_at": "2026-02-18T01:00:00Z"
+ }
+}

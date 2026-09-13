@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000013",
+ "procedure_type": "tender",
+ "title": "Google Workspace Business Starter obunasi",
+ "status": "completed",
+ "published_at": "2026-02-05T23:00:00Z",
+ "deadline_at": "2026-02-12T23:00:00Z",
+ "completed_at": "2026-02-18T23:00:00Z",
+ "currency": "UZS",
+ "start_price": 25000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Google Workspace Business Starter",
+   "quantity": 2,
+   "unit": "dona",
+   "unit_price": "12500000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 18242252.08,
+  "awarded_at": "2026-02-18T23:00:00Z"
+ }
+}

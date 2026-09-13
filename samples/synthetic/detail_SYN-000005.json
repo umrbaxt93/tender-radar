@@ -4,9 +4,9 @@
  "procedure_type": "selection",
  "title": "Kommunal xizmatlar: elektr energiyasi",
  "status": "completed",
- "published_at": "2025-11-14T11:00:00Z",
- "deadline_at": "2025-12-03T11:00:00Z",
- "completed_at": "2025-12-01T11:00:00Z",
+ "published_at": "2025-11-26T11:00:00Z",
+ "deadline_at": "2025-12-15T11:00:00Z",
+ "completed_at": "2025-12-13T11:00:00Z",
  "currency": "UZS",
  "start_price": 312500000,
  "customer": {
@@ -28,6 +28,6 @@
    "stir": "800000001"
   },
   "amount": 282096370.56,
-  "awarded_at": "2025-12-01T11:00:00Z"
+  "awarded_at": "2025-12-13T11:00:00Z"
  }
 }

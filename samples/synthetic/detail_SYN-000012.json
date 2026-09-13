@@ -2,11 +2,11 @@
  "synthetic": true,
  "id": "SYN-000012",
  "procedure_type": "auction",
- "title": "Bulutli hosting xizmati (VPS) 12 oy",
+ "title": "Приобретение оборудования для учебного кабинета",
  "status": "completed",
- "published_at": "2026-01-28T05:00:00Z",
- "deadline_at": "2026-02-12T05:00:00Z",
- "completed_at": "2026-02-22T05:00:00Z",
+ "published_at": "2026-02-09T05:00:00Z",
+ "deadline_at": "2026-02-24T05:00:00Z",
+ "completed_at": "2026-03-06T05:00:00Z",
  "currency": "UZS",
  "start_price": 190000000,
  "customer": {
@@ -16,9 +16,9 @@
  },
  "items": [
   {
-   "name": "VPS 8 vCPU 32GB",
+   "name": "Оборудование кабинета",
    "quantity": 2,
-   "unit": "oy",
+   "unit": "компл",
    "unit_price": "95000000"
   }
  ],
@@ -28,6 +28,6 @@
    "stir": "800000003"
   },
   "amount": 154933636.64,
-  "awarded_at": "2026-02-22T05:00:00Z"
+  "awarded_at": "2026-03-06T05:00:00Z"
  }
 }

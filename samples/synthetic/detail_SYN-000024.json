@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000024",
+ "procedure_type": "tender",
+ "title": "Texnik jihozlarni modernizatsiya qilish ishlari",
+ "status": "completed",
+ "published_at": "2025-09-14T06:00:00Z",
+ "deadline_at": "2025-10-02T06:00:00Z",
+ "completed_at": "2025-10-07T06:00:00Z",
+ "currency": "UZS",
+ "start_price": 4800000000,
+ "customer": {
+  "name": "Xorazm viloyati soliq boshqarmasi (SYNTHETIC)",
+  "stir": "900000007",
+  "region": "Xorazm viloyati"
+ },
+ "items": [
+  {
+   "name": "Modernizatsiya",
+   "quantity": 100,
+   "unit": "xizmat",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 4574945393.36,
+  "awarded_at": "2025-10-07T06:00:00Z"
+ }
+}

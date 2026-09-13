@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000019",
+ "procedure_type": "selection",
+ "title": "Dori vositalari va tibbiy sarf materiallari",
+ "status": "completed",
+ "published_at": "2026-07-22T17:00:00Z",
+ "deadline_at": "2026-08-03T17:00:00Z",
+ "completed_at": "2026-08-01T17:00:00Z",
+ "currency": "UZS",
+ "start_price": 12000000,
+ "customer": {
+  "name": "Namangan viloyati statistika boshqarmasi (SYNTHETIC)",
+  "stir": "900000005",
+  "region": "Namangan viloyati"
+ },
+ "items": [
+  {
+   "name": "Paratsetamol 500mg",
+   "quantity": 10,
+   "unit": "quti",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 10068567.52,
+  "awarded_at": "2026-08-01T17:00:00Z"
+ }
+}
