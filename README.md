@@ -8,6 +8,8 @@ contract is UNVERIFIED (see [docs/SOURCE_API.md](docs/SOURCE_API.md)), so everyt
 importable right now comes from clearly labelled synthetic fixtures, and every output that
 contains them says so.
 
+**Continuing this project? Start with [docs/HANDOFF.md](docs/HANDOFF.md).**
+
 [Specification](docs/SPEC.md) · [Progress](PROGRESS.md) · [Database](docs/DATABASE.md) ·
 [Deployment](docs/DEPLOYMENT.md) · [Cloud workflow](docs/CLOUD_WORKFLOW.md)
 

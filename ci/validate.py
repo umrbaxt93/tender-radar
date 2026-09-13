@@ -7,7 +7,7 @@ required = ['docs/SPEC.md','CLAUDE.md','AGENTS.md','GEMINI.md',
  'PROGRESS.md','DECISIONS.md','TODO.md','.env.example','Makefile',
  'docker-compose.yml','.gitignore','supervisor.sh','supervisor.ps1','.github/workflows/checks.yml',
  'ci/supervisor.py','ci/gemini-deny.toml','.github/workflows/supervisor.yml','docs/CLOUD_WORKFLOW.md',
- 'pyproject.toml','alembic.ini','alembic/env.py','radar/models.py','radar/cli.py']
+ 'pyproject.toml','alembic.ini','alembic/env.py','radar/models.py','radar/cli.py','docs/HANDOFF.md']
 for name in required:
  assert (root/name).is_file() and (root/name).stat().st_size, f'Missing {name}'
 for name in ['CLAUDE.md','GEMINI.md','.agents/rules/tender-radar.md','.antigravity/rules.md']:
