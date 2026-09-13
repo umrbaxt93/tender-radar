@@ -32,6 +32,19 @@ Definition of Done in docs/SPEC.md, which requires real imported lots.
 8. DONE for the implemented surface: 137 pytest tests pass, ruff clean.
 9. TODO: verified final report against real data, and the phase-2 backlog.
 
+## Launch readiness
+- DONE: Dockerfile and a full-stack docker-compose (database, migrations, worker, web),
+  validated with `docker compose config`. Never built here: no Docker daemon in this
+  environment.
+- DONE: scripts/bootstrap.sh, run end to end on this machine: virtualenv, .env, migrations,
+  a synthetic cycle and stats.
+- DONE: systemd units for the web and worker processes and an nginx example that keeps the
+  app behind TLS and basic auth.
+- DONE: the platform was run here as two long-lived processes, worker on an interval and web
+  on 127.0.0.1:8000, with /health returning ok and /radar serving.
+- BLOCKED: a real launch on a real host. No host, no verified source contract, and external
+  deployment is outside what this phase authorizes.
+
 ## Beyond the original order
 - DONE: `reparse` rebuilds every row from stored snapshots with checksum verification and no
   network access, which is what makes the raw_snapshot requirement useful.

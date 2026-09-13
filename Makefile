@@ -1,5 +1,5 @@
-.PHONY: install validate supervisor up migrate import import-synthetic reparse worker \
-        demo classify renewal export web stats health test lint
+.PHONY: install bootstrap validate supervisor up up-all down logs migrate import \
+        import-synthetic reparse worker demo classify renewal export web stats health test lint
 VENV ?= .venv
 PY ?= $(VENV)/bin/python
 ARGS ?=
@@ -15,8 +15,23 @@ validate:
 supervisor:
 	python3 ci/github_review.py
 
+# Prepare a host without Docker: virtualenv, .env, migrations, synthetic verification.
+bootstrap:
+	./scripts/bootstrap.sh $(ARGS)
+
+# Database only, for local development against the host virtualenv.
 up:
 	docker compose up -d --wait postgres
+
+# The whole platform in containers: database, migrations, worker and web.
+up-all:
+	docker compose up -d --build
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f --tail=100
 
 migrate:
 	$(PY) -m radar migrate

@@ -99,3 +99,22 @@ A failed import or a hit budget stop ends the cycle instead of publishing a Rada
 half-imported data. SIGTERM finishes the cycle in flight rather than cutting a job in half.
 2026-09-13 | docs/DEPLOYMENT.md is written but has never been executed, and says so. Sizing is
 derived from measured row and snapshot sizes rather than assumed.
+
+## Launch packaging — 2026-09-13
+2026-09-13 | Two supported launch paths: `docker compose up -d --build` for the whole stack,
+and `scripts/bootstrap.sh` plus the systemd units in deploy/ for a plain host. One image
+serves both the web and worker processes so their dependencies cannot drift apart.
+2026-09-13 | Both paths run the offline synthetic cycle first. A first launch therefore proves
+the install without touching the source or spending anything, and the operator switches to the
+live source deliberately by setting WORKER_ARGS or the URL variables.
+2026-09-13 | The web port is published on 127.0.0.1 only and the compose file exposes no
+database port. The application has no authentication of its own, so deploy/nginx-tender-radar.conf
+puts TLS and basic auth in front and leaves only /health open.
+2026-09-13 | ci/validate.py now asserts that .env is git-ignored and untracked rather than
+absent. A host that actually runs the platform needs a local .env, and bootstrap.sh creates
+one; the real requirement was always that it never gets committed.
+2026-09-13 | The worker unit uses SIGTERM with a 900 second stop timeout so a restart lets the
+cycle in flight finish instead of cutting an import in half.
+2026-09-13 | The Docker path is validated (`docker compose config`) but has never been built or
+run: this development environment has no Docker daemon. The plain-host path was run end to end
+here. Both facts are stated in docs/DEPLOYMENT.md rather than implied.

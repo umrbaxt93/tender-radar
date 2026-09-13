@@ -16,8 +16,12 @@
 - [ ] Provider-side spending controls before enabling any recurring paid job.
 
 ## Blocked on a host
-- [ ] Execute docs/DEPLOYMENT.md on a real machine, then correct it from what actually
-      happened. It has never been run.
+- [ ] Build the image and run `docker compose up -d --build` on a real machine. The compose
+      file validates but has never been built: no Docker daemon here.
+- [ ] Execute docs/DEPLOYMENT.md end to end on the target host, then correct it from what
+      actually happened.
+- [ ] Put the reverse proxy and an access control in front of the web process before it is
+      reachable from anywhere but localhost. The application has no authentication.
 - [ ] Nightly pg_dump off the host, and a tested restore.
 
 ## Open code work

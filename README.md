@@ -11,15 +11,33 @@ contains them says so.
 [Specification](docs/SPEC.md) · [Progress](PROGRESS.md) · [Database](docs/DATABASE.md) ·
 [Deployment](docs/DEPLOYMENT.md) · [Cloud workflow](docs/CLOUD_WORKFLOW.md)
 
-## Run it
+## Launch it
 
-Requires Python 3.12 and PostgreSQL 16 (`make up` with Docker, or any existing server).
+Everything in containers, including the database, migrations, worker and web:
+
+```bash
+echo "POSTGRES_PASSWORD=choose-one" >> .env
+make up-all                  # docker compose up -d --build
+curl http://127.0.0.1:8000/health
+```
+
+Or on a plain host with Python 3.12 and PostgreSQL 16:
+
+```bash
+./scripts/bootstrap.sh       # virtualenv, .env, migrations, one synthetic cycle
+make web                     # http://127.0.0.1:8000/radar and /health
+```
+
+Both paths first run the offline synthetic cycle, so the install proves itself before
+anything touches the source or costs money. For a server, install the unit files in `deploy/`
+and follow the launch checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+For development against an existing database:
 
 ```bash
 make install
 export DATABASE_URL=postgresql://tender:PASSWORD@localhost:5432/tender_radar
-make demo                    # migrate, import 12 synthetic lots, classify, renewal, export
-make web                     # http://127.0.0.1:8000/radar and /health
+make demo                    # migrate, synthetic import, classify, renewal, export
 ```
 
 `make demo` uses `--mock-ai`, a deterministic offline model, so it costs nothing and needs no

@@ -12,7 +12,13 @@ for name in required:
  assert (root/name).is_file() and (root/name).stat().st_size, f'Missing {name}'
 for name in ['CLAUDE.md','GEMINI.md','.agents/rules/tender-radar.md','.antigravity/rules.md']:
  assert (root/name).read_bytes() == (root/'AGENTS.md').read_bytes(), 'Rule drift'
-assert not (root/'.env').exists(), 'Unexpected .env'
+# A local .env is expected on a host that actually runs the platform (scripts/bootstrap.sh
+# creates one). What must never happen is committing it, so check tracking, not existence.
+import subprocess
+assert '.env' in (root/'.gitignore').read_text().split(), '.env must stay git-ignored'
+tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', '.env'], cwd=root,
+                         capture_output=True)
+assert tracked.returncode != 0, '.env is tracked by git; remove it from the index'
 # The cloud review prompt is the supervisor's only instruction source and stays review-only.
 review = (root/'prompts/CLOUD_REVIEW_PROMPT.md').read_text()
 for phrase in ['Review only', 'do not output application code']:

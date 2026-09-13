@@ -23,6 +23,21 @@ compressed snapshot.
 Shared web hosting is not suitable: it cannot run a long-lived worker process, and the
 PostgreSQL extension and connection requirements do not fit.
 
+## Two ways to launch
+
+**Containers.** `docker compose up -d --build` starts the database, applies migrations, then
+runs the worker and the web process from one image. The web port is published on 127.0.0.1
+only. `POSTGRES_PASSWORD` must be set or the stack refuses to start. On a first launch the
+worker defaults to the offline synthetic cycle, so the stack proves itself before anything
+touches the source; switch it with `WORKER_ARGS` in `.env` once the source contract is
+verified. The image and compose file have been checked for validity but never built here,
+because this development environment has no Docker daemon.
+
+**Plain host.** `./scripts/bootstrap.sh` installs into a virtualenv, creates `.env` from the
+example, applies migrations and runs one synthetic cycle. Then install the two unit files in
+`deploy/` and put `deploy/nginx-tender-radar.conf` in front of the web process. This path has
+been run end to end here against PostgreSQL 16.
+
 ## First install
 
 1. Create the database and enable the extension the schema needs. The `pg_trgm` extension is
@@ -36,6 +51,21 @@ PostgreSQL extension and connection requirements do not fit.
 5. Only then configure `UZEX_LIST_URL`, `UZEX_DETAIL_URL` and `CONTACT_EMAIL`, and run a small
    real import with `--limit`. Read docs/SOURCE_API.md first: until it is verified, there is
    nothing correct to put in those variables.
+
+## Launch checklist
+
+1. `./scripts/bootstrap.sh` (or `docker compose up -d --build`). Expect a synthetic cycle and
+   a `/health` that returns ok. Nothing in that run is a real procurement result.
+2. Verify the public endpoint contract and fill docs/SOURCE_API.md. Until that is done there
+   is nothing correct to put in `UZEX_LIST_URL` and `UZEX_DETAIL_URL`, and a live import
+   cannot start: both are empty by default and the client refuses to run without them.
+3. Set `CONTACT_EMAIL`. It goes into the User-Agent of every request, so the source can see
+   who is calling.
+4. Import a small slice first: `python -m radar import --limit 200`. Check `stats` coverage
+   percentages before trusting anything downstream.
+5. Put the reviewed model price in `radar/classify/pricing.yaml`, then classify without
+   `--mock-ai`. Watch `ai_spent_usd` against `CLASSIFIER_BUDGET_USD`.
+6. Enable the two services, put the reverse proxy in front, and take the first backup.
 
 ## Running the jobs
 
