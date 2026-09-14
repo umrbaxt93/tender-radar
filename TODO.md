@@ -30,6 +30,6 @@
 - [ ] Supplier side analysis once award data proves rich enough to support it.
 
 ## Phase 2
-Bitrix24 lead and task creation for high scores with idempotent sync and a feedback loop back
-into scoring, category to manager mapping, daily import and alerts, competitor and price
-intelligence. None of this is authorized in the current phase.
+- [x] Bitrix24 idempotent lead/deal/task creation module (`radar/crm.py`) ported from parent project with unique constraint per procedure.
+- [ ] Category to manager mapping and automatic scoring feedback loop into CRM.
+- [ ] Daily import and alerts, competitor and price intelligence.

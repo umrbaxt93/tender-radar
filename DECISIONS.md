@@ -170,3 +170,13 @@ Strictly preserved prohibitions:
 - Extracted rules from parent project and expanded with IT brands (Autodesk, Microsoft, Kaspersky, Fortinet, Cisco, VMware, Oracle, Adobe, ESET, Zoom, etc.), product families (AutoCAD, Windows, Office 365, FortiGate, etc.), hardware models (e.g. FG-100F, PowerEdge R750), and license durations (e.g. "1 yil", "12 oy", "3 года", "1-Year" -> months).
 - Integrated into `radar.importer.upsert_procedure` and verified via `radar reparse` over all 447 database snapshots (100% success, 0 errors).
 - Unit tests added in `tests/test_normalize.py` (all 149 test cases pass).
+
+## Bitrix24 CRM and sales workflow integration (Stage 3) — 2026-09-14
+2026-09-14 | Ported `app/crm_service.py` from parent project into `radar/crm.py` with strict idempotency and relational storage:
+- Added `crm_deal` and `crm_task` tables via Alembic migration `0004_crm_deal.py`.
+- Enforced strict uniqueness on `crm_deal.procedure_id` (`uq_crm_deal_procedure`) guaranteeing a single lot/procedure can never generate duplicate deals in Bitrix24 or the database.
+- Implemented `get_company_profile_and_timeline`, `generate_grounded_proposal` (grounded in normalized product brands/families, no made-up prices, `auto_send_allowed=False`), `push_deal_for_procedure`, and compatible `push_to_bitrix24`.
+- Integrated REST API endpoint `crm.deal.add` via `urllib.request` using `BITRIX24_WEBHOOK_URL` (or local credentials path) with automatic fallback to traceable mock mode in test/offline environments.
+- Added CLI commands: `crm-timeline`, `crm-proposal`, `crm-deal`, `crm-push` in `radar/cli.py`.
+- Added web endpoints: `/api/companies/{stir}/timeline`, `/api/companies/{stir}/proposal`, `/api/procedures/{procedure_id}/bitrix`.
+- All 157 pytest tests pass (0 skipped, 0 failed), ruff and validate pass.

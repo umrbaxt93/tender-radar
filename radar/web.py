@@ -49,6 +49,50 @@ def radar(request: Request, limit: int = 200) -> HTMLResponse:
     })
 
 
+@app.get("/api/companies/{stir}/timeline")
+def api_company_timeline(stir: str) -> JSONResponse:
+    from radar.crm import get_company_profile_and_timeline
+
+    with session_scope() as session:
+        data = get_company_profile_and_timeline(session, stir)
+    status_code = 200 if data.get("found") else 404
+    return JSONResponse(data, status_code=status_code)
+
+
+@app.get("/api/companies/{stir}/proposal")
+def api_company_proposal(stir: str) -> JSONResponse:
+    from radar.crm import generate_grounded_proposal
+
+    with session_scope() as session:
+        data = generate_grounded_proposal(session, stir)
+    status_code = 200 if "error" not in data else 404
+    return JSONResponse(data, status_code=status_code)
+
+
+@app.post("/api/procedures/{procedure_id}/bitrix")
+async def api_procedure_bitrix(procedure_id: int, request: Request) -> JSONResponse:
+    from radar.crm import push_deal_for_procedure
+
+    payload: dict = {}
+    if request.headers.get("content-type", "").startswith("application/json"):
+        payload = await request.json()
+
+    with session_scope() as session:
+        try:
+            res = push_deal_for_procedure(
+                session=session,
+                procedure_id=procedure_id,
+                title=payload.get("title"),
+                amount=payload.get("amount"),
+                use_mock=payload.get("mock", False),
+            )
+        except ValueError as exc:
+            return JSONResponse({"status": "error", "message": str(exc)}, status_code=404)
+        except Exception as exc:
+            return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
+    return JSONResponse(res)
+
+
 @app.get("/")
 def index() -> JSONResponse:
     return JSONResponse({"endpoints": ["/radar", "/health"]})

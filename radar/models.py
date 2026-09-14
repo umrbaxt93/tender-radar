@@ -86,6 +86,7 @@ class Procedure(Base):
     )
     classification: Mapped[Classification | None] = relationship(back_populates="procedure")
     award: Mapped[Award | None] = relationship(back_populates="procedure")
+    crm_deal: Mapped[CrmDeal | None] = relationship(back_populates="procedure", uselist=False)
 
 
 class LotItem(Base):
@@ -200,6 +201,58 @@ class AiCostLedger(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class CrmDeal(Base):
+    """CRM Deal synchronized with Bitrix24.
+
+    Strictly idempotent: exactly one deal per procedure (procedure_id is unique).
+    """
+
+    __tablename__ = "crm_deal"
+    __table_args__ = (UniqueConstraint("procedure_id", name="uq_crm_deal_procedure"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    procedure_id: Mapped[int] = mapped_column(
+        ForeignKey("procedure.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    deal_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    customer_org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organization.id", ondelete="SET NULL"), index=True
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 2))
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="CREATED")
+    bitrix_response: Mapped[dict | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    procedure: Mapped[Procedure] = relationship(back_populates="crm_deal")
+    customer: Mapped[Organization | None] = relationship()
+
+
+class CrmTask(Base):
+    """Internal CRM sales tasks and proposals."""
+
+    __tablename__ = "crm_task"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organization.id", ondelete="SET NULL"), index=True
+    )
+    procedure_id: Mapped[int | None] = mapped_column(
+        ForeignKey("procedure.id", ondelete="SET NULL"), index=True
+    )
+    task_type: Mapped[str] = mapped_column(String(64), nullable=False, default="TAKTAK_TAYYORLASH")
+    task_title: Mapped[str] = mapped_column(Text, nullable=False)
+    assigned_staff_id: Mapped[str | None] = mapped_column(String(64))
+    assigned_staff_name: Mapped[str | None] = mapped_column(String(128))
+    proposal_summary: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="YANGI")
+    bitrix_deal_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    customer: Mapped[Organization | None] = relationship()
+    procedure: Mapped[Procedure | None] = relationship()
 
 
 Index("ix_organization_alias_name_trgm", OrganizationAlias.name_raw,

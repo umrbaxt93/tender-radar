@@ -144,6 +144,62 @@ def cmd_migrate_xt(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_crm_timeline(args: argparse.Namespace) -> int:
+    import json
+
+    from radar.crm import get_company_profile_and_timeline
+    with session_scope() as session:
+        data = get_company_profile_and_timeline(session, args.stir)
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+    return 0 if data.get("found") else 1
+
+
+def cmd_crm_proposal(args: argparse.Namespace) -> int:
+    import json
+
+    from radar.crm import generate_grounded_proposal
+    with session_scope() as session:
+        data = generate_grounded_proposal(session, args.stir)
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+    return 0 if "error" not in data else 1
+
+
+def cmd_crm_deal(args: argparse.Namespace) -> int:
+    from radar.crm import push_deal_for_procedure
+    with session_scope() as session:
+        res = push_deal_for_procedure(
+            session=session,
+            procedure_id=args.procedure_id,
+            title=args.title,
+            amount=args.amount,
+            use_mock=args.mock,
+        )
+    print(
+        f"crm-deal: status={res['status']} created={res['created']} "
+        f"deal_id={res['deal_id']} amount={res.get('amount')}"
+    )
+    print(f"  message: {res['message']}")
+    return 0
+
+
+def cmd_crm_push(args: argparse.Namespace) -> int:
+    from radar.crm import push_to_bitrix24
+    with session_scope() as session:
+        res = push_to_bitrix24(
+            session=session,
+            target=args.target,
+            title=args.title,
+            amount=args.amount or 0.0,
+            use_mock=args.mock,
+        )
+    print(
+        f"crm-push: success={res['success']} deal_id={res.get('bitrix_deal_id')} "
+        f"already_existed={res.get('already_existed')}"
+    )
+    print(f"  message: {res['message']}")
+    return 0 if res.get("success") else 1
+
+
 def cmd_health(args: argparse.Namespace) -> int:
     from sqlalchemy import text
 
@@ -207,6 +263,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("stats", help="print database counts")
     s.set_defaults(func=cmd_stats)
+
+    s = sub.add_parser("crm-timeline", help="get company timeline for STIR")
+    s.add_argument("stir", help="taxpayer identification number (STIR)")
+    s.set_defaults(func=cmd_crm_timeline)
+
+    s = sub.add_parser("crm-proposal", help="generate grounded proposal draft for STIR")
+    s.add_argument("stir", help="taxpayer identification number (STIR)")
+    s.set_defaults(func=cmd_crm_proposal)
+
+    s = sub.add_parser("crm-deal", help="create Bitrix24 deal for procedure (idempotent)")
+    s.add_argument("procedure_id", type=int, help="procedure ID")
+    s.add_argument("--title", help="optional custom deal title")
+    s.add_argument("--amount", type=float, help="optional custom amount")
+    s.add_argument("--mock", action="store_true", help="force mock mode")
+    s.set_defaults(func=cmd_crm_deal)
+
+    s = sub.add_parser("crm-push", help="push deal for company STIR or procedure ID (idempotent)")
+    s.add_argument("target", help="company STIR or procedure ID")
+    s.add_argument("--title", help="optional custom deal title")
+    s.add_argument("--amount", type=float, default=0.0, help="optional custom amount")
+    s.add_argument("--mock", action="store_true", help="force mock mode")
+    s.set_defaults(func=cmd_crm_push)
 
     s = sub.add_parser("health", help="check database connectivity")
     s.set_defaults(func=cmd_health)
