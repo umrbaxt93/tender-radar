@@ -63,6 +63,7 @@ FAMILY_RULES: list[tuple[str, str, str]] = [
     ("Dell", r"\b(optiplex)\b", "OptiPlex Desktop"),
     ("HPE", r"\b(proliant)\b", "ProLiant Server"),
     ("Lenovo", r"\b(thinkpad)\b", "ThinkPad Notebook"),
+    ("HP", r"\b(laserjet|deskjet|probook|elitebook)\b", "LaserJet"),
 ]
 
 # Model patterns for common hardware and software editions
@@ -112,6 +113,8 @@ def normalize_product(raw_name: str) -> NormalizedProduct:
             brand = "Oracle"
         elif "1c" in low or "1с" in low:
             brand = "1C"
+        elif "hp" in re.findall(r"\b[a-z0-9]+\b", low) or "laserjet" in low or "probook" in low:
+            brand = "HP"
 
     product_family = None
     if brand:

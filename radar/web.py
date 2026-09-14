@@ -93,6 +93,138 @@ async def api_procedure_bitrix(procedure_id: int, request: Request) -> JSONRespo
     return JSONResponse(res)
 
 
+@app.get("/api/search")
+def api_search(q: str = "", type: str = "keyword", limit: int = 50) -> JSONResponse:
+    from radar.search import (
+        search_competitor_intelligence,
+        search_customer_intelligence,
+        search_keywords,
+    )
+
+    with session_scope() as session:
+        if type == "customer":
+            data = search_customer_intelligence(session, q, limit=limit)
+        elif type == "competitor":
+            data = search_competitor_intelligence(session, q, limit=limit)
+        else:
+            data = {"results": search_keywords(session, q, limit=limit), "query": q}
+    return JSONResponse(data)
+
+
+@app.get("/api/eimzo/status")
+def api_eimzo_status() -> JSONResponse:
+    from radar.eimzo import EImzoManager
+
+    mgr = EImzoManager()
+    daemon_info = mgr.check_daemon()
+    session_info = mgr.get_session()
+    return JSONResponse({
+        "daemon": daemon_info,
+        "session": {
+            "authenticated": session_info.get("authenticated", False),
+            "tin": session_info.get("tin"),
+            "has_token": bool(session_info.get("token")),
+            "last_updated": session_info.get("last_updated"),
+        },
+    })
+
+
+@app.post("/api/eimzo/challenge")
+def api_eimzo_challenge() -> JSONResponse:
+    from radar.eimzo import EImzoManager
+
+    mgr = EImzoManager()
+    res = mgr.get_challenge()
+    return JSONResponse(res)
+
+
+@app.post("/api/eimzo/verify")
+async def api_eimzo_verify(request: Request) -> JSONResponse:
+    from radar.eimzo import EImzoManager
+
+    mgr = EImzoManager()
+    is_json = request.headers.get("content-type", "").startswith("application/json")
+    payload = await request.json() if is_json else {}
+
+    pkcs7 = payload.get("pkcs7")
+    token = payload.get("token")
+    tin = payload.get("tin", "308904387")
+
+    if pkcs7:
+        res = mgr.verify_and_login(pkcs7)
+        return JSONResponse(res)
+    elif token:
+        saved = mgr.save_session(token=token, tin=tin)
+        return JSONResponse({"status": "ok", "saved": saved})
+    return JSONResponse({"status": "error", "message": "pkcs7 or token required"}, status_code=400)
+
+
+@app.post("/api/ebirja/sync")
+async def api_ebirja_sync(request: Request) -> JSONResponse:
+    from radar.source.ebirja import (
+        EbirjaClient,
+        import_ebirja_records,
+        parse_ebirja_auction,
+        parse_ebirja_contract,
+    )
+
+    is_json = request.headers.get("content-type", "").startswith("application/json")
+    payload = await request.json() if is_json else {}
+    search_term = payload.get("search")
+    limit = int(payload.get("limit", 20))
+
+    client = EbirjaClient()
+    records = []
+
+    # 1. Shop contracts
+    shop_res = client.fetch_shop_contracts(
+        page=0, per_page=min(limit, 50), search=search_term, shop_type="e-shop"
+    )
+    for item in shop_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_contract(item, contract_type="Shop"))
+
+    # 2. National shop contracts
+    nat_res = client.fetch_shop_contracts(
+        page=0, per_page=min(limit, 20), search=search_term, shop_type="national-shop"
+    )
+    for item in nat_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_contract(item, contract_type="National-Shop"))
+
+    # 3. Tender contracts
+    tender_res = client.fetch_tender_contracts(
+        page=0, per_page=min(limit, 20), search=search_term, tender_type=1
+    )
+    for item in tender_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_contract(item, contract_type="Tender"))
+
+    # 4. Selection contracts
+    sel_res = client.fetch_tender_contracts(
+        page=0, per_page=min(limit, 20), search=search_term, tender_type=2
+    )
+    for item in sel_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_contract(item, contract_type="Tanlov"))
+
+    # 5. Offer requests
+    offer_res = client.fetch_offer_requests(page=0, per_page=min(limit, 20), search=search_term)
+    for item in offer_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_contract(item, contract_type="Taklif"))
+
+    # 6. Active auctions
+    auc_res = client.fetch_active_auctions(page=1, size=min(limit, 20), search=search_term)
+    for item in auc_res.get("result", {}).get("data", []):
+        records.append(parse_ebirja_auction(item))
+
+    with session_scope() as session:
+        stats = import_ebirja_records(session, records)
+
+    return JSONResponse({
+        "status": "ok",
+        "fetched_count": len(records),
+        "imported": stats,
+    })
+
+
 @app.get("/")
 def index() -> JSONResponse:
     return JSONResponse({"endpoints": ["/radar", "/health"]})
+

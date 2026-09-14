@@ -1,60 +1,106 @@
 <!doctype html>
-<html lang="en">
+<html lang="uz">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Renewal Radar</title>
+<title>Renewal Radar — Davlat Xaridlari & E-Birja Razvedkasi</title>
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --ink: #16191d; --muted: #5b6472;
-    --line: #e3e6ea; --accent: #1f3864; --warn-bg: #fff4e5; --warn-ink: #8a4b00;
-    --hot: #b3261e; --warm: #b26a00; --cool: #43506b;
+    --line: #e3e6ea; --accent: #1f3864; --accent-hover: #152747;
+    --warn-bg: #fff4e5; --warn-ink: #8a4b00;
+    --hot: #b3261e; --warm: #b26a00; --cool: #43506b; --success: #1e7e34;
+    --badge-bg: #eef2f8; --badge-ink: #1f3864;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14171c; --card: #1b1f26; --ink: #e9ecf1; --muted: #9aa4b2;
-      --line: #2a303a; --accent: #93b4ff; --warn-bg: #3a2a12; --warn-ink: #ffcf8f;
-      --hot: #ff8a80; --warm: #ffc266; --cool: #9fb0d0;
+      --line: #2a303a; --accent: #93b4ff; --accent-hover: #b8cfff;
+      --warn-bg: #3a2a12; --warn-ink: #ffcf8f;
+      --hot: #ff8a80; --warm: #ffc266; --cool: #9fb0d0; --success: #4cd964;
+      --badge-bg: #222938; --badge-ink: #93b4ff;
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px; padding-left: 20px;
-          padding-right: 20px; }
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1380px; margin: 0 auto; padding: 24px 20px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
   h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  .sub { color: var(--muted); margin: 0; font-size: 14px; }
   .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px;
-            padding: 12px 14px; margin-bottom: 20px; font-size: 14px; }
+            padding: 12px 14px; margin-bottom: 20px; font-size: 13px; }
+  
+  /* Tabs */
+  .nav-tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--line); margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+  .tab-btn { background: none; border: none; padding: 10px 18px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--accent); background: rgba(31, 56, 100, 0.05); }
+  .tab-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: var(--card); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Cards */
   .cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
           padding: 12px 16px; min-width: 130px; flex: 1 1 130px; }
   .card b { display: block; font-size: 22px; letter-spacing: -0.02em; }
-  .card span { color: var(--muted); font-size: 12px; text-transform: uppercase;
+  .card span { color: var(--muted); font-size: 11px; text-transform: uppercase;
                letter-spacing: 0.04em; }
+
+  /* Table styling */
   .tablewrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line);
-               border-radius: 10px; }
-  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+               border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line);
            white-space: nowrap; }
-  th { background: var(--accent); color: #fff; font-weight: 600; font-size: 13px;
+  th { background: var(--accent); color: #fff; font-weight: 600; font-size: 12px;
        position: sticky; top: 0; }
   @media (prefers-color-scheme: dark) { th { color: #10141b; } }
   td.wide { white-space: normal; min-width: 260px; }
+  tr:hover td { background: rgba(0,0,0,0.015); }
   tr:last-child td { border-bottom: none; }
   .score { font-variant-numeric: tabular-nums; font-weight: 700; }
   .hot { color: var(--hot); } .warm { color: var(--warm); } .cool { color: var(--cool); }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
   .empty { padding: 40px; text-align: center; color: var(--muted); }
-  a { color: var(--accent); }
-  footer { color: var(--muted); font-size: 13px; margin-top: 18px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
+
+  /* Badges & Buttons */
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--badge-bg); color: var(--badge-ink); }
+  .badge-success { background: rgba(30, 126, 52, 0.15); color: var(--success); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: background 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-outline { background: transparent; border-color: var(--line); color: var(--ink); }
+  .btn-outline:hover { background: var(--line); }
+
+  /* Search Box */
+  .search-container { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .search-input { flex: 1 1 280px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font-size: 14px; outline: none; }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* Intelligence Details */
+  .intel-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .intel-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+  .intel-title { font-size: 18px; font-weight: 700; margin: 0; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Renewal Radar</h1>
-  <p class="sub">IT purchases approaching their renewal window, highest score first.
-     Generated {{ generated_at }}.</p>
+  <div class="header-top">
+    <div>
+      <h1>Renewal Radar</h1>
+      <p class="sub">IT xaridlari, qayta sotib olish (renewal) bashorati va E-Birja tahlili. Yangilangan: {{ generated_at }}.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="https://tender.softy.uz" class="btn btn-outline" target="_blank">🎯 Softy Platforma</a>
+      <button class="btn btn-primary" onclick="switchTab('tab-eimzo')">🔑 E-IMZO & E-Birja</button>
+    </div>
+  </div>
 
   {% if synthetic_sources %}
   <div class="banner"><strong>Synthetic data.</strong>
@@ -70,44 +116,395 @@
     <div class="card"><span>AI spend</span><b>${{ '%.4f'|format(stats.ai_spent_usd) }}</b></div>
   </div>
 
-  <div class="tablewrap">
-  {% if rows %}
-  <table>
-    <thead><tr>
-      <th>Customer</th><th class="num">Score</th><th>Contact by</th><th>Category</th>
-      <th>Brand</th><th class="num">Amount</th><th>Expected renewal</th>
-      <th>Last purchase</th><th>STIR</th><th>Region</th><th>Lot</th>
-    </tr></thead>
-    <tbody>
-    {% for row in rows %}
-      <tr>
-        <td class="wide">{{ row.customer }}</td>
-        <td class="num score {{ 'hot' if row.score >= 60 else 'warm' if row.score >= 40
-                                else 'cool' }}">{{ row.score }}</td>
-        <td>{{ row.contact_by_at.strftime('%Y-%m-%d') if row.contact_by_at else '' }}</td>
-        <td>{{ row.category or '' }}</td>
-        <td>{{ row.brand or '' }}</td>
-        <td class="num">{{ '{:,.0f}'.format(row.amount) if row.amount is not none else '' }}</td>
-        <td>{{ row.expected_renewal_at.strftime('%Y-%m-%d') if row.expected_renewal_at }}</td>
-        <td>{{ row.last_purchase_at.strftime('%Y-%m-%d') if row.last_purchase_at else '' }}</td>
-        <td>{{ row.stir or '' }}</td>
-        <td>{{ row.region or '' }}</td>
-        <td class="wide">
-          {% if row.source_url %}<a href="{{ row.source_url }}" rel="nofollow noopener"
-             target="_blank">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="empty">No opportunities in the contact window.
-     Run <code>import</code>, <code>classify</code> and <code>renewal</code> first.</p>
-  {% endif %}
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-radar')">🎯 Radar & Qayta xaridlar</button>
+    <button class="tab-btn" onclick="switchTab('tab-search')">🔍 Universal Qidiruv (Lotlar & Shartnomalar)</button>
+    <button class="tab-btn" onclick="switchTab('tab-customer')">🏢 Mijozlar Tahlili (Xaridor nima sotib olgan?)</button>
+    <button class="tab-btn" onclick="switchTab('tab-competitor')">🥊 Raqobatchilar Tahlili (G'oliblar & Bozor)</button>
+    <button class="tab-btn" onclick="switchTab('tab-eimzo')">🔑 E-Birja & E-IMZO Integratsiyasi</button>
+  </div>
+
+  <!-- Tab 1: Radar & Renewals -->
+  <div id="tab-radar" class="tab-content active">
+    <div class="tablewrap">
+    {% if rows %}
+    <table>
+      <thead><tr>
+        <th>Customer</th><th class="num">Score</th><th>Contact by</th><th>Category</th>
+        <th>Brand</th><th class="num">Amount</th><th>Expected renewal</th>
+        <th>Last purchase</th><th>STIR</th><th>Region</th><th>Lot</th>
+      </tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="wide"><strong>{{ row.customer }}</strong></td>
+          <td class="num score {{ 'hot' if row.score >= 60 else 'warm' if row.score >= 40
+                                  else 'cool' }}">{{ row.score }}</td>
+          <td>{{ row.contact_by_at.strftime('%Y-%m-%d') if row.contact_by_at else '' }}</td>
+          <td><span class="badge">{{ row.category or 'IT' }}</span></td>
+          <td><strong>{{ row.brand or '' }}</strong></td>
+          <td class="num">{{ '{:,.0f}'.format(row.amount) if row.amount is not none else '' }}</td>
+          <td>{{ row.expected_renewal_at.strftime('%Y-%m-%d') if row.expected_renewal_at }}</td>
+          <td>{{ row.last_purchase_at.strftime('%Y-%m-%d') if row.last_purchase_at else '' }}</td>
+          <td><code>{{ row.stir or '' }}</code></td>
+          <td>{{ row.region or '' }}</td>
+          <td class="wide">
+            {% if row.source_url %}<a href="{{ row.source_url }}" rel="nofollow noopener"
+               target="_blank">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No opportunities in the contact window.
+       Run <code>import</code>, <code>classify</code> and <code>renewal</code> first.</p>
+    {% endif %}
+    </div>
+  </div>
+
+  <!-- Tab 2: Universal Search (Keyword) -->
+  <div id="tab-search" class="tab-content">
+    <div class="search-container">
+      <input type="text" id="kwQuery" class="search-input" placeholder="Kalit so'z kiriting: masalan Kaspersky, Server, Fortinet, Switch, Kompyuter, Litsenziya..." onkeyup="if(event.key==='Enter') executeKeywordSearch()">
+      <button class="btn btn-primary" onclick="executeKeywordSearch()">Qidirish</button>
+    </div>
+    <div id="kwResultsContainer" class="tablewrap" style="display:none;">
+      <table id="kwTable">
+        <thead>
+          <tr>
+            <th>Manba</th>
+            <th>Lot / Shartnoma</th>
+            <th>Buyurtmachi (Xaridor)</th>
+            <th>Yetkazib beruvchi (G'olib)</th>
+            <th>Kategoriya & Mahsulot</th>
+            <th class="num">Summa (so'm)</th>
+            <th>Sana</th>
+            <th>Holat</th>
+          </tr>
+        </thead>
+        <tbody id="kwTableBody"></tbody>
+      </table>
+    </div>
+    <div id="kwEmpty" class="empty" style="display:none;">Qidiruv bo'yicha ma'lumot topilmadi.</div>
+  </div>
+
+  <!-- Tab 3: Customer Intelligence -->
+  <div id="tab-customer" class="tab-content">
+    <div class="search-container">
+      <input type="text" id="custQuery" class="search-input" placeholder="Mijoz (buyurtmachi) nomi yoki STIR kiriting: masalan Aloqabank, Turon, O'zbekgidroenergo..." onkeyup="if(event.key==='Enter') executeCustomerSearch()">
+      <button class="btn btn-primary" onclick="executeCustomerSearch()">Mijozni tahlil qilish</button>
+    </div>
+    <div id="custResultsContainer"></div>
+  </div>
+
+  <!-- Tab 4: Competitor Intelligence -->
+  <div id="tab-competitor" class="tab-content">
+    <div class="search-container">
+      <input type="text" id="compQuery" class="search-input" placeholder="Raqobatchi (yetkazib beruvchi) nomi yoki STIR kiriting: masalan Smart Server, Serverland, Kompyuter Servis..." onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
+      <button class="btn btn-primary" onclick="executeCompetitorSearch()">Raqobatchini tahlil qilish</button>
+    </div>
+    <div id="compResultsContainer"></div>
+  </div>
+
+  <!-- Tab 5: E-Birja & E-IMZO Integration -->
+  <div id="tab-eimzo" class="tab-content">
+    <div class="intel-card">
+      <div class="intel-header">
+        <h3 class="intel-title">E-IMZO Elektron Kalit & E-Birja Sinxronizatsiyasi</h3>
+        <span id="daemonBadge" class="badge">Tekshirilmoqda...</span>
+      </div>
+      <p>E-IMZO orqali Toshkent tovar xomashyo birjasi davlat xaridlari portaliga (<code>xarid.ebirja.uz</code>) ulanish va yopiq shartnomalarni yuklab tahlil qilish.</p>
+      
+      <div class="cards" style="margin-top: 15px;">
+        <div class="card">
+          <span>Lokal E-IMZO dasturi</span>
+          <b id="daemonStatusText" style="font-size: 16px;">Kutilmoqda...</b>
+        </div>
+        <div class="card">
+          <span>E-Birja Sessiya holati</span>
+          <b id="sessionStatusText" style="font-size: 16px;">Ommaviy API rejimi</b>
+        </div>
+        <div class="card">
+          <span>Korxona STIR</span>
+          <b style="font-size: 16px;">308904387 (SOFTY)</b>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px;">
+        <button class="btn btn-primary" onclick="triggerEbirjaSync('server')">⚡ E-Birja'dan Server va IT Lotlarni Yangilash</button>
+        <button class="btn btn-outline" onclick="triggerEbirjaSync('all')">📥 So'nggi Barcha Shartnomalarni Yuklash</button>
+        <button class="btn btn-outline" onclick="requestEimzoChallenge()">🔑 E-IMZO Challenge Olish</button>
+      </div>
+      <div id="syncResultNotice" style="margin-top: 15px; font-size: 13px;"></div>
+    </div>
   </div>
 
   <footer>Score range is 0&ndash;{{ max_score }} using the weights in radar/lifecycle.yaml.
     Contact window {{ window_days }} days.</footer>
 </div>
+
+<script>
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+    if (btn) btn.classList.add('active');
+    const content = document.getElementById(tabId);
+    if (content) content.classList.add('active');
+    if (tabId === 'tab-eimzo') checkEimzoStatus();
+  }
+
+  async function checkEimzoStatus() {
+    try {
+      const res = await fetch('/api/eimzo/status');
+      const data = await res.json();
+      const daemonBadge = document.getElementById('daemonBadge');
+      const daemonStatusText = document.getElementById('daemonStatusText');
+      const sessionStatusText = document.getElementById('sessionStatusText');
+
+      if (data.daemon && data.daemon.running) {
+        daemonBadge.className = 'badge badge-success';
+        daemonBadge.textContent = 'E-IMZO Faol (' + data.daemon.port + ')';
+        daemonStatusText.textContent = 'Faol (Port ' + data.daemon.port + ')';
+      } else {
+        daemonBadge.className = 'badge';
+        daemonBadge.textContent = 'E-IMZO O\'chiq';
+        daemonStatusText.textContent = 'Ishga tushirilmagan';
+      }
+
+      if (data.session && data.session.authenticated) {
+        sessionStatusText.textContent = 'Avtorizatsiyadan o\'tgan';
+      } else {
+        sessionStatusText.textContent = 'Ommaviy API (Faol)';
+      }
+    } catch(e) {
+      console.warn('Status error:', e);
+    }
+  }
+
+  async function triggerEbirjaSync(term) {
+    const notice = document.getElementById('syncResultNotice');
+    notice.innerHTML = '⏳ E-Birja bilan sinxronizatsiya bajarilmoqda...';
+    try {
+      const kw = (term === 'all') ? '' : term;
+      const res = await fetch('/api/ebirja/sync', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({search: kw, limit: 50})
+      });
+      const data = await res.json();
+      notice.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Muvaffaqiyatli: ' + data.fetched_count + ' ta lot va shartnoma yuklandi (Yangi: ' + (data.imported.inserted || 0) + ', Yangilandi: ' + (data.imported.updated || 0) + ')</span>';
+    } catch(e) {
+      notice.innerHTML = '<span style="color:var(--hot);">Xatolik yuz berdi: ' + e.message + '</span>';
+    }
+  }
+
+  async function requestEimzoChallenge() {
+    const notice = document.getElementById('syncResultNotice');
+    notice.innerHTML = '⏳ E-Birja serveridan challenge olinmoqda...';
+    try {
+      const res = await fetch('/api/eimzo/challenge', {method: 'POST'});
+      const data = await res.json();
+      if (data.challenge) {
+        notice.innerHTML = '<strong>Challenge olindi:</strong> <code>' + data.challenge + '</code> (TTL: ' + data.ttl + 's). E-IMZO kalitingiz orqali imzolashga tayyor.';
+      } else {
+        notice.innerHTML = 'Challenge olindi: ' + JSON.stringify(data);
+      }
+    } catch(e) {
+      notice.innerHTML = 'Challenge xatosi: ' + e.message;
+    }
+  }
+
+  async function executeKeywordSearch() {
+    const q = document.getElementById('kwQuery').value.trim();
+    if (!q) return;
+    const body = document.getElementById('kwTableBody');
+    const container = document.getElementById('kwResultsContainer');
+    const empty = document.getElementById('kwEmpty');
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;">Qidirilmoqda...</td></tr>';
+    container.style.display = 'block';
+    empty.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=keyword');
+      const data = await res.json();
+      const results = data.results || [];
+      if (results.length === 0) {
+        container.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+      }
+
+      body.innerHTML = results.map(r => `
+        <tr>
+          <td><span class="badge">${r.source}</span></td>
+          <td class="wide"><strong>${r.source_url ? `<a href="${r.source_url}" target="_blank">${r.title}</a>` : r.title}</strong></td>
+          <td>${r.customer?.name || 'Noma\'lum'}<br><small style="color:var(--muted);">${r.customer?.stir ? 'STIR: ' + r.customer.stir : ''}</small></td>
+          <td>${r.supplier?.name || 'Noma\'lum'}<br><small style="color:var(--muted);">${r.supplier?.stir ? 'STIR: ' + r.supplier.stir : ''}</small></td>
+          <td><span class="badge">${r.classification?.category || 'IT'}</span> ${r.classification?.brand ? '<strong>' + r.classification.brand + '</strong>' : ''}</td>
+          <td class="num"><strong>${Number(r.amount || 0).toLocaleString()}</strong></td>
+          <td>${r.date || ''}</td>
+          <td><span class="badge ${r.status === 'COMPLETED' ? 'badge-success' : ''}">${r.status || 'FAOL'}</span></td>
+        </tr>
+      `).join('');
+    } catch(e) {
+      body.innerHTML = '<tr><td colspan="8" style="color:var(--hot); text-align:center;">Xatolik yuz berdi: ' + e.message + '</td></tr>';
+    }
+  }
+
+  async function executeCustomerSearch() {
+    const q = document.getElementById('custQuery').value.trim();
+    if (!q) return;
+    const container = document.getElementById('custResultsContainer');
+    container.innerHTML = '<div class="empty">Mijoz ma\'lumotlari tahlil qilinmoqda...</div>';
+
+    try {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=customer');
+      const data = await res.json();
+      if (!data.found || !data.organizations || data.organizations.length === 0) {
+        container.innerHTML = '<div class="empty">Bunday mijoz yoki buyurtmachi topilmadi.</div>';
+        return;
+      }
+
+      container.innerHTML = data.organizations.map(org => `
+        <div class="intel-card">
+          <div class="intel-header">
+            <div>
+              <h3 class="intel-title">🏢 ${org.name}</h3>
+              <div style="color:var(--muted); font-size:13px; margin-top:3px;">
+                STIR: <strong>${org.stir || 'N/A'}</strong> | Hudud: ${org.region || 'O\'zbekiston'}
+              </div>
+            </div>
+            <div>
+              <span class="badge badge-success" style="font-size:13px; padding:6px 12px;">
+                Jami xaridlar: ${Number(org.total_spent || 0).toLocaleString()} so'm (${org.total_purchases_count} ta shartnoma)
+              </span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; margin-bottom:15px;">
+            <div style="background:var(--bg); padding:12px; border-radius:8px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted);">Eng ko'p xarid qilingan toifalar:</strong>
+              <div class="chips">
+                ${org.top_categories.map(c => `<span class="chip"><strong>${c.category}</strong>: ${c.count} ta</span>`).join('')}
+              </div>
+            </div>
+            <div style="background:var(--bg); padding:12px; border-radius:8px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted);">Kimlardan sotib olgan (Yetkazib beruvchilar):</strong>
+              <div class="chips">
+                ${org.top_suppliers.map(s => `<span class="chip"><strong>${s.supplier}</strong>: ${s.count} ta</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sana</th>
+                  <th>Lot / Shartnoma nomi</th>
+                  <th>Kimdan olgan (Yetkazib beruvchi)</th>
+                  <th>Toifa</th>
+                  <th class="num">Summa (so'm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${org.purchases.map(p => `
+                  <tr>
+                    <td>${p.date || ''}</td>
+                    <td class="wide"><strong>${p.source_url ? `<a href="${p.source_url}" target="_blank">${p.title}</a>` : p.title}</strong></td>
+                    <td><strong>${p.supplier?.name || 'Noma\'lum'}</strong></td>
+                    <td><span class="badge">${p.category}</span></td>
+                    <td class="num"><strong>${Number(p.amount || 0).toLocaleString()}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="empty" style="color:var(--hot);">Xatolik: ' + e.message + '</div>';
+    }
+  }
+
+  async function executeCompetitorSearch() {
+    const q = document.getElementById('compQuery').value.trim();
+    if (!q) return;
+    const container = document.getElementById('compResultsContainer');
+    container.innerHTML = '<div class="empty">Raqobatchi ma\'lumotlari tahlil qilinmoqda...</div>';
+
+    try {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=competitor');
+      const data = await res.json();
+      if (!data.found || !data.competitors || data.competitors.length === 0) {
+        container.innerHTML = '<div class="empty">Bunday raqobatchi yoki yetkazib beruvchi topilmadi.</div>';
+        return;
+      }
+
+      container.innerHTML = data.competitors.map(comp => `
+        <div class="intel-card">
+          <div class="intel-header">
+            <div>
+              <h3 class="intel-title">🥊 ${comp.name}</h3>
+              <div style="color:var(--muted); font-size:13px; margin-top:3px;">
+                STIR: <strong>${comp.stir || 'N/A'}</strong> | Hudud: ${comp.region || 'O\'zbekiston'}
+              </div>
+            </div>
+            <div>
+              <span class="badge badge-success" style="font-size:13px; padding:6px 12px;">
+                Jami yutgan summasi: ${Number(comp.total_won_amount || 0).toLocaleString()} so'm (${comp.total_wins_count} ta g'alaba)
+              </span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; margin-bottom:15px;">
+            <div style="background:var(--bg); padding:12px; border-radius:8px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted);">Kimlarga sotgan (Asosiy mijozlari):</strong>
+              <div class="chips">
+                ${comp.top_customers.map(c => `<span class="chip"><strong>${c.customer}</strong>: ${c.count} ta</span>`).join('')}
+              </div>
+            </div>
+            <div style="background:var(--bg); padding:12px; border-radius:8px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted);">Sotgan mahsulot toifalari:</strong>
+              <div class="chips">
+                ${comp.top_categories.map(c => `<span class="chip"><strong>${c.category}</strong>: ${c.count} ta</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sana</th>
+                  <th>G'olib bo'lgan lot / shartnoma</th>
+                  <th>Kimga sotgan (Buyurtmachi)</th>
+                  <th>Toifa</th>
+                  <th class="num">Shartnoma summasi (so'm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${comp.deals.map(d => `
+                  <tr>
+                    <td>${d.date || ''}</td>
+                    <td class="wide"><strong>${d.source_url ? `<a href="${d.source_url}" target="_blank">${d.title}</a>` : d.title}</strong></td>
+                    <td><strong>${d.customer?.name || 'Noma\'lum'}</strong></td>
+                    <td><span class="badge">${d.category}</span></td>
+                    <td class="num"><strong>${Number(d.amount || 0).toLocaleString()}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="empty" style="color:var(--hot);">Xatolik: ' + e.message + '</div>';
+    }
+  }
+</script>
 </body>
 </html>

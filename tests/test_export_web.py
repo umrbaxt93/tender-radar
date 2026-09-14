@@ -152,3 +152,34 @@ def test_old_rows_drop_off(client, session):
     session.commit()
     compute_renewals(session, now=NOW)
     assert "Test Org (SYNTHETIC)" not in client.get("/radar").text
+
+
+def test_api_search_and_eimzo_endpoints(client, session):
+    seed_radar(session)
+
+    # 1. Search keyword
+    res = client.get("/api/search?q=Fortinet&type=keyword")
+    assert res.status_code == 200
+    data = res.json()
+    assert "results" in data
+    assert len(data["results"]) >= 1
+    assert data["results"][0]["customer"]["name"] == "Test Org (SYNTHETIC)"
+
+    # 2. Search customer
+    res_cust = client.get("/api/search?q=301234567&type=customer")
+    assert res_cust.status_code == 200
+    cust_data = res_cust.json()
+    assert cust_data["found"] is True
+    assert cust_data["organizations"][0]["stir"] == "301234567"
+
+    # 3. E-IMZO status endpoint
+    res_eimzo = client.get("/api/eimzo/status")
+    assert res_eimzo.status_code == 200
+    assert "daemon" in res_eimzo.json()
+    assert "session" in res_eimzo.json()
+
+    # 4. Index endpoint lists endpoints
+    res_index = client.get("/")
+    assert res_index.status_code == 200
+    assert "/radar" in res_index.json()["endpoints"]
+
