@@ -27,7 +27,12 @@ from radar.models import (
 )
 from radar.snapshots import snapshot_body, store_snapshot
 from radar.source.client import Source, SourceError
-from radar.source.parser import ProcedureRecord, parse_detail, parse_list_page
+from radar.source.parser import (
+    ProcedureRecord,
+    load_mapping,
+    parse_detail,
+    parse_list_page,
+)
 
 log = logging.getLogger(__name__)
 JOB_NAME = "uzex_completed"
@@ -296,7 +301,8 @@ def reparse_from_snapshots(session: Session, limit: int | None = None,
             log.error("snapshot %s failed its checksum; skipping", snap.id)
             continue
         try:
-            rec = parse_detail(body)
+            mapping = load_mapping(source) if source in ("uzex", "xt_xarid") else None
+            rec = parse_detail(body, mapping=mapping)
         except (ValueError, KeyError) as exc:
             stats.parse_failures += 1
             stats.errors.append(f"snapshot {snap.id}: {exc}")

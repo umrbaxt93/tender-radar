@@ -62,9 +62,16 @@ class ListPage(BaseModel):
     total: int | None = None
 
 
-@lru_cache(maxsize=1)
-def load_mapping(path: Path = MAPPING_PATH) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as fh:
+@lru_cache(maxsize=4)
+def load_mapping(path: str | Path = MAPPING_PATH) -> dict[str, Any]:
+    if isinstance(path, str):
+        if not path.endswith(".yaml") and not path.endswith(".yml") and "/" not in path:
+            p = Path(__file__).with_name(f"{path}_mapping.yaml")
+        else:
+            p = Path(path)
+    else:
+        p = path
+    with open(p, encoding="utf-8") as fh:
         return yaml.safe_load(fh)
 
 
@@ -203,8 +210,12 @@ def parse_detail(body: bytes | str | dict,
         ))
     award = None
     aspec = spec.get("award") or {}
-    raw_award = dig(data, aspec.get("path")) if aspec.get("path") else None
-    if raw_award is None and aspec:
+    path = aspec.get("path")
+    if path == "":
+        raw_award = data
+    elif path:
+        raw_award = dig(data, path) or dig(data, "award")
+    else:
         raw_award = dig(data, "award")
     if isinstance(raw_award, dict):
         amount = parse_decimal(dig(raw_award, aspec.get("amount"))) or parse_decimal(

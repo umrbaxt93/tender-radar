@@ -133,6 +133,17 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_migrate_xt(args: argparse.Namespace) -> int:
+    from radar.migrate_xt import migrate_xt_lots
+
+    settings = load_settings()
+    with session_scope() as session:
+        stats = migrate_xt_lots(session, sqlite_path=args.sqlite_path, settings=settings)
+    print(f"migrate-xt: considered={stats['considered']} inserted={stats['inserted']} "
+          f"updated={stats['updated']} items={stats['items']}")
+    return 0
+
+
 def cmd_health(args: argparse.Namespace) -> int:
     from sqlalchemy import text
 
@@ -149,6 +160,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("migrate", help="apply Alembic migrations")
     s.set_defaults(func=cmd_migrate)
+
+    s = sub.add_parser("migrate-xt", help="migrate verified real XT-Xarid lots from SQLite")
+    s.add_argument("--sqlite-path", default=None, help="path to SQLite softy_procurement.db")
+    s.set_defaults(func=cmd_migrate_xt)
 
     s = sub.add_parser("import", help="import completed procedures")
     s.add_argument("--since", help="YYYY-MM-DD; stop at older lots")

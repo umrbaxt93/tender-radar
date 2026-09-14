@@ -1,0 +1,39 @@
+# Field mapping between the XT-Xarid raw JSON and normalized ProcedureRecord.
+# Adapted from app/adapters/xt_xarid.py
+list:
+  method: GET
+  items_path: items
+  total_path: total
+  page_param: page
+  page_size_param: limit
+  page_size: 50
+  first_page: 1
+  id_field: lot_id
+  completed_at_field: contract_date
+detail:
+  id: lot_id
+  source_url_template: "https://xt-xarid.uz/contract/{source_id}.1.1"
+  procedure_type: procurement_type
+  title: title
+  status: status
+  published_at: announcement_date
+  deadline_at: deadline_date
+  completed_at: contract_date
+  currency: currency
+  start_price: start_price
+  customer:
+    name: buyer_name
+    stir: buyer_inn
+    region: region
+  items:
+    path: items
+    name: product_name
+    quantity: quantity
+    unit: unit
+    unit_price: unit_price
+  award:
+    path: ""
+    supplier_name: winner_name
+    supplier_stir: supplier_inn
+    amount_fallback: final_price
+    awarded_at_fallback: contract_date
