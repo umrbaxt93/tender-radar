@@ -10,7 +10,7 @@
 - [ ] Re-check the renewal lifecycle table against what real purchase intervals show.
 
 ## Blocked on credentials or cost approval
-- [ ] Add the chosen Gemini model price to radar/classify/pricing.yaml from the official
+- [x] Add the chosen Gemini model price to radar/classify/pricing.yaml from the official
       pricing page, with the date it was checked.
 - [ ] Run one small paid batch and compare real spend against the ledger.
 - [ ] Provider-side spending controls before enabling any recurring paid job.

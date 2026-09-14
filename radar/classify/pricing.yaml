@@ -16,6 +16,25 @@
 # environment. Without one of the two, a paid classification run refuses to start.
 
 models:
+  # Official Gemini API pricing reviewed from https://ai.google.dev/gemini-api/docs/pricing on 2026-09-14
+  gemini-2.5-flash-lite:
+    input_usd_per_mtok: 0.10
+    output_usd_per_mtok: 0.40
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-14
+
+  gemini-2.5-flash:
+    input_usd_per_mtok: 0.30
+    output_usd_per_mtok: 2.50
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-14
+
+  gemini-2.0-flash:
+    input_usd_per_mtok: 0.10
+    output_usd_per_mtok: 0.40
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-14
+
   # Offline deterministic model used by --mock-ai. Costs nothing but is priced so that the
   # budget ledger and the $10 stop are exercised by tests exactly as in a paid run.
   mock:
@@ -23,3 +42,4 @@ models:
     output_usd_per_mtok: 4.0
     source: offline test double, not a real model
     reviewed_at: 2026-09-13
+

@@ -157,3 +157,11 @@ Strictly preserved prohibitions:
 - Cost Projections: At 98% rule coverage, 200 lots required only 1 AI batch costing ~$0.0001 under mock pricing, ensuring the $10 budget can handle tens of thousands of tenders.
 - Golden Set: Replaced `samples/synthetic/known_lots.md` with verified real lots (IT and Non-IT). All 140 pytest tests pass.
 
+## Gemini pricing review and budget enforcement verification — 2026-09-14
+2026-09-14 | Official Gemini API pricing retrieved from https://ai.google.dev/gemini-api/docs/pricing and added to `radar/classify/pricing.yaml`:
+- `gemini-2.5-flash-lite`: $0.10 input / $0.40 output per 1M tokens (reviewed 2026-09-14).
+- `gemini-2.5-flash`: $0.30 input / $2.50 output per 1M tokens (reviewed 2026-09-14).
+- `gemini-2.0-flash`: $0.10 input / $0.40 output per 1M tokens (reviewed 2026-09-14).
+2026-09-14 | Budget stopping enforcement verified: `CostLedger` correctly halts classification prior to any network call when `CLASSIFIER_BUDGET_USD` cap is reached, raising `BudgetExceeded` and recording $0 in spend.
+
+
