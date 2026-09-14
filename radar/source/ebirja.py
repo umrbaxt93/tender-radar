@@ -48,7 +48,15 @@ class EbirjaClient:
         self.timeout = timeout
         self.ctx = ssl._create_unverified_context()
 
-    def _request(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _request(
+        self,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        retries: int = 3,
+    ) -> dict[str, Any]:
+        import random
+        import time
+
         params = params or {}
         query_string = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
         url = f"{self.base_url}{endpoint}"
@@ -56,17 +64,50 @@ class EbirjaClient:
             url = f"{url}?{query_string}"
 
         headers = self.eimzo_mgr.get_auth_headers()
-        req = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, context=self.ctx, timeout=self.timeout) as resp:
-                body = resp.read().decode("utf-8")
-                return json.loads(body)
-        except urllib.error.HTTPError as exc:
-            log.warning("HTTP error %d from %s", exc.code, url)
-            return {"error": f"HTTP {exc.code}", "result": {"data": [], "meta": {"totalCount": 0}}}
-        except Exception as exc:
-            log.warning("Request failed to %s: %s", url, exc)
-            return {"error": str(exc), "result": {"data": [], "meta": {"totalCount": 0}}}
+        headers["Origin"] = "https://ebirja.uz"
+        headers["Referer"] = "https://ebirja.uz/"
+        headers["Accept"] = "application/json, text/plain, */*"
+        headers["Accept-Language"] = "uz,ru;q=0.9,en;q=0.8"
+
+        # Rate-pacing jitter to prevent bot-detection / WAF triggers
+        time.sleep(random.uniform(0.6, 1.2))
+
+        for attempt in range(1, retries + 1):
+            req = urllib.request.Request(url, headers=headers)
+            try:
+                with urllib.request.urlopen(req, context=self.ctx, timeout=self.timeout) as resp:
+                    body = resp.read().decode("utf-8")
+                    return json.loads(body)
+            except urllib.error.HTTPError as exc:
+                if exc.code in (429, 502, 503, 504) and attempt < retries:
+                    wait_time = attempt * 2.5
+                    log.warning(
+                        "HTTP %d from %s, retrying in %.1fs (attempt %d/%d)",
+                        exc.code,
+                        url,
+                        wait_time,
+                        attempt,
+                        retries,
+                    )
+                    time.sleep(wait_time)
+                    continue
+                log.warning("HTTP error %d from %s", exc.code, url)
+                return {
+                    "error": f"HTTP {exc.code}",
+                    "result": {"data": [], "meta": {"totalCount": 0}},
+                }
+            except Exception as exc:
+                if attempt < retries:
+                    time.sleep(attempt * 1.5)
+                    continue
+                log.warning("Request failed to %s: %s", url, exc)
+                return {"error": str(exc), "result": {"data": [], "meta": {"totalCount": 0}}}
+
+        return {"error": "Max retries exceeded", "result": {"data": [], "meta": {"totalCount": 0}}}
+
+    def fetch_contract_view(self, contract_id: int | str) -> dict[str, Any]:
+        """Fetch detailed contract information using authenticated session."""
+        return self._request("/common/contract/view", {"id": str(contract_id)})
 
     def fetch_shop_contracts(
         self,

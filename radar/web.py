@@ -94,20 +94,61 @@ async def api_procedure_bitrix(procedure_id: int, request: Request) -> JSONRespo
 
 
 @app.get("/api/search")
-def api_search(q: str = "", type: str = "keyword", limit: int = 50) -> JSONResponse:
+def api_search(
+    request: Request,
+    q: str = "",
+    type: str = "keyword",
+    limit: int = 50,
+) -> JSONResponse:
     from radar.search import (
         search_competitor_intelligence,
         search_customer_intelligence,
         search_keywords,
+        search_products,
     )
+
+    stir = request.query_params.get("stir")
+    product = request.query_params.get("product")
+    c_stir = request.query_params.get("customer_stir")
+    s_stir = request.query_params.get("supplier_stir")
 
     with session_scope() as session:
         if type == "customer":
-            data = search_customer_intelligence(session, q, limit=limit)
+            data = search_customer_intelligence(session, q, stir=stir, limit=limit)
         elif type == "competitor":
-            data = search_competitor_intelligence(session, q, limit=limit)
+            data = search_competitor_intelligence(session, q, stir=stir, limit=limit)
+        elif type in ("product", "products"):
+            prod_query = product or q
+            data = search_products(session, prod_query, limit=limit)
         else:
-            data = {"results": search_keywords(session, q, limit=limit), "query": q}
+            res = search_keywords(
+                session,
+                query=q,
+                limit=limit,
+                product_query=product,
+                customer_stir=c_stir,
+                supplier_stir=s_stir,
+            )
+            data = {"results": res, "query": q, "count": len(res)}
+    return JSONResponse(data)
+
+
+@app.get("/api/ai/recommendation")
+def api_ai_recommendation(procedure_id: int) -> JSONResponse:
+    from radar.ai_advisor import get_recommendation_for_procedure
+
+    with session_scope() as session:
+        data = get_recommendation_for_procedure(session, procedure_id)
+    return JSONResponse(data)
+
+
+@app.post("/api/ai/recommendation")
+async def api_ai_recommendation_custom(request: Request) -> JSONResponse:
+    from radar.ai_advisor import generate_ai_recommendation
+
+    is_json = request.headers.get("content-type", "").startswith("application/json")
+    payload = await request.json() if is_json else {}
+    data = generate_ai_recommendation(payload)
     return JSONResponse(data)
 
 

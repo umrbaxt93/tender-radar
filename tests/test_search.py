@@ -276,6 +276,7 @@ def test_web_api_search_endpoints(tmp_path, monkeypatch) -> None:
         )
         s.add(p)
         s.flush()
+        proc_id = p.id
         s.add(LotItem(procedure_id=p.id, raw_name="Kaspersky Total Security", brand="Kaspersky"))
         s.add(Award(procedure_id=p.id, supplier_org_id=smart.id, amount=Decimal("49000000")))
         s.commit()
@@ -306,7 +307,33 @@ def test_web_api_search_endpoints(tmp_path, monkeypatch) -> None:
     assert res_comp.json()["found"] is True
     assert res_comp.json()["competitors"][0]["name"] == "Smart Server MCHJ"
 
-    # 4. E-IMZO status API
+    # 4. Product search API
+    res_prod = client.get("/api/search?product=Kaspersky&type=product")
+    assert res_prod.status_code == 200
+    assert res_prod.json()["found"] is True
+    assert res_prod.json()["count"] == 1
+    assert res_prod.json()["stats"]["matched_items_count"] == 1
+
+    # 5. Customer search by STIR
+    res_c_stir = client.get("/api/search?stir=200111222&type=customer")
+    assert res_c_stir.status_code == 200
+    assert res_c_stir.json()["found"] is True
+    assert res_c_stir.json()["organizations"][0]["stir"] == "200111222"
+
+    # 6. Competitor search by STIR
+    res_s_stir = client.get("/api/search?stir=305111222&type=competitor")
+    assert res_s_stir.status_code == 200
+    assert res_s_stir.json()["found"] is True
+    assert res_s_stir.json()["competitors"][0]["stir"] == "305111222"
+
+    # 7. AI Recommendation API
+    res_ai = client.get(f"/api/ai/recommendation?procedure_id={proc_id}")
+    assert res_ai.status_code == 200
+    assert "analysis" in res_ai.json()
+    assert "suggested_discount_percent" in res_ai.json()
+    assert "commercial_pitch" in res_ai.json()
+
+    # 8. E-IMZO status API
     res_eimzo = client.get("/api/eimzo/status")
     assert res_eimzo.status_code == 200
     assert "daemon" in res_eimzo.json()

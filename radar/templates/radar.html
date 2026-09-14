@@ -133,7 +133,7 @@
       <thead><tr>
         <th>Customer</th><th class="num">Score</th><th>Contact by</th><th>Category</th>
         <th>Brand</th><th class="num">Amount</th><th>Expected renewal</th>
-        <th>Last purchase</th><th>STIR</th><th>Region</th><th>Lot</th>
+        <th>Last purchase</th><th>STIR</th><th>Region</th><th>Lot</th><th>Tavsiya</th>
       </tr></thead>
       <tbody>
       {% for row in rows %}
@@ -153,6 +153,9 @@
             {% if row.source_url %}<a href="{{ row.source_url }}" rel="nofollow noopener"
                target="_blank">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}
           </td>
+          <td>
+            <button class="btn btn-outline" style="padding:4px 8px; font-size:11px; white-space:nowrap;" onclick="openAiAdvisor({{ row.procedure_id }})">🤖 AI Tavsiya</button>
+          </td>
         </tr>
       {% endfor %}
       </tbody>
@@ -164,12 +167,15 @@
     </div>
   </div>
 
-  <!-- Tab 2: Universal Search (Keyword) -->
+  <!-- Tab 2: Universal Search (Keyword & Products) -->
   <div id="tab-search" class="tab-content">
-    <div class="search-container">
-      <input type="text" id="kwQuery" class="search-input" placeholder="Kalit so'z kiriting: masalan Kaspersky, Server, Fortinet, Switch, Kompyuter, Litsenziya..." onkeyup="if(event.key==='Enter') executeKeywordSearch()">
+    <div class="search-container" style="display:flex; gap:10px; flex-wrap:wrap;">
+      <input type="text" id="kwQuery" class="search-input" style="flex:2; min-width:200px;" placeholder="Kalit so'z (lot nomi, buyurtmachi)..." onkeyup="if(event.key==='Enter') executeKeywordSearch()">
+      <input type="text" id="kwProduct" class="search-input" style="flex:2; min-width:200px;" placeholder="📦 Mahsulot/Tovar (Server, AutoCAD, Monitor...)" onkeyup="if(event.key==='Enter') executeKeywordSearch()">
+      <input type="text" id="kwStir" class="search-input" style="flex:1; min-width:140px;" placeholder="STIR (INN)" onkeyup="if(event.key==='Enter') executeKeywordSearch()">
       <button class="btn btn-primary" onclick="executeKeywordSearch()">Qidirish</button>
     </div>
+    <div id="kwProductStats" style="display:none; margin-bottom:15px;" class="cards"></div>
     <div id="kwResultsContainer" class="tablewrap" style="display:none;">
       <table id="kwTable">
         <thead>
@@ -181,7 +187,7 @@
             <th>Kategoriya & Mahsulot</th>
             <th class="num">Summa (so'm)</th>
             <th>Sana</th>
-            <th>Holat</th>
+            <th>Amal</th>
           </tr>
         </thead>
         <tbody id="kwTableBody"></tbody>
@@ -192,8 +198,9 @@
 
   <!-- Tab 3: Customer Intelligence -->
   <div id="tab-customer" class="tab-content">
-    <div class="search-container">
-      <input type="text" id="custQuery" class="search-input" placeholder="Mijoz (buyurtmachi) nomi yoki STIR kiriting: masalan Aloqabank, Turon, O'zbekgidroenergo..." onkeyup="if(event.key==='Enter') executeCustomerSearch()">
+    <div class="search-container" style="display:flex; gap:10px; flex-wrap:wrap;">
+      <input type="text" id="custQuery" class="search-input" style="flex:2; min-width:220px;" placeholder="Mijoz (buyurtmachi) nomi: Aloqabank, O'zbekgidroenergo..." onkeyup="if(event.key==='Enter') executeCustomerSearch()">
+      <input type="text" id="custStir" class="search-input" style="flex:1; min-width:150px;" placeholder="🏢 Mijoz STIR (INN): 200123456" onkeyup="if(event.key==='Enter') executeCustomerSearch()">
       <button class="btn btn-primary" onclick="executeCustomerSearch()">Mijozni tahlil qilish</button>
     </div>
     <div id="custResultsContainer"></div>
@@ -201,8 +208,9 @@
 
   <!-- Tab 4: Competitor Intelligence -->
   <div id="tab-competitor" class="tab-content">
-    <div class="search-container">
-      <input type="text" id="compQuery" class="search-input" placeholder="Raqobatchi (yetkazib beruvchi) nomi yoki STIR kiriting: masalan Smart Server, Serverland, Kompyuter Servis..." onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
+    <div class="search-container" style="display:flex; gap:10px; flex-wrap:wrap;">
+      <input type="text" id="compQuery" class="search-input" style="flex:2; min-width:220px;" placeholder="Raqobatchi nomi: Smart Server, Serverland..." onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
+      <input type="text" id="compStir" class="search-input" style="flex:1; min-width:150px;" placeholder="🥊 Raqobatchi STIR (INN): 308904387" onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
       <button class="btn btn-primary" onclick="executeCompetitorSearch()">Raqobatchini tahlil qilish</button>
     </div>
     <div id="compResultsContainer"></div>
@@ -317,18 +325,152 @@
     }
   }
 
+  <!-- AI Strategy Advisor Modal -->
+  <div id="aiModal" style="display:none; position:fixed; z-index:99999; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:16px; max-width:760px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:1px solid #e2e8f0; padding:24px; position:relative;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:24px;">🤖</span>
+          <div>
+            <h3 id="aiModalTitle" style="margin:0; font-size:18px; font-weight:700; color:#1e293b;">AI Strategik Maslahatchi (SOFTY Advisor)</h3>
+            <small id="aiModalSubtitle" style="color:#64748b; font-size:12px;">Davlat xaridlari tahlili va g'oliblik taktikasi</small>
+          </div>
+        </div>
+        <button onclick="closeAiModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold; line-height:1;">&times;</button>
+      </div>
+
+      <div id="aiModalLoading" style="text-align:center; padding:40px; color:#475569;">
+        <div style="font-size:28px; margin-bottom:10px;">⏳</div>
+        <div style="font-weight:600;">Sun'iy intellekt xarid va raqobatchi ma'lumotlarini tahlil qilmoqda...</div>
+      </div>
+
+      <div id="aiModalBody" style="display:none;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:14px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; margin-bottom:4px;">1. Xarid va Mijoz Tahlili</div>
+          <div id="aiTextAnalysis" style="font-size:13px; line-height:1.6; color:#1e293b;"></div>
+        </div>
+
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px; margin-bottom:14px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#dc2626; margin-bottom:4px;">2. Raqobatchining Zaif Nuqtalari</div>
+          <div id="aiTextWeakness" style="font-size:13px; line-height:1.6; color:#991b1b;"></div>
+        </div>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#16a34a;">3. SOFTY G'oliblik Strategiyasi</div>
+            <span id="aiBadgeDiscount" class="badge badge-success" style="font-size:12px;"></span>
+          </div>
+          <div id="aiTextStrategy" style="font-size:13px; line-height:1.6; color:#166534; white-space:pre-line;"></div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; margin-bottom:6px;">4. Bosqichma-bosqich Harakatlar Rejasi:</div>
+          <ul id="aiActionPlan" style="margin:0; padding-left:20px; font-size:13px; color:#334155; line-height:1.6;"></ul>
+        </div>
+
+        <div style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:10px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#475569;">5. Tayyor Tijoriy Taklif Matni (Mijozga yuborish uchun)</div>
+            <button class="btn btn-outline" style="padding:2px 8px; font-size:11px;" onclick="copyAiPitch()">📋 Nusxa olish</button>
+          </div>
+          <pre id="aiCommercialPitch" style="font-family:inherit; font-size:12px; white-space:pre-wrap; background:#fff; padding:10px; border-radius:6px; border:1px solid #e2e8f0; margin:0; color:#0f172a; max-height:150px; overflow-y:auto;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    const target = document.getElementById(tabId);
+    if (target) target.classList.add('active');
+    if (tabId === 'tab-eimzo') checkEimzoStatus();
+  }
+
+  async function checkEimzoStatus() {
+    try {
+      const res = await fetch('/api/eimzo/status');
+      const data = await res.json();
+      const daemonBadge = document.getElementById('daemonBadge');
+      const daemonStatusText = document.getElementById('daemonStatusText');
+      const sessionStatusText = document.getElementById('sessionStatusText');
+
+      if (data.daemon && data.daemon.running) {
+        daemonBadge.className = 'badge badge-success';
+        daemonBadge.textContent = 'E-IMZO Faol (' + data.daemon.port + ')';
+        daemonStatusText.textContent = 'Faol (Port ' + data.daemon.port + ')';
+      } else {
+        daemonBadge.className = 'badge';
+        daemonBadge.textContent = 'E-IMZO O\'chiq';
+        daemonStatusText.textContent = 'Ishga tushirilmagan';
+      }
+
+      if (data.session && data.session.authenticated) {
+        sessionStatusText.textContent = 'Avtorizatsiyadan o\'tgan';
+      } else {
+        sessionStatusText.textContent = 'Ommaviy API (Faol)';
+      }
+    } catch(e) {
+      console.warn('Status error:', e);
+    }
+  }
+
+  async function triggerEbirjaSync(term) {
+    const notice = document.getElementById('syncResultNotice');
+    notice.innerHTML = '⏳ E-Birja bilan xavfsiz avtorizatsiyalangan sinxronizatsiya bajarilmoqda...';
+    try {
+      const kw = (term === 'all') ? '' : term;
+      const res = await fetch('/api/ebirja/sync', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({search: kw, limit: 100})
+      });
+      const data = await res.json();
+      notice.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Muvaffaqiyatli: ' + data.fetched_count + ' ta shartnoma yuklandi (Yangi: ' + (data.imported.inserted || 0) + ', Yangilandi: ' + (data.imported.updated || 0) + ')</span>';
+    } catch(e) {
+      notice.innerHTML = '<span style="color:var(--hot);">Xatolik yuz berdi: ' + e.message + '</span>';
+    }
+  }
+
+  async function requestEimzoChallenge() {
+    const notice = document.getElementById('syncResultNotice');
+    notice.innerHTML = '⏳ E-Birja serveridan challenge olinmoqda...';
+    try {
+      const res = await fetch('/api/eimzo/challenge', {method: 'POST'});
+      const data = await res.json();
+      if (data.challenge) {
+        notice.innerHTML = '<strong>Challenge olindi:</strong> <code>' + data.challenge + '</code> (TTL: ' + data.ttl + 's). E-IMZO kaliti orqali imzolanadi.';
+      } else {
+        notice.innerHTML = 'Challenge olindi: ' + JSON.stringify(data);
+      }
+    } catch(e) {
+      notice.innerHTML = 'Challenge xatosi: ' + e.message;
+    }
+  }
+
   async function executeKeywordSearch() {
     const q = document.getElementById('kwQuery').value.trim();
-    if (!q) return;
+    const prod = document.getElementById('kwProduct').value.trim();
+    const stir = document.getElementById('kwStir').value.trim();
+    if (!q && !prod && !stir) return;
+
     const body = document.getElementById('kwTableBody');
     const container = document.getElementById('kwResultsContainer');
     const empty = document.getElementById('kwEmpty');
+    const statsDiv = document.getElementById('kwProductStats');
     body.innerHTML = '<tr><td colspan="8" style="text-align:center;">Qidirilmoqda...</td></tr>';
     container.style.display = 'block';
     empty.style.display = 'none';
+    statsDiv.style.display = 'none';
 
     try {
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=keyword');
+      let url = '/api/search?q=' + encodeURIComponent(q);
+      if (prod) url += '&product=' + encodeURIComponent(prod);
+      if (stir) url += '&customer_stir=' + encodeURIComponent(stir);
+
+      const res = await fetch(url);
       const data = await res.json();
       const results = data.results || [];
       if (results.length === 0) {
@@ -340,13 +482,18 @@
       body.innerHTML = results.map(r => `
         <tr>
           <td><span class="badge">${r.source}</span></td>
-          <td class="wide"><strong>${r.source_url ? `<a href="${r.source_url}" target="_blank">${r.title}</a>` : r.title}</strong></td>
+          <td class="wide">
+            <strong>${r.source_url ? `<a href="${r.source_url}" target="_blank">${r.title}</a>` : r.title}</strong>
+            ${(r.items && r.items.length > 0) ? `<div style="font-size:11px; color:var(--muted); margin-top:2px;">📦 ${r.items.map(it => it.raw_name).slice(0, 2).join(', ')}</div>` : ''}
+          </td>
           <td>${r.customer?.name || 'Noma\'lum'}<br><small style="color:var(--muted);">${r.customer?.stir ? 'STIR: ' + r.customer.stir : ''}</small></td>
           <td>${r.supplier?.name || 'Noma\'lum'}<br><small style="color:var(--muted);">${r.supplier?.stir ? 'STIR: ' + r.supplier.stir : ''}</small></td>
           <td><span class="badge">${r.classification?.category || 'IT'}</span> ${r.classification?.brand ? '<strong>' + r.classification.brand + '</strong>' : ''}</td>
           <td class="num"><strong>${Number(r.amount || 0).toLocaleString()}</strong></td>
           <td>${r.date || ''}</td>
-          <td><span class="badge ${r.status === 'COMPLETED' ? 'badge-success' : ''}">${r.status || 'FAOL'}</span></td>
+          <td>
+            <button class="btn btn-outline" style="padding:4px 8px; font-size:11px; white-space:nowrap;" onclick="openAiAdvisor(${r.id})">🤖 AI Tavsiya</button>
+          </td>
         </tr>
       `).join('');
     } catch(e) {
@@ -356,12 +503,15 @@
 
   async function executeCustomerSearch() {
     const q = document.getElementById('custQuery').value.trim();
-    if (!q) return;
+    const stir = document.getElementById('custStir').value.trim();
+    if (!q && !stir) return;
     const container = document.getElementById('custResultsContainer');
     container.innerHTML = '<div class="empty">Mijoz ma\'lumotlari tahlil qilinmoqda...</div>';
 
     try {
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=customer');
+      let url = '/api/search?type=customer&q=' + encodeURIComponent(q);
+      if (stir) url += '&stir=' + encodeURIComponent(stir);
+      const res = await fetch(url);
       const data = await res.json();
       if (!data.found || !data.organizations || data.organizations.length === 0) {
         container.innerHTML = '<div class="empty">Bunday mijoz yoki buyurtmachi topilmadi.</div>';
@@ -408,6 +558,7 @@
                   <th>Kimdan olgan (Yetkazib beruvchi)</th>
                   <th>Toifa</th>
                   <th class="num">Summa (so'm)</th>
+                  <th>Amal</th>
                 </tr>
               </thead>
               <tbody>
@@ -418,6 +569,9 @@
                     <td><strong>${p.supplier?.name || 'Noma\'lum'}</strong></td>
                     <td><span class="badge">${p.category}</span></td>
                     <td class="num"><strong>${Number(p.amount || 0).toLocaleString()}</strong></td>
+                    <td>
+                      <button class="btn btn-outline" style="padding:3px 6px; font-size:11px;" onclick="openAiAdvisor(${p.procedure_id})">🤖 AI Tavsiya</button>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -432,12 +586,15 @@
 
   async function executeCompetitorSearch() {
     const q = document.getElementById('compQuery').value.trim();
-    if (!q) return;
+    const stir = document.getElementById('compStir').value.trim();
+    if (!q && !stir) return;
     const container = document.getElementById('compResultsContainer');
     container.innerHTML = '<div class="empty">Raqobatchi ma\'lumotlari tahlil qilinmoqda...</div>';
 
     try {
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q) + '&type=competitor');
+      let url = '/api/search?type=competitor&q=' + encodeURIComponent(q);
+      if (stir) url += '&stir=' + encodeURIComponent(stir);
+      const res = await fetch(url);
       const data = await res.json();
       if (!data.found || !data.competitors || data.competitors.length === 0) {
         container.innerHTML = '<div class="empty">Bunday raqobatchi yoki yetkazib beruvchi topilmadi.</div>';
@@ -484,6 +641,7 @@
                   <th>Kimga sotgan (Buyurtmachi)</th>
                   <th>Toifa</th>
                   <th class="num">Shartnoma summasi (so'm)</th>
+                  <th>Amal</th>
                 </tr>
               </thead>
               <tbody>
@@ -494,6 +652,9 @@
                     <td><strong>${d.customer?.name || 'Noma\'lum'}</strong></td>
                     <td><span class="badge">${d.category}</span></td>
                     <td class="num"><strong>${Number(d.amount || 0).toLocaleString()}</strong></td>
+                    <td>
+                      <button class="btn btn-outline" style="padding:3px 6px; font-size:11px;" onclick="openAiAdvisor(${d.procedure_id})">🤖 AI Tavsiya</button>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -504,6 +665,46 @@
     } catch(e) {
       container.innerHTML = '<div class="empty" style="color:var(--hot);">Xatolik: ' + e.message + '</div>';
     }
+  }
+
+  async function openAiAdvisor(procedureId) {
+    const modal = document.getElementById('aiModal');
+    const loading = document.getElementById('aiModalLoading');
+    const body = document.getElementById('aiModalBody');
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    body.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/ai/recommendation?procedure_id=' + procedureId);
+      const data = await res.json();
+      loading.style.display = 'none';
+      body.style.display = 'block';
+
+      document.getElementById('aiModalSubtitle').textContent = (data.engine || 'AI Strategist') + ' — ' + (data.procedure?.title || '');
+      document.getElementById('aiTextAnalysis').textContent = data.analysis || '';
+      document.getElementById('aiTextWeakness').textContent = data.competitor_weakness || '';
+      document.getElementById('aiBadgeDiscount').textContent = (data.suggested_discount_percent || 5) + '% arzon narx tavsiyasi';
+      document.getElementById('aiTextStrategy').textContent = data.recommended_strategy || '';
+
+      const planList = document.getElementById('aiActionPlan');
+      planList.innerHTML = (data.action_plan || []).map(p => `<li>${p}</li>`).join('');
+
+      document.getElementById('aiCommercialPitch').textContent = data.commercial_pitch || '';
+    } catch(e) {
+      loading.innerHTML = '<span style="color:var(--hot);">Xatolik yuz berdi: ' + e.message + '</span>';
+    }
+  }
+
+  function closeAiModal() {
+    document.getElementById('aiModal').style.display = 'none';
+  }
+
+  function copyAiPitch() {
+    const pitch = document.getElementById('aiCommercialPitch').textContent;
+    navigator.clipboard.writeText(pitch).then(() => {
+      alert('Tijoriy taklif matni buferga nusxalandi!');
+    });
   }
 </script>
 </body>

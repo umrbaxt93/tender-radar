@@ -20,16 +20,23 @@ from radar.models import Award, Classification, LotItem, Organization, Organizat
 
 def search_keywords(
     session: Session,
-    query: str,
+    query: str = "",
     limit: int = 50,
     source: str | None = None,
+    product_query: str | None = None,
+    customer_stir: str | None = None,
+    supplier_stir: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Search procedures and contract items by keyword across titles, items, and brands."""
-    q_str = query.strip()
-    if not q_str:
-        return []
+    """Search procedures and contract items by keyword across titles, items, and brands,
+    with optional filters for product keyword, customer INN/STIR, and supplier INN/STIR.
+    """
+    q_str = (query or "").strip()
+    prod_str = (product_query or "").strip()
+    c_stir = (customer_stir or "").strip()
+    s_stir = (supplier_stir or "").strip()
 
-    pattern = f"%{q_str}%"
+    if not q_str and not prod_str and not c_stir and not s_stir:
+        return []
 
     # Base query joining procedure, customer, award, items, and classification
     stmt = (
@@ -42,7 +49,12 @@ def search_keywords(
         )
         .outerjoin(Procedure.items)
         .outerjoin(Procedure.classification)
-        .where(
+    )
+
+    conditions = []
+    if q_str:
+        pattern = f"%{q_str}%"
+        conditions.append(
             or_(
                 Procedure.title.ilike(pattern),
                 Procedure.source_id.ilike(pattern),
@@ -50,15 +62,40 @@ def search_keywords(
                 LotItem.brand.ilike(pattern),
                 LotItem.product_family.ilike(pattern),
                 Classification.category.ilike(pattern),
+                Procedure.customer.has(Organization.name_canonical.ilike(pattern)),
+                Procedure.award.has(Award.supplier.has(Organization.name_canonical.ilike(pattern))),
             )
         )
-        .distinct()
+
+    if prod_str:
+        prod_pattern = f"%{prod_str}%"
+        conditions.append(
+            or_(
+                LotItem.raw_name.ilike(prod_pattern),
+                LotItem.brand.ilike(prod_pattern),
+                LotItem.product_family.ilike(prod_pattern),
+            )
+        )
+
+    if c_stir:
+        conditions.append(Procedure.customer.has(Organization.stir.ilike(f"%{c_stir}%")))
+
+    if s_stir:
+        conditions.append(
+            Procedure.award.has(Award.supplier.has(Organization.stir.ilike(f"%{s_stir}%")))
+        )
+
+    if source:
+        conditions.append(Procedure.source == source)
+
+    for cond in conditions:
+        stmt = stmt.where(cond)
+
+    stmt = (
+        stmt.distinct()
         .order_by(Procedure.completed_at.desc().nullslast(), Procedure.id.desc())
         .limit(limit)
     )
-
-    if source:
-        stmt = stmt.where(Procedure.source == source)
 
     procs = list(session.scalars(stmt).unique())
     results = []
@@ -119,35 +156,36 @@ def search_keywords(
 
 def search_customer_intelligence(
     session: Session,
-    query: str,
+    query: str = "",
+    stir: str | None = None,
     limit: int = 50,
 ) -> dict[str, Any]:
     """Retrieve full procurement history, suppliers, and metrics for a buyer/customer."""
-    q_str = query.strip()
-    if not q_str:
+    q_str = (query or "").strip()
+    stir_str = (stir or "").strip()
+    if not q_str and not stir_str:
         return {"found": False, "organizations": []}
 
-    pattern = f"%{q_str}%"
-
-    # Find matching organizations
-    orgs = list(
-        session.scalars(
-            select(Organization)
-            .outerjoin(Organization.aliases)
-            .where(
-                or_(
-                    Organization.stir.ilike(pattern),
-                    Organization.name_canonical.ilike(pattern),
-                    OrganizationAlias.name_raw.ilike(pattern),
-                )
+    stmt = select(Organization).outerjoin(Organization.aliases)
+    conditions = []
+    if stir_str:
+        conditions.append(Organization.stir.ilike(f"%{stir_str}%"))
+    if q_str:
+        pattern = f"%{q_str}%"
+        conditions.append(
+            or_(
+                Organization.stir.ilike(pattern),
+                Organization.name_canonical.ilike(pattern),
+                OrganizationAlias.name_raw.ilike(pattern),
             )
-            .distinct()
-            .limit(10)
         )
-    )
+    for c in conditions:
+        stmt = stmt.where(c)
+
+    orgs = list(session.scalars(stmt.distinct().limit(10)))
 
     if not orgs:
-        return {"found": False, "query": q_str, "organizations": []}
+        return {"found": False, "query": q_str or stir_str, "organizations": []}
 
     org_results = []
     for org in orgs:
@@ -234,7 +272,7 @@ def search_customer_intelligence(
 
     return {
         "found": True,
-        "query": q_str,
+        "query": q_str or stir_str,
         "count": len(org_results),
         "organizations": org_results,
     }
@@ -242,36 +280,40 @@ def search_customer_intelligence(
 
 def search_competitor_intelligence(
     session: Session,
-    query: str,
+    query: str = "",
+    stir: str | None = None,
     limit: int = 50,
 ) -> dict[str, Any]:
     """Retrieve all sales, tenders won, buyers, and revenue for a competitor/supplier."""
-    q_str = query.strip()
-    if not q_str:
+    q_str = (query or "").strip()
+    stir_str = (stir or "").strip()
+    if not q_str and not stir_str:
         return {"found": False, "competitors": []}
 
-    pattern = f"%{q_str}%"
-
-    # Find matching organizations who are recorded as suppliers in Award
-    orgs = list(
-        session.scalars(
-            select(Organization)
-            .join(Award, Award.supplier_org_id == Organization.id)
-            .outerjoin(Organization.aliases)
-            .where(
-                or_(
-                    Organization.stir.ilike(pattern),
-                    Organization.name_canonical.ilike(pattern),
-                    OrganizationAlias.name_raw.ilike(pattern),
-                )
-            )
-            .distinct()
-            .limit(10)
-        )
+    stmt = (
+        select(Organization)
+        .join(Award, Award.supplier_org_id == Organization.id)
+        .outerjoin(Organization.aliases)
     )
+    conditions = []
+    if stir_str:
+        conditions.append(Organization.stir.ilike(f"%{stir_str}%"))
+    if q_str:
+        pattern = f"%{q_str}%"
+        conditions.append(
+            or_(
+                Organization.stir.ilike(pattern),
+                Organization.name_canonical.ilike(pattern),
+                OrganizationAlias.name_raw.ilike(pattern),
+            )
+        )
+    for c in conditions:
+        stmt = stmt.where(c)
+
+    orgs = list(session.scalars(stmt.distinct().limit(10)))
 
     if not orgs:
-        return {"found": False, "query": q_str, "competitors": []}
+        return {"found": False, "query": q_str or stir_str, "competitors": []}
 
     competitors = []
     for org in orgs:
@@ -363,7 +405,142 @@ def search_competitor_intelligence(
 
     return {
         "found": True,
-        "query": q_str,
+        "query": q_str or stir_str,
         "count": len(competitors),
         "competitors": competitors,
     }
+
+
+def search_products(
+    session: Session,
+    query: str,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Dedicated product keyword search.
+
+    Searches LotItem across raw_name, brand, and product_family.
+    Aggregates:
+    - matched procedures with highlighted item rows;
+    - total spend across matched items;
+    - average price, min price, max price;
+    - top buyers and top suppliers for this product.
+    """
+    q_str = query.strip()
+    if not q_str:
+        return {"found": False, "query": "", "count": 0, "results": [], "stats": {}}
+
+    pattern = f"%{q_str}%"
+
+    stmt = (
+        select(Procedure)
+        .options(
+            joinedload(Procedure.customer),
+            joinedload(Procedure.award).joinedload(Award.supplier),
+            joinedload(Procedure.items),
+            joinedload(Procedure.classification),
+        )
+        .join(Procedure.items)
+        .where(
+            or_(
+                LotItem.raw_name.ilike(pattern),
+                LotItem.brand.ilike(pattern),
+                LotItem.product_family.ilike(pattern),
+            )
+        )
+        .distinct()
+        .order_by(Procedure.completed_at.desc().nullslast(), Procedure.id.desc())
+        .limit(limit)
+    )
+
+    procs = list(session.scalars(stmt).unique())
+    if not procs:
+        return {"found": False, "query": q_str, "count": 0, "results": [], "stats": {}}
+
+    total_spend = Decimal(0)
+    customer_counts: Counter[str] = Counter()
+    supplier_counts: Counter[str] = Counter()
+    brand_counts: Counter[str] = Counter()
+    matched_items_count = 0
+    results = []
+
+    for p in procs:
+        cust = p.customer
+        aw = p.award
+        supp = aw.supplier if aw else None
+        clf = p.classification
+        amt = aw.amount if (aw and aw.amount is not None) else (p.start_price or Decimal(0))
+        total_spend += amt
+
+        cust_name = cust.name_canonical if cust else "Noma'lum"
+        customer_counts[cust_name] += 1
+
+        supp_name = supp.name_canonical if supp else "Noma'lum"
+        if aw:
+            supplier_counts[supp_name] += 1
+
+        matched_items = []
+        for itm in p.items:
+            name_match = q_str.lower() in (itm.raw_name or "").lower()
+            brand_match = q_str.lower() in (itm.brand or "").lower()
+            fam_match = q_str.lower() in (itm.product_family or "").lower()
+            if name_match or brand_match or fam_match:
+                matched_items_count += 1
+                if itm.brand:
+                    brand_counts[itm.brand] += 1
+                matched_items.append({
+                    "raw_name": itm.raw_name,
+                    "brand": itm.brand,
+                    "product_family": itm.product_family,
+                    "quantity": float(itm.quantity) if itm.quantity is not None else None,
+                    "unit": itm.unit,
+                })
+
+        dt = (
+            p.completed_at.strftime("%Y-%m-%d")
+            if p.completed_at
+            else (p.published_at.strftime("%Y-%m-%d") if p.published_at else None)
+        )
+
+        results.append({
+            "id": p.id,
+            "source": p.source,
+            "source_id": p.source_id,
+            "source_url": p.source_url,
+            "title": p.title,
+            "date": dt,
+            "amount": float(amt),
+            "currency": p.currency or "UZS",
+            "customer": {
+                "name": cust_name,
+                "stir": cust.stir if cust else None,
+                "region": cust.region if cust else None,
+            },
+            "supplier": {
+                "name": supp_name,
+                "stir": supp.stir if supp else None,
+            } if aw else None,
+            "matched_items": matched_items,
+            "classification": {
+                "category": clf.category if clf else "IT",
+                "brand": clf.brand if clf else None,
+            } if clf else None,
+        })
+
+    avg_spend = float(total_spend / len(procs)) if procs else 0.0
+
+    return {
+        "found": True,
+        "query": q_str,
+        "count": len(results),
+        "stats": {
+            "total_spend": float(total_spend),
+            "avg_spend": avg_spend,
+            "matched_procedures_count": len(procs),
+            "matched_items_count": matched_items_count,
+            "top_buyers": [{"name": k, "count": v} for k, v in customer_counts.most_common(5)],
+            "top_suppliers": [{"name": k, "count": v} for k, v in supplier_counts.most_common(5)],
+            "top_brands": [{"brand": k, "count": v} for k, v in brand_counts.most_common(5)],
+        },
+        "results": results,
+    }
+
