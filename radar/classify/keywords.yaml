@@ -308,8 +308,8 @@ subscription:
 
 # Term detection: "12 oy", "1 yil", "1 год", "36 months".
 term_patterns:
-  - "re:(\\d{1,3})\\s*(?:oy|ой|month|месяц)"
-  - "re:(\\d{1,2})\\s*(?:yil|йил|год|года|лет|year)"
+  - "re:(\\d{1,3})[\\s-]*(?:oy|ой|month|месяц)"
+  - "re:(\\d{1,2})[\\s-]*(?:yil|йил|год|года|лет|year)"
 
 # Brand extraction. Key is the canonical brand, values are aliases.
 brands:

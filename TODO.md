@@ -26,7 +26,7 @@
 ## Open code work
 - [ ] Parent organization relationships, so a ministry and its subordinate bodies can be read
       as one customer where that is the right view.
-- [ ] Product normalization to brand, model and licence term, which price analysis depends on.
+- [x] Product normalization to brand, model and licence term, which price analysis depends on.
 - [ ] Supplier side analysis once award data proves rich enough to support it.
 
 ## Phase 2

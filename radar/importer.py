@@ -25,6 +25,7 @@ from radar.models import (
     Procedure,
     RawSnapshot,
 )
+from radar.normalize import normalize_product
 from radar.snapshots import snapshot_body, store_snapshot
 from radar.source.client import Source, SourceError
 from radar.source.parser import (
@@ -146,8 +147,13 @@ def upsert_procedure(session: Session, rec: ProcedureRecord, snapshot_id: int | 
         session.delete(item)
     session.flush()
     for item in rec.items:
-        session.add(LotItem(procedure_id=proc.id, raw_name=item.raw_name, quantity=item.quantity,
-                            unit=item.unit, unit_price_raw=item.unit_price_raw))
+        norm = normalize_product(item.raw_name)
+        session.add(LotItem(
+            procedure_id=proc.id, raw_name=item.raw_name,
+            brand=norm.brand, product_family=norm.product_family,
+            model=norm.model, term_months=norm.term_months,
+            quantity=item.quantity, unit=item.unit, unit_price_raw=item.unit_price_raw
+        ))
     if rec.award:
         supplier = upsert_organization(session, rec.award.supplier_name,
                                        rec.award.supplier_stir, None, match_threshold)

@@ -95,6 +95,10 @@ class LotItem(Base):
         ForeignKey("procedure.id", ondelete="CASCADE"), nullable=False, index=True
     )
     raw_name: Mapped[str] = mapped_column(Text, nullable=False)
+    brand: Mapped[str | None] = mapped_column(Text, index=True)
+    product_family: Mapped[str | None] = mapped_column(Text)
+    model: Mapped[str | None] = mapped_column(Text)
+    term_months: Mapped[int | None] = mapped_column(Integer)
     quantity: Mapped[Decimal | None] = mapped_column(Numeric(20, 3))
     unit: Mapped[str | None] = mapped_column(Text)
     unit_price_raw: Mapped[str | None] = mapped_column(Text)

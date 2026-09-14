@@ -164,4 +164,9 @@ Strictly preserved prohibitions:
 - `gemini-2.0-flash`: $0.10 input / $0.40 output per 1M tokens (reviewed 2026-09-14).
 2026-09-14 | Budget stopping enforcement verified: `CostLedger` correctly halts classification prior to any network call when `CLASSIFIER_BUDGET_USD` cap is reached, raising `BudgetExceeded` and recording $0 in spend.
 
-
+## Product normalization (brand, family, model, term) — 2026-09-14
+2026-09-14 | Implemented product normalization module (`radar/normalize.py`) and schema migration (`alembic/versions/0003_product_normalization.py`):
+- Added columns to `lot_item`: `brand` (varchar 100), `product_family` (varchar 100), `model` (varchar 255), `term_months` (integer).
+- Extracted rules from parent project and expanded with IT brands (Autodesk, Microsoft, Kaspersky, Fortinet, Cisco, VMware, Oracle, Adobe, ESET, Zoom, etc.), product families (AutoCAD, Windows, Office 365, FortiGate, etc.), hardware models (e.g. FG-100F, PowerEdge R750), and license durations (e.g. "1 yil", "12 oy", "3 года", "1-Year" -> months).
+- Integrated into `radar.importer.upsert_procedure` and verified via `radar reparse` over all 447 database snapshots (100% success, 0 errors).
+- Unit tests added in `tests/test_normalize.py` (all 149 test cases pass).
