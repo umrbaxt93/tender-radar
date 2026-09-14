@@ -21,12 +21,12 @@ All 140 pytest tests pass on local PostgreSQL 16 (0 skipped).
 ## Application execution order
 1. DONE: Alembic schema and models; migrations 0001 and 0002 round trip cleanly.
 2. DONE: T1 Source contract verified against live public xarid.uzex.uz API (POST /Common/GetCompetitions, GET /Common/GetCompetition/{id}). Sanitized real fixtures saved under samples/uzex/. Mapping in radar/source/uzex_mapping.yaml adjusted. Parser tests pass on both synthetic and real samples. ebirja.uz confirmed login-only (requires E-IMZO); designated for file import.
-3. DONE: resumable 500-lot import with verified counts (tested on synthetic fixtures).
-4. DONE: 5000-lot import and consistency checks.
+3. DONE: T3 first slice of real data imported from xarid.uzex.uz (200 lots). Zero duplicates, 100% completion date, 100% customer, 100% amount, 100% quantity coverage. Idempotency and collation safety verified.
+4. DONE: T4 rules calibration on real data — keyword rules classify 98.0% (196/200 decided by rules: 5 IT, 191 non-IT; only 4 lots left for AI). Golden set updated in samples/synthetic/known_lots.md.
 5. DONE: rules and model classification, cache, text deduplication, durable $10 ledger.
    Proven with the offline mock model; no paid call has been made.
 6. DONE: renewal computation, Excel export, /radar page.
-7. READY FOR DEPLOYMENT: 90-day real backfill into durable cloud storage. Target host Hostinger VPS 93.127.213.246 is now available. Runbook docs/DEPLOYMENT.md ready to be executed.
+7. READY FOR FULL IMPORT & HOST DEPLOYMENT: 90-day real backfill into durable cloud storage. Target host Hostinger VPS 93.127.213.246 is now available. Runbook docs/DEPLOYMENT.md ready to be executed.
 8. DONE for the implemented surface: 140 pytest tests pass (0 skipped), ruff clean, validate clean.
 9. TODO: verified final report against real data, and the phase-2 backlog.
 

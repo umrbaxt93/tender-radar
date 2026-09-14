@@ -81,7 +81,8 @@ def upsert_organization(session: Session, name: str | None, stir: str | None,
         alias = session.scalar(
             select(OrganizationAlias)
             .join(Organization)
-            .where(func.lower(OrganizationAlias.name_raw) == name.lower(),
+            .where((OrganizationAlias.name_raw == name) |
+                   (func.lower(OrganizationAlias.name_raw) == name.lower()),
                    (Organization.stir == stir) | (Organization.stir.is_(None)))
         )
         org = alias.organization if alias else None
@@ -98,15 +99,17 @@ def upsert_organization(session: Session, name: str | None, stir: str | None,
         if region and not org.region:
             org.region = region
     if name:
-        # Query rather than reading org.aliases: the relationship can be stale within a
-        # session, and a stale read here means a unique-constraint crash mid-import.
-        known = session.scalar(
-            select(OrganizationAlias.id)
-            .where(OrganizationAlias.org_id == org.id,
-                   func.lower(OrganizationAlias.name_raw) == name.lower())
-        )
-        if not known:
-            session.add(OrganizationAlias(org_id=org.id, name_raw=name))
+        # Check existing aliases in Python to support all Unicode/Cyrillic
+        # encodings regardless of DB collation.
+        existing_aliases = session.scalars(
+            select(OrganizationAlias.name_raw).where(OrganizationAlias.org_id == org.id)
+        ).all()
+        if not any(a.strip().lower() == name.lower() for a in existing_aliases):
+            session.execute(
+                pg_insert(OrganizationAlias)
+                .values(org_id=org.id, name_raw=name)
+                .on_conflict_do_nothing(constraint="uq_org_alias")
+            )
             session.flush()
     return org
 

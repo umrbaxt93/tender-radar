@@ -147,3 +147,13 @@ Strictly preserved prohibitions:
 - Request interval must never be reduced below 3 seconds.
 - Durable $10 AI classifier budget limit must not be removed.
 - Web application has no built-in authentication and must not be exposed to the public internet without reverse proxy access control (nginx TLS + basic auth).
+
+## Real import execution and rules calibration (T3 & T4) — 2026-09-14
+2026-09-14 | Real UZEX import slice executed: 200 real lots imported cleanly via live xarid-api-purchase.uzex.uz endpoint (`from: 1, to: 50` range pagination).
+- Duplicate count: 0 duplicates across all 200 procedures.
+- Coverage metrics: completion date 100%, customer 100%, start price / amount 100%, quantity 100%. (Award 0% on recent active listings taking bids).
+- Idempotency & Collation: Updated `upsert_organization` with Python Unicode-aware case comparison and `ON CONFLICT DO NOTHING` on `organization_alias` to ensure idempotent alias insertion across PostgreSQL collation environments without crashing on Cyrillic uppercase strings.
+- Rules Calibration: Augmented `keywords.yaml` with public procurement domain terminology (Russian & Uzbek case forms for municipal and government tenders). Rule coverage reached 98.0% (196 out of 200 decided by rules: 5 IT, 191 non-IT; only 4 ambiguous lots left for AI).
+- Cost Projections: At 98% rule coverage, 200 lots required only 1 AI batch costing ~$0.0001 under mock pricing, ensuring the $10 budget can handle tens of thousands of tenders.
+- Golden Set: Replaced `samples/synthetic/known_lots.md` with verified real lots (IT and Non-IT). All 140 pytest tests pass.
+

@@ -193,18 +193,24 @@ categories:
     - tizimli integratsiya
     - texnik qo'llab-quvvatlash dasturiy
     - техническая поддержка программного
+    - axborot-kommunikatsiya texnologiyalari
   Software Development:
     - dasturiy ta'minotni ishlab chiqish
     - разработка программного обеспечения
+    - разработке программного обеспечения
+    - разработка информационной системы
+    - информационной системы разработка
     - veb-sayt yaratish
     - разработка сайта
     - mobil ilova ishlab chiqish
-    - информационной системы разработка
   Telecom:
     - internet xizmati
     - услуги интернет
     - aloqa xizmatlari
     - услуги связи
+    - услуги телекоммуникационные
+    - проводных телекоммуникаций
+    - операторов связи
     - "re:\\batc\\b"
     - "re:\\bатс\\b"
     - telefon stansiya
@@ -212,6 +218,7 @@ categories:
   Other IT:
     - axborot texnologiyalari
     - информационные технологии
+    - информационных технологий
     - "re:\\bit\\s+(?:uskuna|jihoz|oborudovani)"
 
 not_it:
@@ -229,6 +236,19 @@ not_it:
   - ta'mirlash ishlari
   - ремонт кровли
   - ремонтные работы
+  - аудит
+  - бухгалтер
+  - юридическ
+  - сурдоперевод
+  - охран
+  - подбор
+  - архитектур
+  - перевозк
+  - транспорт
+  - экономическ
+  - сельскохозяйствен
+  - спортивн
+  - делопроизводств
   - oziq-ovqat
   - продукты питания
   - продуктов питания

@@ -1,6 +1,7 @@
 # Field mapping between the source JSON and the normalized ProcedureRecord.
 # VERIFIED against live public xarid-api-purchase.uzex.uz API (2026-09-14).
 list:
+  method: POST
   items_path: ""                  # top-level JSON array in GetCompetitions
   total_path: 0.total_count       # total count from first item
   page_param: from                # pagination parameter (1-based range)

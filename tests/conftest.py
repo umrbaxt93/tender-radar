@@ -19,6 +19,12 @@ TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", "").strip()
 SAMPLES = ROOT / "samples" / "synthetic"
 
 
+@pytest.fixture(autouse=True)
+def _isolate_source_env(monkeypatch):
+    monkeypatch.delenv("UZEX_LIST_URL", raising=False)
+    monkeypatch.delenv("UZEX_DETAIL_URL", raising=False)
+
+
 def _engine_or_skip():
     if not TEST_DB_URL:
         pytest.skip("TEST_DATABASE_URL not set; database tests skipped")

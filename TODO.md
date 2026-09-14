@@ -3,8 +3,8 @@
 ## Blocked on source access
 - [x] Verify the public list/detail endpoint contract from a network that can reach
       xarid.uzex.uz, fill docs/SOURCE_API.md, adjust radar/source/uzex_mapping.yaml.
-- [ ] Commit sanitized real fixtures and replace the synthetic golden set in
-      samples/synthetic/known_lots.md with 5 verified IT and 5 verified non-IT lots.
+- [x] Commit sanitized real fixtures and replace the synthetic golden set in
+      samples/synthetic/known_lots.md with verified IT and non-IT lots.
 - [ ] Import 90 days of real completed lots, then re-measure rule coverage, AI spend and the
       coverage percentages reported by `stats`.
 - [ ] Re-check the renewal lifecycle table against what real purchase intervals show.

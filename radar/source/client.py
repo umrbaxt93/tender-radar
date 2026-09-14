@@ -112,24 +112,48 @@ class HttpSource:
     def _page_params(self, page: int) -> dict:
         spec = (self.mapping or {}).get("list", {})
         params = dict(self.list_params)
-        params[spec.get("page_param", "page")] = page
-        if spec.get("page_size"):
-            params[spec.get("page_size_param", "size")] = spec["page_size"]
+        page_param = spec.get("page_param", "page")
+        page_size_param = spec.get("page_size_param", "size")
+        page_size = spec.get("page_size")
+        first_page = spec.get("first_page", 1)
+        if spec.get("range_pagination") or (page_param == "from" and page_size_param == "to"):
+            sz = page_size or 50
+            params[page_param] = (page - first_page) * sz + 1
+            params[page_size_param] = (page - first_page + 1) * sz
+        else:
+            params[page_param] = page
+            if page_size:
+                params[page_size_param] = page_size
         return params
 
     def list_page(self, page: int) -> Fetched:
-        return self._get(self.list_url, self._page_params(page))
+        spec = (self.mapping or {}).get("list", {})
+        method = spec.get("method", "GET").upper()
+        params = self._page_params(page)
+        if method == "POST":
+            return self._request("POST", self.list_url, json_data=params)
+        return self._request("GET", self.list_url, params=params)
 
     def detail(self, source_id: str) -> Fetched:
-        url = self.detail_url.format(source_id=source_id)
-        return self._get(url, None if "{source_id}" in self.detail_url else {"id": source_id})
+        spec = (self.mapping or {}).get("detail", {})
+        method = spec.get("method", "GET").upper()
+        url = self.detail_url.format(source_id=source_id, id=source_id)
+        params = (None if ("{source_id}" in self.detail_url or "{id}" in self.detail_url)
+                  else {"id": source_id})
+        if method == "POST":
+            return self._request("POST", url, json_data=params)
+        return self._request("GET", url, params=params)
 
     def _get(self, url: str, params: dict | None) -> Fetched:
+        return self._request("GET", url, params=params)
+
+    def _request(self, method: str, url: str, params: dict | None = None,
+                 json_data: dict | None = None) -> Fetched:
         attempt = 0
         while True:
             self.limiter.wait()
             try:
-                resp = self.client.get(url, params=params)
+                resp = self.client.request(method, url, params=params, json=json_data)
             except httpx.HTTPError as exc:
                 self._retry_or_pause(attempt, f"network error: {type(exc).__name__}")
                 attempt += 1

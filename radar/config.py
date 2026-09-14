@@ -9,6 +9,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _load_env_file() -> None:
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return
+    env_file = ROOT / ".env"
+    if env_file.is_file():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip("'\"")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
+
 def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
@@ -47,5 +63,7 @@ class Settings:
         return self.database_url
 
 
-def load_settings() -> Settings:
+def load_settings(load_env: bool = True) -> Settings:
+    if load_env:
+        _load_env_file()
     return Settings()
