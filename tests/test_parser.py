@@ -60,3 +60,34 @@ def test_missing_id_is_rejected():
     import pytest
     with pytest.raises(ValueError):
         parse_detail({"title": "no id"})
+
+
+def test_parse_real_uzex_samples():
+    from pathlib import Path
+    samples = Path(__file__).resolve().parents[1] / "samples" / "uzex"
+    list_path = samples / "list_response.json"
+    detail_path = samples / "detail_response.json"
+    assert list_path.is_file(), "samples/uzex/list_response.json missing"
+    assert detail_path.is_file(), "samples/uzex/detail_response.json missing"
+
+    page = parse_list_page(list_path.read_bytes())
+    assert page.total == 4710
+    assert len(page.entries) == 10
+    assert page.entries[0].source_id == "24197"
+    assert page.entries[0].completed_at == datetime(2026, 9, 18, 18, 0, tzinfo=UTC)
+
+    detail = parse_detail(detail_path.read_bytes())
+    assert detail.source_id == "20000"
+    assert detail.customer_stir == "206916313"
+    assert detail.customer_name == "BIZNESNI RIVOJLANTIRISH BANKI AKSIYADORLIK TIJORAT BANKI"
+    assert detail.start_price == Decimal("48000000.0")
+    assert detail.currency == "UZS"
+    assert len(detail.items) == 1
+    exp_name = "Услуга экспертно-консультативная в области экономического развития"
+    assert detail.items[0].raw_name == exp_name
+    assert detail.award is not None
+    assert detail.award.supplier_name == "Zayniddinov Nurali Sherali ou2018gu2018li"
+    assert detail.award.supplier_stir == "111111111"
+    assert detail.award.amount == Decimal("48000000.0")
+    assert detail.award.awarded_at == datetime(2026, 2, 5, 14, 0, tzinfo=UTC)
+

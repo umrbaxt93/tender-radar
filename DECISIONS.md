@@ -122,3 +122,15 @@ here. Both facts are stated in docs/DEPLOYMENT.md rather than implied.
 platform as a real process showed that a SIGTERM arriving during the wait was swallowed until
 the interval expired, and the worker then started a whole extra cycle after having been asked
 to stop. It now stops within a second when idle, and still finishes a cycle already in flight.
+
+## macOS environment and source contract verification — 2026-09-14
+2026-09-14 | macOS environment setup: Python 3.12.14 installed via standalone binary (uv), and PostgreSQL 16.15 configured via official Postgres.app with dedicated local database (tender_radar) and test database (tender_radar_test) on 127.0.0.1:5432. All 140 pytest tests (including all database tests) and scaffold validation pass with zero skipped tests.
+2026-09-14 | T1 Source contract verification:
+- xarid.uzex.uz: Public unauthenticated endpoints verified on live portal.
+  List endpoint: POST https://xarid-api-purchase.uzex.uz/Common/GetCompetitions with JSON range {"from": 1, "to": 50}.
+  Detail endpoint: GET https://xarid-api-purchase.uzex.uz/Common/GetCompetition/{source_id}.
+  Completed status (status_name: "Совершен") delivers full customer STIR (customer_inn), cost, date_of_opening_offers, line items in js_details, and winning supplier details in winners_ids.
+- ebirja.uz: Verified that all lot and trade details are protected behind EDS (E-IMZO) challenge authentication (/api/eds/frontend/challenge). Public unauthenticated access returns 404. Under project rules (no E-IMZO bypass), ebirja data is designated for file import (source='ebirja-export', Task T2).
+- Sanitized real request/response samples saved under samples/uzex/ with tokens stripped.
+- radar/source/uzex_mapping.yaml and radar/source/parser.py updated with verified contract and fallbacks, passing tests for both real and synthetic fixtures.
+

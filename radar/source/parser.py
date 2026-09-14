@@ -150,17 +150,24 @@ def parse_list_page(body: bytes | str | dict, mapping: dict[str, Any] | None = N
     mapping = mapping or load_mapping()
     data = json.loads(body) if isinstance(body, bytes | str) else body
     spec = mapping["list"]
-    raw_items = dig(data, spec["items_path"]) or []
+    items_path = spec.get("items_path")
+    if isinstance(data, list):
+        raw_items = data
+    elif items_path:
+        raw_items = dig(data, items_path) or []
+    else:
+        raw_items = dig(data, "data.items") or []
     if not isinstance(raw_items, list):
-        raise ValueError(f"list items at {spec['items_path']!r} is not an array")
+        raise ValueError(f"list items at {spec.get('items_path')!r} is not an array")
     entries = []
     for item in raw_items:
         sid = _str(dig(item, spec["id_field"]))
-        if not sid:
-            continue
-        completed = parse_datetime(dig(item, spec.get("completed_at_field")))
+        completed_raw = dig(item, spec.get("completed_at_field")) or dig(item, "completed_at")
+        completed = parse_datetime(completed_raw)
         entries.append(ListEntry(source_id=sid, completed_at=completed))
     total = dig(data, spec.get("total_path"))
+    if total is None and isinstance(data, dict):
+        total = dig(data, "data.total")
     return ListPage(entries=entries, total=int(total) if isinstance(total, int | float) else None)
 
 
@@ -174,42 +181,99 @@ def parse_detail(body: bytes | str | dict,
         raise ValueError("detail response has no source id")
     items: list[LotItemRecord] = []
     ispec = spec.get("items") or {}
-    for raw in dig(data, ispec.get("path")) or []:
-        name = _str(dig(raw, ispec.get("name")))
+    raw_items = dig(data, ispec.get("path")) if ispec.get("path") else None
+    if raw_items is None:
+        raw_items = dig(data, "items") or []
+    for raw in raw_items:
+        name = _str(dig(raw, ispec.get("name"))) or _str(dig(raw, "name"))
         if not name:
             continue
+        qty_val = dig(raw, ispec.get("quantity")) if ispec.get("quantity") else dig(raw, "quantity")
+        unit_val = dig(raw, ispec.get("unit")) if ispec.get("unit") else dig(raw, "unit")
+        price_val = (
+            dig(raw, ispec.get("unit_price"))
+            if ispec.get("unit_price")
+            else dig(raw, "unit_price")
+        )
         items.append(LotItemRecord(
             raw_name=name,
-            quantity=parse_decimal(dig(raw, ispec.get("quantity"))),
-            unit=_str(dig(raw, ispec.get("unit"))),
-            unit_price_raw=_str(dig(raw, ispec.get("unit_price"))),
+            quantity=parse_decimal(qty_val),
+            unit=_str(unit_val),
+            unit_price_raw=_str(price_val),
         ))
     award = None
     aspec = spec.get("award") or {}
-    raw_award = dig(data, aspec.get("path")) if aspec else None
+    raw_award = dig(data, aspec.get("path")) if aspec.get("path") else None
+    if raw_award is None and aspec:
+        raw_award = dig(data, "award")
     if isinstance(raw_award, dict):
-        award = AwardRecord(
-            supplier_name=_str(dig(raw_award, aspec.get("supplier_name"))),
-            supplier_stir=_str(dig(raw_award, aspec.get("supplier_stir"))),
-            amount=parse_decimal(dig(raw_award, aspec.get("amount"))),
-            awarded_at=parse_datetime(dig(raw_award, aspec.get("awarded_at"))),
+        amount = parse_decimal(dig(raw_award, aspec.get("amount"))) or parse_decimal(
+            dig(raw_award, "amount")
         )
+        if amount is None and aspec.get("amount_fallback"):
+            amount = parse_decimal(dig(data, aspec["amount_fallback"]))
+        awarded_at = parse_datetime(dig(raw_award, aspec.get("awarded_at"))) or parse_datetime(
+            dig(raw_award, "awarded_at")
+        )
+        if awarded_at is None and aspec.get("awarded_at_fallback"):
+            awarded_at = parse_datetime(dig(data, aspec["awarded_at_fallback"]))
+        supp_name = (
+            _str(dig(raw_award, aspec.get("supplier_name")))
+            or _str(dig(raw_award, "supplier.name"))
+            or _str(dig(raw_award, "supplier_name"))
+        )
+        supp_stir = (
+            _str(dig(raw_award, aspec.get("supplier_stir")))
+            or _str(dig(raw_award, "supplier.stir"))
+            or _str(dig(raw_award, "supplier_stir"))
+        )
+        if supp_name or supp_stir or amount is not None:
+            award = AwardRecord(
+                supplier_name=supp_name,
+                supplier_stir=supp_stir,
+                amount=amount,
+                awarded_at=awarded_at,
+            )
     cspec = spec.get("customer") or {}
     template = spec.get("source_url_template")
+    src_url = template.format(source_id=source_id) if template else _str(dig(data, "source_url"))
+    proc_type = _str(dig(data, spec.get("procedure_type"))) or _str(dig(data, "procedure_type"))
+    title = _str(dig(data, spec.get("title"))) or _str(dig(data, "title")) or ""
+    status = _str(dig(data, spec.get("status"))) or _str(dig(data, "status"))
+    pub_at = (
+        parse_datetime(dig(data, spec.get("published_at")))
+        or parse_datetime(dig(data, "published_at"))
+    )
+    dead_at = (
+        parse_datetime(dig(data, spec.get("deadline_at")))
+        or parse_datetime(dig(data, "deadline_at"))
+    )
+    comp_at = (
+        parse_datetime(dig(data, spec.get("completed_at")))
+        or parse_datetime(dig(data, "completed_at"))
+    )
+    curr = _str(dig(data, spec.get("currency"))) or _str(dig(data, "currency"))
+    price = (
+        parse_decimal(dig(data, spec.get("start_price")))
+        or parse_decimal(dig(data, "start_price"))
+    )
+    cust_name = _str(dig(data, cspec.get("name"))) or _str(dig(data, "customer.name"))
+    cust_stir = _str(dig(data, cspec.get("stir"))) or _str(dig(data, "customer.stir"))
+    cust_region = _str(dig(data, cspec.get("region"))) or _str(dig(data, "customer.region"))
     return ProcedureRecord(
         source_id=source_id,
-        source_url=template.format(source_id=source_id) if template else None,
-        procedure_type=_str(dig(data, spec.get("procedure_type"))),
-        title=_str(dig(data, spec.get("title"))) or "",
-        status=_str(dig(data, spec.get("status"))),
-        published_at=parse_datetime(dig(data, spec.get("published_at"))),
-        deadline_at=parse_datetime(dig(data, spec.get("deadline_at"))),
-        completed_at=parse_datetime(dig(data, spec.get("completed_at"))),
-        currency=_str(dig(data, spec.get("currency"))),
-        start_price=parse_decimal(dig(data, spec.get("start_price"))),
-        customer_name=_str(dig(data, cspec.get("name"))),
-        customer_stir=_str(dig(data, cspec.get("stir"))),
-        customer_region=_str(dig(data, cspec.get("region"))),
+        source_url=src_url,
+        procedure_type=proc_type,
+        title=title,
+        status=status,
+        published_at=pub_at,
+        deadline_at=dead_at,
+        completed_at=comp_at,
+        currency=curr,
+        start_price=price,
+        customer_name=cust_name,
+        customer_stir=cust_stir,
+        customer_region=cust_region,
         items=items,
         award=award,
     )

@@ -1,7 +1,7 @@
 # TODO
 
 ## Blocked on source access
-- [ ] Verify the public list/detail endpoint contract from a network that can reach
+- [x] Verify the public list/detail endpoint contract from a network that can reach
       xarid.uzex.uz, fill docs/SOURCE_API.md, adjust radar/source/uzex_mapping.yaml.
 - [ ] Commit sanitized real fixtures and replace the synthetic golden set in
       samples/synthetic/known_lots.md with 5 verified IT and 5 verified non-IT lots.

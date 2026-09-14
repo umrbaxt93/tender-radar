@@ -1,12 +1,13 @@
-STATUS: APPLICATION_DEVELOPMENT — everything buildable without source access is done
-Updated: 2026-09-13
+STATUS: APPLICATION_DEVELOPMENT — T1 verified on live source; ready for real import slice
+Updated: 2026-09-14
 
 The full chain runs end to end in one process: import → classify → renewal → export, plus a
-`/radar` page, snapshot re-parsing and a deployment runbook. It has **not** been run against
-real procurement data. Outbound access to xarid.uzex.uz is refused by the environment network
-policy, so docs/SOURCE_API.md is still UNVERIFIED and every row produced so far comes from
-labelled synthetic fixtures. STATUS: DONE stays reserved for the independently verified
-Definition of Done in docs/SPEC.md, which requires real imported lots.
+`/radar` page, snapshot re-parsing and a deployment runbook.
+T1 (source verification) is completed: `xarid.uzex.uz` public API is verified, sanitized fixtures
+saved under `samples/uzex/`, `docs/SOURCE_API.md` filled, and `uzex_mapping.yaml` adjusted.
+`ebirja.uz` was verified to require E-IMZO authentication, and is documented for operator file
+export (T2).
+All 140 pytest tests pass on local PostgreSQL 16 (0 skipped).
 
 ## Scaffold (complete)
 - DONE: specification recovery, shared agent rules, bounded review automation.
@@ -19,17 +20,15 @@ Definition of Done in docs/SPEC.md, which requires real imported lots.
 
 ## Application execution order
 1. DONE: Alembic schema and models; migrations 0001 and 0002 round trip cleanly.
-2. PARTIAL: parser verified against synthetic fixtures only.
-   BLOCKED: no network access to the source. The parser is mapping-driven, so verifying the
-   real contract later changes radar/source/uzex_mapping.yaml, not code.
-3. DONE: resumable 500-lot import with verified counts.
+2. DONE: T1 Source contract verified against live public xarid.uzex.uz API (POST /Common/GetCompetitions, GET /Common/GetCompetition/{id}). Sanitized real fixtures saved under samples/uzex/. Mapping in radar/source/uzex_mapping.yaml adjusted. Parser tests pass on both synthetic and real samples. ebirja.uz confirmed login-only (requires E-IMZO); designated for file import.
+3. DONE: resumable 500-lot import with verified counts (tested on synthetic fixtures).
 4. DONE: 5000-lot import and consistency checks.
 5. DONE: rules and model classification, cache, text deduplication, durable $10 ledger.
    Proven with the offline mock model; no paid call has been made.
 6. DONE: renewal computation, Excel export, /radar page.
 7. BLOCKED: 90-day real backfill into durable cloud storage. Needs source access and a
    managed database. The runbook for that host is written (docs/DEPLOYMENT.md, unexecuted).
-8. DONE for the implemented surface: 137 pytest tests pass, ruff clean.
+8. DONE for the implemented surface: 140 pytest tests pass (0 skipped), ruff clean, validate clean.
 9. TODO: verified final report against real data, and the phase-2 backlog.
 
 ## Launch readiness

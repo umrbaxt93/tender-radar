@@ -1,42 +1,38 @@
 # Field mapping between the source JSON and the normalized ProcedureRecord.
-# STATUS: UNVERIFIED against the live public xarid.uzex.uz API (network access to
-# the source was blocked in the development environment, see docs/SOURCE_API.md).
-# The synthetic fixtures in samples/synthetic/ follow exactly this shape. When
-# sanitized real responses become available, only this file (and possibly
-# radar/source/parser.py) needs adjusting; the importer, storage and tests stay.
+# VERIFIED against live public xarid-api-purchase.uzex.uz API (2026-09-14).
 list:
-  items_path: data.items          # dotted path to the array of list entries
-  total_path: data.total          # dotted path to the total count (optional)
-  page_param: page                # query parameter name for the page number
-  page_size_param: size           # query parameter name for the page size
+  items_path: ""                  # top-level JSON array in GetCompetitions
+  total_path: 0.total_count       # total count from first item
+  page_param: from                # pagination parameter (1-based range)
+  page_size_param: to             # range upper bound
   page_size: 50
   first_page: 1
   id_field: id                    # list entry field holding the source id
-  completed_at_field: completed_at
+  completed_at_field: end_date_submitting_offers
 detail:
   id: id
-  source_url_template: "https://xarid.uzex.uz/lot/{source_id}"   # UNVERIFIED display URL
+  source_url_template: "https://xarid.uzex.uz/purchase/detail/{source_id}"
   procedure_type: procedure_type
-  title: title
-  status: status
-  published_at: published_at
-  deadline_at: deadline_at
-  completed_at: completed_at
-  currency: currency
-  start_price: start_price
+  title: category_name
+  status: status_name
+  published_at: published_date
+  deadline_at: end_date_submitting_offers
+  completed_at: date_of_opening_offers
+  currency: currency_name
+  start_price: cost
   customer:
-    name: customer.name
-    stir: customer.stir
-    region: customer.region
+    name: customer_name
+    stir: customer_inn
+    region: customer_region_name
   items:
-    path: items
-    name: name
+    path: js_details
+    name: product_name
     quantity: quantity
-    unit: unit
-    unit_price: unit_price
+    unit: unit_name
+    unit_price: price
   award:
-    path: award                   # optional; absent when the source has no award data
-    supplier_name: supplier.name
-    supplier_stir: supplier.stir
-    amount: amount
-    awarded_at: awarded_at
+    path: winners_ids.0
+    supplier_name: fullname
+    supplier_stir: inn
+    amount_fallback: cost
+    awarded_at_fallback: date_of_opening_offers

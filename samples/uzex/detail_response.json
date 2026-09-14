@@ -1,0 +1,111 @@
+{
+    "id": 20000,
+    "category_id": 0,
+    "status_id": 0,
+    "cost": 48000000.0,
+    "user_id": 0,
+    "currency_id": 0,
+    "competition_organizer_id": 0,
+    "delivery_address_id": 0,
+    "delivery_address": "\u0421\u0443\u0440\u0445\u0430\u043d\u0434\u0430\u0440\u044c\u0438\u043d\u0441\u043a\u0430\u044f \u043e\u0431\u043b\u0430\u0441\u0442\u044c \u0422\u0435\u0440\u043c\u0435\u0437\u041d\u0430\u0432\u043e\u0438\u0439 \u043a\u045e\u0447\u0430\u0441\u0438 18 \u0410-\u0443\u0439",
+    "delivery_days": 365,
+    "competition_bid_reg_form_id": 8581,
+    "place_of_subm_address_id": 0,
+    "location_of_comp_address_id": 0,
+    "end_date_submitting_offers": "2026-02-05T12:00:00",
+    "date_of_opening_offers": "2026-02-05T14:00:00",
+    "goods_acquaintance_address_id": 0,
+    "date_acquaintance_with_goods": "2026-02-05T15:09:00",
+    "plangraph_id": 0,
+    "old_competition_id": 0,
+    "old_auction_id": 0,
+    "typ_publish_id": 0,
+    "published_date": "2026-01-29T17:27:08",
+    "start_date_submitting_offers": "2026-01-29T17:27:08",
+    "note": null,
+    "category_name": "\u0423\u0441\u043b\u0443\u0433\u0438 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0435, \u043d\u0430\u0443\u0447\u043d\u044b\u0435 \u0438 \u0442\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0435, \u043f\u0440\u043e\u0447\u0438\u0435",
+    "currency_name": "UZS",
+    "description": null,
+    "customer_name": "BIZNESNI RIVOJLANTIRISH BANKI AKSIYADORLIK TIJORAT BANKI",
+    "customer_inn": "206916313",
+    "customer_address": "\u0433\u043e\u0440\u043e\u0434 \u0422\u0430\u0448\u043a\u0435\u043d\u0442 \u0428\u0430\u0439\u0445\u0430\u043d\u0442\u0430\u0445\u0443\u0440\u0441\u043a\u0438\u0439 \u0440\u0430\u0439\u043e\u043d\u041d\u0430\u0432\u043e\u0438\u0439 \u043a\u045e\u0447\u0430\u0441\u0438 18 \u0410-\u0443\u0439",
+    "location_of_boffer_address": null,
+    "place_of_subm_address": "\u0421\u0443\u0440\u0445\u0430\u043d\u0434\u0430\u0440\u044c\u0438\u043d\u0441\u043a\u0430\u044f \u043e\u0431\u043b\u0430\u0441\u0442\u044c \u0422\u0435\u0440\u043c\u0435\u0437\u041d\u0430\u0432\u043e\u0438\u0439 \u043a\u045e\u0447\u0430\u0441\u0438 18 \u0410-\u0443\u0439",
+    "customer_phone": "+998781509339 (597)",
+    "organizer_name": "HR Bosh mutaxassis Xasanov Farrux 883401206 brb",
+    "status_name": "\u0421\u043e\u0432\u0435\u0440\u0448\u0435\u043d",
+    "competition_description": "Texnik topshiriqa va xarid xujjatiga muvofiq",
+    "competition_bid_reg_form": "Texnik topshiriqa va xarid xujjatiga muvofiq",
+    "location_of_competition_address": "\u0421\u0443\u0440\u0445\u0430\u043d\u0434\u0430\u0440\u044c\u0438\u043d\u0441\u043a\u0430\u044f \u043e\u0431\u043b\u0430\u0441\u0442\u044c \u0422\u0435\u0440\u043c\u0435\u0437 \u041d\u0430\u0432\u043e\u0438\u0439 \u043a\u045e\u0447\u0430\u0441\u0438 18 \u0410-\u0443\u0439",
+    "js_details": [
+        {
+            "order_num": 1,
+            "product_name": "\u0423\u0441\u043b\u0443\u0433\u0430 \u044d\u043a\u0441\u043f\u0435\u0440\u0442\u043d\u043e-\u043a\u043e\u043d\u0441\u0443\u043b\u044c\u0442\u0430\u0442\u0438\u0432\u043d\u0430\u044f \u0432 \u043e\u0431\u043b\u0430\u0441\u0442\u0438 \u044d\u043a\u043e\u043d\u043e\u043c\u0438\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u044f",
+            "description": "\u0423\u0441\u043b\u0443\u0433\u0430 \u044d\u043a\u0441\u043f\u0435\u0440\u0442\u043d\u043e-\u043a\u043e\u043d\u0441\u0443\u043b\u044c\u0442\u0430\u0442\u0438\u0432\u043d\u0430\u044f \u0432 \u043e\u0431\u043b\u0430\u0441\u0442\u0438 \u044d\u043a\u043e\u043d\u043e\u043c\u0438\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u044f",
+            "quantity": 1.0,
+            "unit_name": null,
+            "price": 48000000.0,
+            "cost": 48000000.0,
+            "currency_name": "UZS",
+            "js_properties": [
+                {
+                    "property_name": "\u0415\u0434\u0438\u043d\u0438\u0446\u0430 \u0438\u0437\u043c\u0435\u0440\u0435\u043d\u0438\u044f",
+                    "user_value": "\u0443\u0441\u043b.\u0435\u0434",
+                    "user_value_id": 0,
+                    "p_num": 0
+                },
+                {
+                    "property_name": "\u041d\u0430\u043b\u0438\u0447\u0438\u0435 \u043f\u043e\u044d\u0442\u0430\u043f\u043d\u043e\u0439 \u043e\u043f\u043b\u0430\u0442\u044b",
+                    "user_value": "\u0414\u0430",
+                    "user_value_id": 0,
+                    "p_num": 3
+                },
+                {
+                    "property_name": "\u0412\u0438\u0434 \u0440\u0430\u0441\u0447\u0435\u0442\u0430",
+                    "user_value": "\u0411\u0435\u0437\u043d\u0430\u043b\u0438\u0447\u043d\u044b\u0439",
+                    "user_value_id": 1,
+                    "p_num": 2
+                }
+            ]
+        }
+    ],
+    "js_files": [
+        {
+            "file_id": 32048896,
+            "file_name": "04fc524a-1cf5-40ae-b742-065d76ec1b68.pdf",
+            "file_path": "files/user-files/2026/1/29",
+            "file_ext": "pdf",
+            "custom_name": "xaridhujjati(18).pdf",
+            "typ_id": 1
+        },
+        {
+            "file_id": 32048894,
+            "file_name": "bfb9ddfa-01aa-4cf9-bdc7-30e7be3c2282.docx",
+            "file_path": "files/user-files/2026/1/29",
+            "file_ext": "docx",
+            "custom_name": "shartnomanamunagph(35).docx",
+            "typ_id": 1
+        },
+        {
+            "file_id": 32048888,
+            "file_name": "144bdf0c-2b19-43f2-9cf3-96ab79e2df10.pdf",
+            "file_path": "files/user-files/2026/1/29",
+            "file_ext": "pdf",
+            "custom_name": "texniktopshiriq.pdf",
+            "typ_id": 1
+        }
+    ],
+    "contract_file_name": null,
+    "contract_file_path": null,
+    "winner_id": null,
+    "winners_id": "[{\"id\":12095,\"fullname\":\"Zayniddinov Nurali Sherali ou2018gu2018li\",\"inn\":\"111111111\",\"pinfl\":\"11111111111111\",\"job_title\":\"111\"}]",
+    "winners_ids": [
+        {
+            "id": 12095,
+            "fullname": "Zayniddinov Nurali Sherali ou2018gu2018li",
+            "inn": "111111111",
+            "pinfl": "11111111111111",
+            "job_title": "111"
+        }
+    ]
+}
