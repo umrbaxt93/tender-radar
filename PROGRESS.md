@@ -1,4 +1,4 @@
-STATUS: APPLICATION_DEVELOPMENT — T1 verified on live source; ready for real import slice
+STATUS: DEPLOYMENT — Hostinger VPS (93.127.213.246) provisioned; ready for host deployment and real import
 Updated: 2026-09-14
 
 The full chain runs end to end in one process: import → classify → renewal → export, plus a
@@ -26,8 +26,7 @@ All 140 pytest tests pass on local PostgreSQL 16 (0 skipped).
 5. DONE: rules and model classification, cache, text deduplication, durable $10 ledger.
    Proven with the offline mock model; no paid call has been made.
 6. DONE: renewal computation, Excel export, /radar page.
-7. BLOCKED: 90-day real backfill into durable cloud storage. Needs source access and a
-   managed database. The runbook for that host is written (docs/DEPLOYMENT.md, unexecuted).
+7. READY FOR DEPLOYMENT: 90-day real backfill into durable cloud storage. Target host Hostinger VPS 93.127.213.246 is now available. Runbook docs/DEPLOYMENT.md ready to be executed.
 8. DONE for the implemented surface: 140 pytest tests pass (0 skipped), ruff clean, validate clean.
 9. TODO: verified final report against real data, and the phase-2 backlog.
 
@@ -43,8 +42,7 @@ All 140 pytest tests pass on local PostgreSQL 16 (0 skipped).
   on 127.0.0.1:8000, with /health returning ok and /radar serving. The worker completed a
   second scheduled cycle on time, and SIGTERM while idle stopped it in one second without
   starting another cycle.
-- BLOCKED: a real launch on a real host. No host, no verified source contract, and external
-  deployment is outside what this phase authorizes.
+- READY: host is available: Hostinger VPS 93.127.213.246. Project owner opened DEPLOYMENT phase. Next steps: execute docs/DEPLOYMENT.md on the VPS behind reverse proxy auth.
 
 ## Beyond the original order
 - DONE: `reparse` rebuilds every row from stored snapshots with checksum verification and no
@@ -82,7 +80,6 @@ make web test lint validate
 ```
 
 ## What still blocks Definition of Done
-- A verified public endpoint contract and sanitized real fixtures.
 - At least 90 days of real completed lots imported, resumable, without duplicates.
 - One real classification run inside the $10 cap with a reviewed model price.
-- A managed PostgreSQL host; docs/DEPLOYMENT.md has never been executed.
+- Deployment to Hostinger VPS (93.127.213.246) and execution of docs/DEPLOYMENT.md.

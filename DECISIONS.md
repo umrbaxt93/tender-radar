@@ -134,3 +134,16 @@ to stop. It now stops within a second when idle, and still finishes a cycle alre
 - Sanitized real request/response samples saved under samples/uzex/ with tokens stripped.
 - radar/source/uzex_mapping.yaml and radar/source/parser.py updated with verified contract and fallbacks, passing tests for both real and synthetic fixtures.
 
+## Deployment phase authorization — 2026-09-14
+2026-09-14 | Project owner Umidjon Fatullaev (SOFTY) authorized transition from APPLICATION_DEVELOPMENT to DEPLOYMENT phase.
+Why: T1 source contract verification on live xarid.uzex.uz API is completed, local MVP test suite (140 tests) and launch packaging are fully validated, and target host infrastructure is provisioned (Hostinger VPS 93.127.213.246).
+Authorized actions:
+- Deployment of the platform stack to Hostinger VPS (93.127.213.246) following docs/DEPLOYMENT.md.
+- Live public UZEX import.
+- Merges to main.
+Strictly preserved prohibitions:
+- No E-IMZO or CAPTCHA bypass.
+- No login or session automation on ebirja.uz (cabinet data via file import only).
+- Request interval must never be reduced below 3 seconds.
+- Durable $10 AI classifier budget limit must not be removed.
+- Web application has no built-in authentication and must not be exposed to the public internet without reverse proxy access control (nginx TLS + basic auth).

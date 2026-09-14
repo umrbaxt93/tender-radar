@@ -15,13 +15,12 @@
 - [ ] Run one small paid batch and compare real spend against the ledger.
 - [ ] Provider-side spending controls before enabling any recurring paid job.
 
-## Blocked on a host
-- [ ] Build the image and run `docker compose up -d --build` on a real machine. The compose
-      file validates but has never been built: no Docker daemon here.
+## Ready for host deployment (Hostinger VPS 93.127.213.246)
+- [ ] Build the image and run `docker compose up -d --build` on the target host (Hostinger VPS 93.127.213.246).
 - [ ] Execute docs/DEPLOYMENT.md end to end on the target host, then correct it from what
       actually happened.
-- [ ] Put the reverse proxy and an access control in front of the web process before it is
-      reachable from anywhere but localhost. The application has no authentication.
+- [ ] Put the reverse proxy and an access control (nginx TLS + basic auth) in front of the web process before it is
+      reachable from anywhere but localhost. The application has no built-in authentication.
 - [ ] Nightly pg_dump off the host, and a tested restore.
 
 ## Open code work
