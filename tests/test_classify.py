@@ -142,3 +142,35 @@ def test_prompt_truncation_and_hashing():
     assert len(item.text) == g.MAX_INPUT_CHARS
     assert item.hash == g.input_hash(item.text)
     assert "ref=1" in g.build_prompt([item])
+
+
+def test_unsure_only_targets_exactly_the_rows_the_rules_abstained_on(session):
+    """The pipeline could only ask for "never classified" or "everything". Everything
+    re-sends lots the rules already decided, paying the model to relearn what is known."""
+    from decimal import Decimal
+
+    from radar.classify.pipeline import _pending
+    from radar.models import Classification, Procedure
+
+    def add(source_id: str, confidence: str, method: str = "rule") -> int:
+        proc = Procedure(source="uzex", source_id=source_id, title=f"Lot {source_id}")
+        session.add(proc)
+        session.flush()
+        session.add(Classification(procedure_id=proc.id, is_it=False, method=method,
+                                   confidence=Decimal(confidence)))
+        return proc.id
+
+    abstained = add("A", "0.50")
+    add("B", "0.95")           # rules confidently said no
+    add("C", "0.90")           # rules said IT
+    add("D", "0.50", "ai")     # the model already answered; asking again buys nothing
+    bare = Procedure(source="uzex", source_id="E", title="Lot E")  # no classification row
+    session.add(bare)
+    session.flush()
+
+    unsure_ids = [pid for pid, _ in _pending(session, None, False, unsure_only=True)]
+    assert unsure_ids == [abstained]
+
+    # The other two modes are unchanged.
+    assert bare.id in [pid for pid, _ in _pending(session, None, False)]
+    assert len(_pending(session, None, True)) == 5

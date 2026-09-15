@@ -81,7 +81,7 @@ def cmd_classify(args: argparse.Namespace) -> int:
     with session_scope() as session:
         report = run_classification(session, settings, use_ai=not args.rules_only,
                                     limit=args.limit, mock=args.mock_ai,
-                                    refresh=args.refresh)
+                                    refresh=args.refresh, unsure_only=args.unsure)
     print(report.summary())
     return 0
 
@@ -258,6 +258,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--mock-ai", action="store_true", help="deterministic offline mock model")
     s.add_argument("--refresh", action="store_true", help="re-classify already classified lots")
     s.add_argument("--limit", type=int)
+    s.add_argument("--unsure", action="store_true",
+                   help="only lots the rules abstained on (the rows AI can actually inform)")
     s.set_defaults(func=cmd_classify)
 
     s = sub.add_parser("renewal", help="recompute renewal opportunities")

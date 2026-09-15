@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -51,9 +52,22 @@ def _store(session: Session, procedure_id: int, values: dict) -> None:
     session.execute(stmt)
 
 
-def _pending(session: Session, limit: int | None, refresh: bool) -> list[tuple[int, str]]:
+# The confidence the rules layer stores when it abstains (see rules.py): the row is
+# written is_it=false, but nothing was actually decided about it.
+UNSURE_CONFIDENCE = Decimal("0.50")
+
+
+def _pending(session: Session, limit: int | None, refresh: bool,
+             unsure_only: bool = False) -> list[tuple[int, str]]:
     stmt = select(Procedure.id, Procedure.title)
-    if not refresh:
+    if unsure_only:
+        # The only rows where the model adds information. Re-sending lots the rules
+        # already decided spends money to relearn what is known.
+        stmt = stmt.join(Classification, Classification.procedure_id == Procedure.id).where(
+            Classification.method == "rule",
+            Classification.confidence == UNSURE_CONFIDENCE,
+        )
+    elif not refresh:
         stmt = stmt.where(~select(Classification.procedure_id)
                           .where(Classification.procedure_id == Procedure.id).exists())
     stmt = stmt.order_by(Procedure.id)
@@ -75,10 +89,11 @@ def _item_names(session: Session, procedure_ids: list[int]) -> dict[int, list[st
 
 def run_classification(session: Session, settings: Settings, *, use_ai: bool = True,
                        limit: int | None = None, mock: bool = False, refresh: bool = False,
+                       unsure_only: bool = False,
                        batch_size: int = g.DEFAULT_BATCH_SIZE,
                        model: g.Model | None = None) -> ClassifyReport:
     report = ClassifyReport()
-    pending = _pending(session, limit, refresh)
+    pending = _pending(session, limit, refresh, unsure_only)
     report.considered = len(pending)
     if not pending:
         report.stopped_reason = "nothing_to_do"
