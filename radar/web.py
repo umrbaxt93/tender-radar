@@ -187,9 +187,11 @@ async def api_eimzo_verify(request: Request) -> JSONResponse:
     is_json = request.headers.get("content-type", "").startswith("application/json")
     payload = await request.json() if is_json else {}
 
+    from radar.config import load_settings
+
     pkcs7 = payload.get("pkcs7")
     token = payload.get("token")
-    tin = payload.get("tin", "308904387")
+    tin = payload.get("tin") or load_settings().company_tin
 
     if pkcs7:
         res = mgr.verify_and_login(pkcs7)

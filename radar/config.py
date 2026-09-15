@@ -38,6 +38,8 @@ def _float(name: str, default: float) -> float:
 class Settings:
     database_url: str = field(default_factory=lambda: _env("DATABASE_URL"))
     contact_email: str = field(default_factory=lambda: _env("CONTACT_EMAIL"))
+    # Softy's own STIR, used as the identity for E-IMZO sessions against E-Birja.
+    company_tin: str = field(default_factory=lambda: _env("COMPANY_TIN"))
     gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY"))
     gemini_model: str = field(default_factory=lambda: _env("GEMINI_MODEL"))
     classifier_budget_usd: float = field(
@@ -56,6 +58,18 @@ class Settings:
     )
     request_interval_s: float = field(default_factory=lambda: _float("REQUEST_INTERVAL_S", 3.0))
     out_dir: Path = field(default_factory=lambda: ROOT / _env("OUT_DIR", "out"))
+    # Dashboard build and deploy. All empty by default: the worker skips deployment
+    # rather than failing when an operator has not configured a target.
+    dashboard_data_path: str = field(default_factory=lambda: _env("DASHBOARD_DATA_PATH"))
+    dashboard_build_script: str = field(default_factory=lambda: _env("DASHBOARD_BUILD_SCRIPT"))
+    dashboard_html_path: str = field(default_factory=lambda: _env("DASHBOARD_HTML_PATH"))
+    deploy_ssh_key: str = field(default_factory=lambda: _env("DEPLOY_SSH_KEY"))
+    deploy_ssh_port: str = field(default_factory=lambda: _env("DEPLOY_SSH_PORT", "22"))
+    deploy_target: str = field(default_factory=lambda: _env("DEPLOY_TARGET"))
+
+    @property
+    def deploy_configured(self) -> bool:
+        return bool(self.dashboard_html_path and self.deploy_ssh_key and self.deploy_target)
 
     def require_database(self) -> str:
         if not self.database_url:

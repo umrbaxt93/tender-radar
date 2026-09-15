@@ -29,6 +29,9 @@ categories:
     - disk massiv
     - дисковый массив
   Network:
+    # E-Birja stamps its own IT type onto the contract. The "it-" prefix removes the
+    # ambiguity that makes the bare word too weak to decide on.
+    - "re:\\bit-tarmoq\\b"
     - kommutator
     - коммутатор
     - switch
@@ -120,6 +123,26 @@ categories:
     - adobe
     - 1c
     - "re:\\b1с\\b"
+    - erp
+    - sap
+    - oracle
+    - dynamics
+    - buxgalteriya
+    - бухгалтери
+    - license management
+    - управление лицензиями
+    - asset management
+    - управление активами
+    - database
+    - postgresql
+    - mysql
+    - mongodb
+    - virtualization
+    - vmware
+    - hyper-v
+    - analitika
+    - аналитика
+    - business intelligence
   Cloud:
     - hosting
     - хостинг
@@ -195,6 +218,9 @@ categories:
     - техническая поддержка программного
     - axborot-kommunikatsiya texnologiyalari
   Software Development:
+    # Same E-Birja type marker: "IT-dastur" is a software contract, not a generic
+    # mention of the word "dastur" inside some unrelated lot.
+    - "re:\\bit-dastur\\b"
     - dasturiy ta'minotni ishlab chiqish
     - разработка программного обеспечения
     - разработке программного обеспечения

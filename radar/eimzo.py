@@ -116,7 +116,7 @@ class EImzoManager:
                 data = json.loads(resp.read().decode("utf-8"))
                 token = data.get("result", {}).get("token") or data.get("token")
                 user = data.get("result", {}).get("user") or data.get("user", {})
-                tin = user.get("tin") or user.get("inn") or "308904387"
+                tin = user.get("tin") or user.get("inn") or ""
                 if token:
                     self.save_session(token=token, tin=tin, user_data=user)
                 return {"status": "ok", "token": token, "user": user, "data": data}
@@ -136,7 +136,7 @@ class EImzoManager:
             "authenticated": False,
             "token": None,
             "cookie": None,
-            "tin": "308904387",
+            "tin": None,
             "last_updated": None,
         }
 
@@ -144,7 +144,7 @@ class EImzoManager:
         self,
         token: str | None = None,
         cookie: str | None = None,
-        tin: str = "308904387",
+        tin: str | None = None,
         user_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Persist session token and credentials."""
@@ -152,13 +152,14 @@ class EImzoManager:
             "authenticated": bool(token or cookie),
             "token": token.strip() if token else None,
             "cookie": cookie.strip() if cookie else None,
-            "tin": tin.strip() if tin else "308904387",
+            "tin": tin.strip() if tin else None,
             "user": user_data or {},
             "last_updated": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.session_file, "w", encoding="utf-8") as fh:
             json.dump(session_data, fh, ensure_ascii=False, indent=2)
+        self.session_file.chmod(0o600)
         return session_data
 
     def clear_session(self) -> dict[str, Any]:

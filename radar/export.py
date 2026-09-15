@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from radar.models import Award, Classification, Organization, Procedure
+from radar.models import Award, Classification, LotItem, Organization, Procedure, RenewalOpportunity
 from radar.renewal import radar_rows
 from radar.stats import collect_stats
 
@@ -24,6 +24,18 @@ WARN_FONT = Font(color="9C0006", bold=True)
 
 RADAR_HEADERS = ["Customer", "STIR", "Region", "Category", "Brand", "Last purchase", "Amount",
                  "Expected renewal", "Contact by", "Score", "Source URL", "Lot title"]
+EXPORT_10COL_HEADERS = [
+    "Korxona nomi",
+    "Tashkilot INN/JSHSHIR",
+    "Mahsulot nomi",
+    "Shartnoma tuzilgan sana",
+    "Shartnoma tugash sanasi",
+    "Boshlang'ich summa (so'm)",
+    "Yutilgan summa (so'm)",
+    "Yutib olgan korxona nomi",
+    "Yutib olgan korxona INN/JSHSHIR",
+    "Lot silkasi"
+]
 IT_HEADERS = ["Source", "Source ID", "Completed", "Customer", "STIR", "Region", "Category",
               "Brand", "Method", "Model", "Confidence", "Amount", "Currency", "Title",
               "Source URL"]
@@ -51,6 +63,51 @@ def _autosize(sheet, widths: dict[int, int]) -> None:
 
 def _sources(session: Session) -> list[str]:
     return sorted(s for s in session.scalars(select(Procedure.source).distinct()) if s)
+
+
+def _export_10columns_sheet(sheet, session: Session, limit: int | None = None) -> int:
+    """The buyer-facing sheet: customer, product, dates, both sums, winner and lot link."""
+    _style_header(sheet, EXPORT_10COL_HEADERS)
+    amount_col = func.coalesce(Award.amount, Procedure.start_price)
+    stmt = (select(Procedure, Organization, Award, LotItem, RenewalOpportunity, amount_col)
+            .join(Classification, Classification.procedure_id == Procedure.id)
+            .join(Organization, Organization.id == Procedure.customer_org_id, isouter=True)
+            .join(Award, Award.procedure_id == Procedure.id, isouter=True)
+            .outerjoin(LotItem, LotItem.procedure_id == Procedure.id)
+            .join(RenewalOpportunity, RenewalOpportunity.procedure_id == Procedure.id, isouter=True)
+            .where(Classification.is_it.is_(True), Procedure.completed_at.is_not(None))
+            .order_by(Procedure.completed_at.desc())
+            .limit(limit or 5000))
+
+    row_count = 0
+    for proc, cust_org, award, item, renewal, amount in session.execute(stmt).all():
+        winner_org = award.supplier if award else None
+        product_name = item.raw_name if item else (proc.title or "")
+        signed_date = proc.completed_at.strftime("%Y-%m-%d") if proc.completed_at else ""
+        # Hardware has no renewal row, so fall back to the lot deadline and finally to a
+        # one-year term, matching the dashboard export. An empty cell here reads as
+        # "no contract end", which is wrong for a one-off purchase.
+        end_at = (renewal.expected_renewal_at if renewal and renewal.expected_renewal_at
+                  else proc.deadline_at
+                  or (proc.completed_at + timedelta(days=365) if proc.completed_at else None))
+        end_date = end_at.strftime("%Y-%m-%d") if end_at else ""
+
+        sheet.append([
+            cust_org.name_canonical if cust_org else "",
+            cust_org.stir if cust_org else "",
+            product_name,
+            signed_date,
+            end_date,
+            float(proc.start_price) if proc.start_price is not None else None,
+            float(amount) if amount is not None else None,
+            winner_org.name_canonical if winner_org else "",
+            winner_org.stir if winner_org else "",
+            proc.source_url or ""
+        ])
+        row_count += 1
+
+    _autosize(sheet, {1: 46, 2: 12, 3: 40, 4: 16, 5: 16, 6: 14, 7: 14, 8: 46, 9: 12, 10: 40})
+    return row_count
 
 
 def export_workbook(session: Session, path: str | Path, now: datetime | None = None,
@@ -103,16 +160,21 @@ def export_workbook(session: Session, path: str | Path, now: datetime | None = N
     _autosize(lots, {1: 12, 2: 14, 3: 12, 4: 46, 5: 12, 6: 20, 7: 18, 8: 14, 9: 8, 10: 16,
                      11: 10, 12: 18, 13: 9, 14: 60, 15: 40})
 
+    export_10col = book.create_sheet("Export_10col")
+    export_10col_count = _export_10columns_sheet(export_10col, session, limit=limit)
+
     stats = book.create_sheet("Stats")
     _style_header(stats, ["Metric", "Value"])
     stats.append(["generated_at", now.strftime("%Y-%m-%d %H:%M UTC")])
     stats.append(["radar_rows", len(rows)])
     stats.append(["it_lots", it_count])
+    stats.append(["export_10col_rows", export_10col_count])
     for key, value in collect_stats(session).items():
         stats.append([key, str(value) if isinstance(value, dict) else value])
     stats.append(["data_note", "Rows from sources other than 'uzex' are synthetic fixtures."])
     _autosize(stats, {1: 30, 2: 70})
 
     book.save(path)
-    log.info("wrote %s (%d radar rows, %d IT lots)", path, len(rows), it_count)
+    log.info("wrote %s (%d radar rows, %d IT lots, %d export rows)",
+             path, len(rows), it_count, export_10col_count)
     return path, len(rows)

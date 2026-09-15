@@ -16,11 +16,16 @@ web page at `/radar`. Specification: docs/SPEC.md.
 
 The whole pipeline exists, is tested and runs unattended in one process: import → classify →
 renewal → export, plus the web page, a snapshot re-parser and launch packaging (Docker
-compose, bootstrap script, systemd units). 139 tests pass, CI is green. **No real
-procurement data has ever been imported.** The environment this was built in could not reach
-any `.uz` host, so the public endpoint contract is UNVERIFIED and every row so far comes from
-synthetic fixtures that are labelled synthetic in the data, the Excel file and the web page.
-The single thing that turns this into a working product is a verified source.
+compose, bootstrap script, systemd units). 174 tests pass, CI is green. Real data is now
+flowing: live adapters for UZEX and E-Birja run under launchd every two hours and the
+database holds roughly 5 200 real procedures alongside 60 synthetic fixtures, which stay
+labelled synthetic in the data, the Excel file and the web page.
+
+Two source limitations shape what the product can currently say. The E-Birja list API
+returns neither a supplier `tin` nor a product name, so winner STIR sits near 23% overall
+and 88% of E-Birja rows carry a placeholder title the classifier cannot read. Both open up
+behind an authenticated E-IMZO session, which `radar/eimzo.py` already implements and which
+nobody has signed in with yet. See DECISIONS.md, 2026-09-15.
 
 ## Repository map
 
@@ -28,16 +33,17 @@ The single thing that turns this into a working product is a verified source.
 |---|---|
 | `radar/cli.py` | `python -m radar <cmd>`: migrate, import, reparse, classify, renewal, export, web, worker, stats, health |
 | `radar/models.py`, `alembic/` | Schema (docs/DATABASE.md). Migrations 0001, 0002 |
-| `radar/source/client.py` | Rate-limited public HTTP client (3 s + jitter, backoff, hard stop on 401/403/redirect/CAPTCHA) and a fixture-directory source |
+| `radar/source/client.py` | Rate-limited public HTTP client (3 s + jitter, backoff, hard stop on 401/403/redirect/CAPTCHA) and a fixture-directory source. **`RateLimiter` here is the single place the 3 s floor is enforced; every adapter must pace through it** |
+| `radar/source/uzex.py`, `radar/source/ebirja.py` | Live adapters for the UZEX and E-Birja public APIs |
 | `radar/source/parser.py`, `radar/source/uzex_mapping.yaml` | Mapping-driven parser. **Edit the YAML, not the parser, when the real JSON shape is known** |
 | `radar/importer.py` | Resumable, idempotent import; one list page per transaction; `reparse` from snapshots |
 | `radar/snapshots.py` | zstd raw snapshots with sha256 |
 | `radar/classify/rules.py`, `keywords.yaml` | Keyword/regex pre-filter, Uzbek-Latin/Cyrillic/Russian. Rules may abstain, must never be wrong |
 | `radar/classify/gemini.py`, `pipeline.py`, `budget.py`, `pricing.yaml` | Gemini with JSON schema, batching, dedup, cache, reservation-first $10 ledger, offline mock |
 | `radar/renewal.py`, `radar/lifecycle.yaml` | Renewal dates (month-end clamped), scoring (max 75), Radar window |
-| `radar/export.py` | Excel: Radar, IT_Lots, Stats |
+| `radar/export.py` | Excel: Radar, IT_Lots, Export_10col, Stats |
 | `radar/web.py`, `radar/templates/radar.html` | FastAPI `/radar`, `/health` |
-| `radar/worker.py` | One ordered cycle in one process, interval mode, clean SIGTERM |
+| `radar/worker.py` | One cycle per run under launchd: sync E-Birja, sync UZEX, recompute renewals, rebuild and deploy the dashboard. Each stage is isolated — a failing stage is logged and skipped, never fatal |
 | `scripts/gen_synthetic_fixtures.py` | Generates labelled synthetic fixtures |
 | `scripts/bootstrap.sh`, `Dockerfile`, `docker-compose.yml`, `deploy/` | Launch packaging |
 | `samples/synthetic/` | Synthetic fixtures + `known_lots.md` golden set for the rules |

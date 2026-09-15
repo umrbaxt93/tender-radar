@@ -82,3 +82,19 @@ def test_brand_detection():
 def test_normalization_handles_apostrophes_and_yo():
     assert normalize("Yoqilg‘i") == normalize("Yoqilg'i")
     assert normalize("ЁЖ") == "еж"
+
+
+def test_ebirja_it_type_marker_is_decisive():
+    """E-Birja names the IT type in the contract itself; 88% of its rows carry no product
+    name at all, so that marker is the only signal the classifier gets for them."""
+    for marker, category in (("IT-dastur", "Software Development"),
+                             ("IT-tarmoq", "Network"),
+                             ("IT-kompyuter", "Computer/Notebook"),
+                             ("IT-server", "Server")):
+        result = classify_procedure(f"E-Birja shartnoma XD26027973 ({marker})", [])
+        assert result.likely_it == "yes", f"{marker} was missed"
+        assert result.category == category
+
+    # The prefix is what makes it decisive: a bare mention stays ambiguous so that a
+    # computer desk is still not counted as a computer.
+    assert classify_procedure("Kompyuter stoli va stul", []).likely_it != "yes"

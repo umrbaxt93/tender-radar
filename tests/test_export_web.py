@@ -40,7 +40,7 @@ def test_workbook_structure_and_rows(session, tmp_path):
     path, count = export_workbook(session, tmp_path / "radar.xlsx", now=NOW)
     assert path.is_file() and count == 1
     book = load_workbook(path)
-    assert book.sheetnames == ["Radar", "IT_Lots", "Stats"]
+    assert book.sheetnames == ["Radar", "IT_Lots", "Export_10col", "Stats"]
 
     radar = book["Radar"]
     # Row 1 warns about synthetic sources, row 3 is the header, row 4 is data.
