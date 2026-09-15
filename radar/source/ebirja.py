@@ -73,9 +73,11 @@ class EbirjaClient:
         headers["Accept"] = "application/json, text/plain, */*"
         headers["Accept-Language"] = "uz,ru;q=0.9,en;q=0.8"
 
-        self.limiter.wait()
-
         for attempt in range(1, retries + 1):
+            # Inside the loop, not before it: a retry is a fresh request to the same host,
+            # and it fires exactly when the server asked us to slow down. Pacing only the
+            # first attempt put retries 2.5 s apart, under the mandatory floor.
+            self.limiter.wait()
             req = urllib.request.Request(url, headers=headers)
             try:
                 with urllib.request.urlopen(req, context=self.ctx, timeout=self.timeout) as resp:

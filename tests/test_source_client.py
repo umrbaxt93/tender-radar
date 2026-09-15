@@ -145,15 +145,51 @@ def test_detail_url_templating():
 
 
 class _Resp:
-    status_code = 200
-    headers = {"content-type": "application/json"}
+    """Minimal stand-in for a requests Response."""
+
+    def __init__(self, status_code: int = 200) -> None:
+        self.status_code = status_code
+        self.headers = {"content-type": "application/json"}
+        self.text = "{}"
 
     def json(self):
         return [{"ok": True}]
 
 
-def test_uzex_adapter_paces_through_the_shared_limiter():
-    """The adapter used to sleep 0.7-1.4 s of its own, under the project's 3 s floor."""
+class _Sequence:
+    """Answers with each status in turn, then 200 forever."""
+
+    def __init__(self, *statuses: int) -> None:
+        self.statuses = list(statuses)
+        self.calls = 0
+
+    def __call__(self, *args, **kwargs) -> _Resp:
+        self.calls += 1
+        return _Resp(self.statuses.pop(0) if self.statuses else 200)
+
+
+def test_uzex_paces_every_attempt_including_retries(monkeypatch):
+    """A retry is a fresh request to a host that just asked us to slow down. Pacing only
+    the first attempt left retries 2 s apart, under the floor CLAUDE.md makes mandatory."""
+    import time as _time
+
+    from radar.source.uzex import UzexClient
+
+    monkeypatch.setattr(_time, "sleep", lambda s: None)   # skip the adapter's own backoff
+    clock = Clock()
+    client = UzexClient(limiter=RateLimiter(sleep=clock.sleep, clock=clock.monotonic,
+                                            rng=random.Random(0)))
+    post = _Sequence(429, 503)                            # two rejections, then success
+    client.session.post = post
+
+    client._request("POST", "https://example.invalid/x", json_data={})
+
+    assert post.calls == 3                                # it did retry
+    assert len(clock.slept) == 2                          # and paced both retries
+    assert all(gap >= MIN_INTERVAL_S for gap in clock.slept)
+
+
+def test_uzex_paces_separate_requests():
     from radar.source.uzex import UzexClient
 
     clock = Clock()
@@ -164,20 +200,33 @@ def test_uzex_adapter_paces_through_the_shared_limiter():
     for _ in range(4):
         client._request("POST", "https://example.invalid/x", json_data={})
 
-    assert len(clock.slept) == 3  # the first call is immediate
+    assert len(clock.slept) == 3                          # the first call is immediate
     assert all(gap >= MIN_INTERVAL_S for gap in clock.slept)
 
 
-def test_ebirja_adapter_paces_through_the_shared_limiter():
+def test_ebirja_paces_every_attempt_including_retries(monkeypatch):
+    import time as _time
+    import urllib.error
+
+    from radar.source import ebirja as ebirja_mod
     from radar.source.ebirja import EbirjaClient
 
+    monkeypatch.setattr(_time, "sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def fake_urlopen(req, **kwargs):
+        calls["n"] += 1
+        raise urllib.error.HTTPError(req.full_url, 429, "Too Many Requests", {}, None)
+
+    monkeypatch.setattr(ebirja_mod.urllib.request, "urlopen", fake_urlopen)
     clock = Clock()
     client = EbirjaClient(limiter=RateLimiter(sleep=clock.sleep, clock=clock.monotonic,
                                               rng=random.Random(0)))
-    for _ in range(3):
-        client.limiter.wait()
 
-    assert len(clock.slept) == 2
+    client._request("/common/contract/shop-list", {"type": "e-shop"})
+
+    assert calls["n"] == 3                                # default retries
+    assert len(clock.slept) == 2                          # every retry went through the limiter
     assert all(gap >= MIN_INTERVAL_S for gap in clock.slept)
 
 

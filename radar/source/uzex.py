@@ -69,10 +69,13 @@ class UzexClient:
         params: dict[str, Any] | None = None,
         retries: int = 3,
     ) -> Any:
-        self.limiter.wait()
         headers = self._get_headers()
 
         for attempt in range(1, retries + 1):
+            # Inside the loop, not before it: a retry is a fresh request to the same host,
+            # and it fires exactly when the server asked us to slow down. Pacing only the
+            # first attempt put retries 2 s apart, under the mandatory floor.
+            self.limiter.wait()
             try:
                 if method.upper() == "POST":
                     resp = self.session.post(
