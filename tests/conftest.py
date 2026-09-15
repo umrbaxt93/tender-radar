@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from radar.config import ROOT
 from radar.db import get_engine
 from radar.models import Base
+
+# radar.auth refuses to import without a real signing key, so give the suite its own.
+# setdefault, not assignment: a CI environment that supplies one keeps it.
+os.environ.setdefault("SESSION_SECRET_KEY", secrets.token_hex(32))
 
 TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", "").strip()
 SAMPLES = ROOT / "samples" / "synthetic"

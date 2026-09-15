@@ -24,8 +24,19 @@ log = logging.getLogger("radar.auth")
 # Password hasher using Argon2id
 _ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
 
-# Session serializer secret key
-SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", "radar-insecure-secret-change-in-production")
+# Session serializer secret key. There is deliberately no fallback: a default committed
+# here would be a published signing key, and anyone holding it can mint an admin cookie.
+# Refusing to start is the only safe behaviour.
+_REJECTED_SECRETS = {
+    "radar-insecure-secret-change-in-production",
+    "CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32",
+}
+SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", "").strip()
+if not SECRET_KEY or SECRET_KEY in _REJECTED_SECRETS or len(SECRET_KEY) < 32:
+    raise RuntimeError(
+        "SESSION_SECRET_KEY must be set to a unique random value of at least 32 characters "
+        "(generate one with: openssl rand -hex 32)"
+    )
 _serializer = URLSafeTimedSerializer(SECRET_KEY, salt="radar-session-salt")
 
 # Rate limiter instance
