@@ -15,26 +15,40 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 MAPPING_PATH = Path(__file__).with_name("uzex_mapping.yaml")
 
+# Source strings land in Postgres text columns, which reject NUL outright. One UZEX
+# organisation name arrived as "Medaostach\x00 Group \x00LLC" and killed an entire
+# import run, so every string is scrubbed as it enters a record.
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
-class LotItemRecord(BaseModel):
+
+class SourceRecord(BaseModel):
+    @field_validator("*", mode="before")
+    @classmethod
+    def _strip_control_chars(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return _CONTROL_CHARS.sub("", value)
+        return value
+
+
+class LotItemRecord(SourceRecord):
     raw_name: str
     quantity: Decimal | None = None
     unit: str | None = None
     unit_price_raw: str | None = None
 
 
-class AwardRecord(BaseModel):
+class AwardRecord(SourceRecord):
     supplier_name: str | None = None
     supplier_stir: str | None = None
     amount: Decimal | None = None
     awarded_at: datetime | None = None
 
 
-class ProcedureRecord(BaseModel):
+class ProcedureRecord(SourceRecord):
     source_id: str
     source_url: str | None = None
     procedure_type: str | None = None
@@ -97,27 +111,35 @@ _DATE_FORMATS = ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"
                  "%d.%m.%Y %H:%M:%S", "%d.%m.%Y %H:%M", "%d.%m.%Y")
 
 
+# UZEX returns 0001-01-01 where it means "no date". Parsed literally it becomes a real
+# timestamp two millennia old, which then flows into renewal dates and the export.
+_EARLIEST_PLAUSIBLE = datetime(1990, 1, 1, tzinfo=UTC)
+
+
+def _aware(dt: datetime) -> datetime | None:
+    dt = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    return dt if dt >= _EARLIEST_PLAUSIBLE else None
+
+
 def parse_datetime(value: Any) -> datetime | None:
     if value is None or value == "":
         return None
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=UTC)
+        return _aware(value)
     if isinstance(value, int | float):
         # epoch seconds or milliseconds
         ts = float(value) / (1000.0 if value > 10_000_000_000 else 1.0)
-        return datetime.fromtimestamp(ts, tz=UTC)
+        return _aware(datetime.fromtimestamp(ts, tz=UTC))
     text = str(value).strip()
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
     try:
-        dt = datetime.fromisoformat(text)
-        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+        return _aware(datetime.fromisoformat(text))
     except ValueError:
         pass
     for fmt in _DATE_FORMATS:
         try:
-            dt = datetime.strptime(text, fmt)
-            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+            return _aware(datetime.strptime(text, fmt))
         except ValueError:
             continue
     return None

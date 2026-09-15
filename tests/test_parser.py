@@ -91,3 +91,29 @@ def test_parse_real_uzex_samples():
     assert detail.award.amount == Decimal("48000000.0")
     assert detail.award.awarded_at == datetime(2026, 2, 5, 14, 0, tzinfo=UTC)
 
+
+
+def test_a_zero_date_sentinel_is_not_a_date():
+    """UZEX returns 0001-01-01 to mean "no date". Taken literally it became a real
+    timestamp that then fed renewal maths and the export."""
+    assert parse_datetime("0001-01-01T00:00:00") is None
+    assert parse_datetime("01.01.0001") is None
+    assert parse_datetime("1899-12-31") is None
+    assert parse_datetime("2024-01-04T10:00:00") == datetime(2024, 1, 4, 10, tzinfo=UTC)
+
+
+def test_control_characters_are_stripped_from_every_record_string():
+    """A UZEX organisation name arrived carrying NUL bytes. Postgres text columns reject
+    those outright, so the whole import run died on one bad row."""
+    from radar.source.parser import AwardRecord, LotItemRecord, ProcedureRecord
+
+    proc = ProcedureRecord(source_id="x", title="Medaostach\x00 Group \x00LLC",
+                           customer_name="A\x00B", customer_region="T\x1fosh")
+    assert proc.title == "Medaostach Group LLC"
+    assert proc.customer_name == "AB"
+    assert proc.customer_region == "Tosh"
+    assert AwardRecord(supplier_name="X\x00Y").supplier_name == "XY"
+    assert LotItemRecord(raw_name="P\x00Q").raw_name == "PQ"
+    # Ordinary text, including newlines and non-Latin scripts, is untouched.
+    keeps = ProcedureRecord(source_id="y", title="Сервер\nHP ProLiant")
+    assert keeps.title == "Сервер\nHP ProLiant"
