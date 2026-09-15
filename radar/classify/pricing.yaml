@@ -16,6 +16,27 @@
 # environment. Without one of the two, a paid classification run refuses to start.
 
 models:
+  # Official Gemini API pricing reviewed from https://ai.google.dev/gemini-api/docs/pricing
+  # on 2026-09-15. The 2.5 family below is kept for the historical ledger but the API now
+  # answers 404 "no longer available to new users" for those ids.
+  gemini-3.1-flash-lite:
+    input_usd_per_mtok: 0.25
+    output_usd_per_mtok: 1.50
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-15
+
+  gemini-3.5-flash-lite:
+    input_usd_per_mtok: 0.30
+    output_usd_per_mtok: 2.50
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-15
+
+  gemini-3.5-flash:
+    input_usd_per_mtok: 1.50
+    output_usd_per_mtok: 9.00
+    source: https://ai.google.dev/gemini-api/docs/pricing
+    reviewed_at: 2026-09-15
+
   # Official Gemini API pricing reviewed from https://ai.google.dev/gemini-api/docs/pricing on 2026-09-14
   gemini-2.5-flash-lite:
     input_usd_per_mtok: 0.10
