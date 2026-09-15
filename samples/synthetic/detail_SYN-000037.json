@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000037",
+ "procedure_type": "tender",
+ "title": "Kanselyariya tovarlari (qog'oz, ruchka)",
+ "status": "completed",
+ "published_at": "2026-08-06T00:00:00Z",
+ "deadline_at": "2026-08-17T00:00:00Z",
+ "completed_at": "2026-09-05T00:00:00Z",
+ "currency": "UZS",
+ "start_price": 312500000,
+ "customer": {
+  "name": "Toshkent shahar hokimligi axborot-kommunikatsiya boshqarmasi (SYNTHETIC)",
+  "stir": "900000000",
+  "region": "Toshkent shahri"
+ },
+ "items": [
+  {
+   "name": "A4 qog'oz 80g",
+   "quantity": 25,
+   "unit": "pachka",
+   "unit_price": "12500000"
+  }
+ ]
+}

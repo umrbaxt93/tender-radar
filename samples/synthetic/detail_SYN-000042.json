@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000042",
+ "procedure_type": "tender",
+ "title": "Noutbuk Lenovo ThinkPad L15 sotib olish",
+ "status": "completed",
+ "published_at": "2025-12-19T00:00:00Z",
+ "deadline_at": "2026-01-01T00:00:00Z",
+ "completed_at": "2025-12-28T00:00:00Z",
+ "currency": "UZS",
+ "start_price": 45000000,
+ "customer": {
+  "name": "Andijon viloyat moliya boshqarmasi (SYNTHETIC)",
+  "stir": "900000003",
+  "region": "Andijon viloyati"
+ },
+ "items": [
+  {
+   "name": "Lenovo ThinkPad L15 Gen4",
+   "quantity": 100,
+   "unit": "dona",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 36641421.26,
+  "awarded_at": "2025-12-28T00:00:00Z"
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000057",
+ "procedure_type": "tender",
+ "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)",
+ "status": "completed",
+ "published_at": "2025-08-31T22:00:00Z",
+ "deadline_at": "2025-09-18T22:00:00Z",
+ "completed_at": "2025-09-08T22:00:00Z",
+ "currency": "UZS",
+ "start_price": 480000000,
+ "customer": {
+  "name": "Andijon viloyat moliya boshqarmasi (SYNTHETIC)",
+  "stir": "900000003",
+  "region": "Andijon viloyati"
+ },
+ "items": [
+  {
+   "name": "AI-92",
+   "quantity": 10,
+   "unit": "litr",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 403592051.18,
+  "awarded_at": "2025-09-08T22:00:00Z"
+ }
+}

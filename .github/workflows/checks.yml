@@ -1,7 +1,7 @@
-name: Scaffold checks
+name: Checks
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -12,7 +12,10 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      # Disposable CI database. Never used for real imports.
+      TEST_DATABASE_URL: postgresql://tender:tender@localhost:5432/tender_radar
     services:
       postgres:
         image: postgres:16-bookworm
@@ -34,3 +37,6 @@ jobs:
       - run: python -m unittest discover -s tests_automation -v
       - run: python ci/validate.py
       - run: psql -h localhost -U tender -d tender_radar -v ON_ERROR_STOP=1 -c 'SELECT 1;'
+      - run: pip install -e ".[dev]"
+      - run: ruff check radar tests scripts
+      - run: pytest

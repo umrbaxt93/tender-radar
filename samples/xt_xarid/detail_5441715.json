@@ -1,0 +1,32 @@
+{
+  "lot_id": "5441715",
+  "lot_number": "5441715",
+  "title": "Программный продукт",
+  "description": "Программный продукт",
+  "procurement_type": "Elektron do‘kon",
+  "status": "COMPLETED",
+  "announcement_date": "2025-08-04",
+  "contract_date": "2025-08-04",
+  "deadline_date": null,
+  "license_end_date": "2026-08-04",
+  "start_price": 12712000.0,
+  "final_price": 12712000.0,
+  "currency": "UZS",
+  "buyer_name": "“Davekspertiza” DM",
+  "buyer_inn": "305550214",
+  "region": "Шайхантахурский район",
+  "winner_name": "OOO SOFT PROJECT SYSTEMS",
+  "supplier_name": "OOO SOFT PROJECT SYSTEMS",
+  "supplier_inn": null,
+  "items": [
+    {
+      "product_name": "Программный продукт",
+      "brand": "Boshqa",
+      "product_family": "Dasturiy ta'minot",
+      "quantity": 1.0,
+      "unit": "dona",
+      "unit_price": 12712000.0,
+      "total_price": 12712000.0
+    }
+  ]
+}

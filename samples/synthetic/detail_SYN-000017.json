@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000017",
+ "procedure_type": "selection",
+ "title": "Kanselyariya tovarlari (qog'oz, ruchka)",
+ "status": "completed",
+ "published_at": "2026-02-18T19:00:00Z",
+ "deadline_at": "2026-03-02T19:00:00Z",
+ "completed_at": "2026-03-08T19:00:00Z",
+ "currency": "UZS",
+ "start_price": 1200000000,
+ "customer": {
+  "name": "Navoiy kon-metallurgiya kolleji (SYNTHETIC)",
+  "stir": "900000008",
+  "region": "Navoiy viloyati"
+ },
+ "items": [
+  {
+   "name": "A4 qog'oz 80g",
+   "quantity": 25,
+   "unit": "pachka",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 1120515347.51,
+  "awarded_at": "2026-03-08T19:00:00Z"
+ }
+}

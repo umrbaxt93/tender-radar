@@ -1,14 +1,39 @@
 # TODO
 
-## Cloud setup
-- [x] Create private GitHub repository umrbaxt93/tender-radar.
-- [x] Publish scaffold and verify Actions checks (#1, success).
-- [ ] Configure Gemini/Anthropic/OpenAI secrets in the agent-review environment and economical model IDs.
-- [ ] Set provider-side spending controls and verify one manual review.
-- [ ] Enable scheduled review only after verification.
+## Blocked on source access
+- [x] Verify the public list/detail endpoint contract from a network that can reach
+      xarid.uzex.uz, fill docs/SOURCE_API.md, adjust radar/source/uzex_mapping.yaml.
+- [x] Commit sanitized real fixtures and replace the synthetic golden set in
+      samples/synthetic/known_lots.md with verified IT and non-IT lots.
+- [ ] Import 90 days of real completed lots, then re-measure rule coverage, AI spend and the
+      coverage percentages reported by `stats`.
+- [ ] Re-check the renewal lifecycle table against what real purchase intervals show.
 
-## Later implementation task
-Start with schema/migrations and fixture-based parser after obtaining public sanitized list/detail JSON and 5 IT + 5 non-IT known lots. No live bulk import before checkpoint/rate-limit/budget tests pass.
+## Blocked on credentials or cost approval
+- [x] Add the chosen Gemini model price to radar/classify/pricing.yaml from the official
+      pricing page, with the date it was checked.
+- [ ] Run one small paid batch and compare real spend against the ledger.
+- [ ] Provider-side spending controls before enabling any recurring paid job.
+
+## Ready for host deployment (Hostinger VPS 93.127.213.246)
+- [ ] Build the image and run `docker compose up -d --build` on the target host (Hostinger VPS 93.127.213.246).
+- [ ] Execute docs/DEPLOYMENT.md end to end on the target host, then correct it from what
+      actually happened.
+- [ ] Put the reverse proxy and an access control (nginx TLS + basic auth) in front of the web process before it is
+      reachable from anywhere but localhost. The application has no built-in authentication.
+- [ ] Nightly pg_dump off the host, and a tested restore.
+
+## Open code work
+- [ ] Parent organization relationships, so a ministry and its subordinate bodies can be read
+      as one customer where that is the right view.
+- [x] Product normalization to brand, model and licence term, which price analysis depends on.
+- [ ] Supplier side analysis once award data proves rich enough to support it.
 
 ## Phase 2
-Bitrix24 score >=70 Deal creation and manager mapping, daily import/alerts, Telegram failure notification and durable cloud deployment. No messages or CRM calls are authorized in this scaffold phase.
+- [x] Bitrix24 idempotent lead/deal/task creation module (`radar/crm.py`) ported from parent project with unique constraint per procedure.
+- [ ] Category to manager mapping and automatic scoring feedback loop into CRM.
+- [ ] Daily import and alerts, competitor and price intelligence.
+
+## Future Phase: E-IMZO Elektron Kalit Autentifikatsiyasi (Deferred)
+- [ ] E-IMZO orqali Toshkent tovar xomashyo birjasi davlat xaridlari portaliga (xarid.ebirja.uz) ulanish va yopiq shartnomalarni yuklab tahlil qilish moduli.
+- [ ] E-IMZO brauzer plagini / E-IMZO daemon (Port 64443 / 127.0.0.1) bilan integratsiya. Hozirda Faza 0 AppSec audit talablariga binoan interfeysdan olib tashlangan va alohida faza sifatida rejalashtirilgan.

@@ -1,0 +1,2 @@
+curl -X GET "https://xarid-api-purchase.uzex.uz/Common/GetCompetition/20000" \
+  -H "Accept: application/json"

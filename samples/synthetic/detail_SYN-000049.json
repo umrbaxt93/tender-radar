@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000049",
+ "procedure_type": "selection",
+ "title": "Texnik jihozlarni modernizatsiya qilish ishlari",
+ "status": "completed",
+ "published_at": "2026-07-10T02:00:00Z",
+ "deadline_at": "2026-07-30T02:00:00Z",
+ "completed_at": "2026-07-23T02:00:00Z",
+ "currency": "UZS",
+ "start_price": 475000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Modernizatsiya",
+   "quantity": 5,
+   "unit": "xizmat",
+   "unit_price": "95000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 438177634.38,
+  "awarded_at": "2026-07-23T02:00:00Z"
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000029",
+ "procedure_type": "tender",
+ "title": "Noutbuk Lenovo ThinkPad L15 sotib olish",
+ "status": "completed",
+ "published_at": "2026-03-29T21:00:00Z",
+ "deadline_at": "2026-04-14T21:00:00Z",
+ "completed_at": "2026-04-09T21:00:00Z",
+ "currency": "UZS",
+ "start_price": 7600000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Lenovo ThinkPad L15 Gen4",
+   "quantity": 2,
+   "unit": "dona",
+   "unit_price": "3800000"
+  }
+ ]
+}

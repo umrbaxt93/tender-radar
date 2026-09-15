@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000059",
+ "procedure_type": "auction",
+ "title": "Google Workspace Business Starter obunasi",
+ "status": "completed",
+ "published_at": "2025-09-24T12:00:00Z",
+ "deadline_at": "2025-10-04T12:00:00Z",
+ "completed_at": "2025-10-04T12:00:00Z",
+ "currency": "UZS",
+ "start_price": 60000000,
+ "customer": {
+  "name": "Navoiy kon-metallurgiya kolleji (SYNTHETIC)",
+  "stir": "900000008",
+  "region": "Navoiy viloyati"
+ },
+ "items": [
+  {
+   "name": "Google Workspace Business Starter",
+   "quantity": 50,
+   "unit": "dona",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 51576725.83,
+  "awarded_at": "2025-10-04T12:00:00Z"
+ }
+}

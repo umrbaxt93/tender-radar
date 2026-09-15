@@ -1,0 +1,56 @@
+# Renewal lifecycle configuration (docs/SPEC.md).
+#
+# months            - how long a purchase in this category is expected to last.
+# radar             - whether the category belongs on the Radar by default. Hardware is
+#                     excluded unless the lot itself was classified is_subscription=true.
+#
+# A lot's own detected term (classification.term_months) wins over the category default when
+# it is present and plausible, because "1 yil" in the lot text is better evidence than a table.
+
+categories:
+  Microsoft:            {months: 12, radar: true}
+  Google Workspace:     {months: 12, radar: true}
+  Antivirus/EDR:        {months: 12, radar: true}
+  DLP:                  {months: 12, radar: true}
+  SIEM/SOC:             {months: 12, radar: true}
+  Cybersecurity-Other:  {months: 12, radar: true}
+  Collaboration:        {months: 12, radar: true}
+  Software Licenses:    {months: 12, radar: true}
+  Cloud:                {months: 12, radar: true}
+  Firewall:             {months: 12, radar: true}
+  Telecom:              {months: 12, radar: true}
+  IT Services:          {months: 12, radar: true}
+  Server:               {months: 48, radar: false}
+  Storage:              {months: 48, radar: false}
+  Network:              {months: 48, radar: false}
+  Computer/Notebook:    {months: 48, radar: false}
+  Printer/MFP:          {months: 48, radar: false}
+  UPS:                  {months: 48, radar: false}
+  CCTV:                 {months: 48, radar: false}
+  Data Center:          {months: 48, radar: false}
+  Software Development: {months: 36, radar: false}
+  Other IT:             {months: 48, radar: false}
+
+defaults:
+  subscription_months: 12
+  hardware_months: 48
+
+# Radar window: a row is shown while the renewal has not yet passed and the contact date is
+# no more than this many days away. Rows whose contact date is already past but whose renewal
+# is still ahead stay on the Radar and score as urgent.
+radar_contact_window_days: 60
+
+# Days before the expected renewal that a manager should make contact.
+contact_lead_days: 60
+
+# Scoring (docs/SPEC.md). The weights below top out at 75, not 100; DECISIONS.md keeps the
+# original weights and reports the true reachable range instead of silently rescaling.
+scoring:
+  contact_within_30_days: 40
+  contact_within_31_60_days: 25
+  amount_above_category_median: 15
+  repeat_customer_12_months: 10
+  priority_brand: 10
+  max_reachable: 75
+
+priority_brands: [Fortinet, Microsoft, Kaspersky, Zoom]

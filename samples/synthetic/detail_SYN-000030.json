@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000030",
+ "procedure_type": "e-shop",
+ "title": "Fortinet FortiGate 100F межсетевой экран с подпиской UTM 1 год",
+ "status": "completed",
+ "published_at": "2025-12-08T19:00:00Z",
+ "deadline_at": "2025-12-20T19:00:00Z",
+ "completed_at": "2026-01-05T19:00:00Z",
+ "currency": "UZS",
+ "start_price": 190000000,
+ "customer": {
+  "name": "Qashqadaryo viloyat hokimligi (SYNTHETIC)",
+  "stir": "900000006",
+  "region": "Qashqadaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "FortiGate 100F UTP bundle",
+   "quantity": 2,
+   "unit": "шт",
+   "unit_price": "95000000"
+  }
+ ]
+}

@@ -1,3 +1,8 @@
+# Full stack: database, one-shot migration, worker and web.
+#   docker compose up -d --build
+# The web port is published on 127.0.0.1 only. There is no authentication in the
+# application, so it must sit behind a reverse proxy before it is reachable from anywhere
+# else. See docs/DEPLOYMENT.md.
 services:
   postgres:
     image: postgres:16-bookworm
@@ -13,6 +18,59 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
-# No host port exposed. Cloud production credentials/backups are configured separately.
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  migrate:
+    build: .
+    command: ["python", "-m", "radar", "migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tender}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:-tender_radar}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  worker:
+    build: .
+    # One process, one cycle at a time. WORKER_ARGS defaults to the offline synthetic run so
+    # a first launch proves the stack without touching the source or spending anything.
+    command: ["sh", "-c", "python -m radar worker --interval ${WORKER_INTERVAL_S:-3600} ${WORKER_ARGS:---fixtures samples/synthetic --mock-ai}"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tender}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:-tender_radar}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      UZEX_LIST_URL: ${UZEX_LIST_URL:-}
+      UZEX_DETAIL_URL: ${UZEX_DETAIL_URL:-}
+      REQUEST_INTERVAL_S: ${REQUEST_INTERVAL_S:-3}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+      CLASSIFIER_BUDGET_USD: ${CLASSIFIER_BUDGET_USD:-10}
+      ORG_MATCH_THRESHOLD: ${ORG_MATCH_THRESHOLD:-0.92}
+    volumes:
+      - ./out:/app/out
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tender}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:-tender_radar}
+      APP_ENV: ${APP_ENV:-production}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Set a session secret key}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+    healthcheck:
+      test: [CMD-SHELL, "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
 volumes:
   postgres_data:

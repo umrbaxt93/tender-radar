@@ -1,0 +1,56 @@
+[project]
+name = "tender-radar"
+version = "0.1.0"
+description = "Public UZEX procurement history -> IT classification -> Renewal Radar"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27,<1",
+    "pydantic>=2.7,<3",
+    "SQLAlchemy>=2.0.30,<3",
+    "alembic>=1.13,<2",
+    "psycopg[binary]>=3.1,<4",
+    "google-genai>=1.0,<2",
+    "openpyxl>=3.1,<4",
+    "fastapi>=0.111,<1",
+    "uvicorn>=0.30,<1",
+    "jinja2>=3.1,<4",
+    "PyYAML>=6,<7",
+    "zstandard>=0.22,<1",
+    "python-multipart>=0.0.9",
+    "requests>=2.32,<3",
+    "argon2-cffi>=23.1.0",
+    "slowapi>=0.1.9",
+    "itsdangerous>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "ruff>=0.5,<1",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["radar", "radar.source", "radar.classify"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+radar = ["templates/*.html", "classify/*.yaml", "*.yaml"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["ci", "tests_automation", "alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/gen_synthetic_fixtures.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

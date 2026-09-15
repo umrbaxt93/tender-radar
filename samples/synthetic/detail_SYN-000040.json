@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000040",
+ "procedure_type": "tender",
+ "title": "Kanselyariya tovarlari (qog'oz, ruchka)",
+ "status": "completed",
+ "published_at": "2026-04-24T02:00:00Z",
+ "deadline_at": "2026-04-30T02:00:00Z",
+ "completed_at": "2026-05-10T02:00:00Z",
+ "currency": "UZS",
+ "start_price": 12000000,
+ "customer": {
+  "name": "Jizzax politexnika instituti (SYNTHETIC)",
+  "stir": "900000009",
+  "region": "Jizzax viloyati"
+ },
+ "items": [
+  {
+   "name": "A4 qog'oz 80g",
+   "quantity": 10,
+   "unit": "pachka",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 9316085.87,
+  "awarded_at": "2026-05-10T02:00:00Z"
+ }
+}

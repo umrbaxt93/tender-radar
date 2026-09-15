@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000020",
+ "procedure_type": "e-shop",
+ "title": "Qurilish materiallari (sement, g'isht)",
+ "status": "completed",
+ "published_at": "2026-06-13T12:00:00Z",
+ "deadline_at": "2026-06-24T12:00:00Z",
+ "completed_at": "2026-07-12T12:00:00Z",
+ "currency": "UZS",
+ "start_price": 12000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Sement M400",
+   "quantity": 10,
+   "unit": "tonna",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 8701889.5,
+  "awarded_at": "2026-07-12T12:00:00Z"
+ }
+}

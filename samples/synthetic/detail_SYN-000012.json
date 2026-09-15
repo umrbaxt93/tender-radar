@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000012",
+ "procedure_type": "auction",
+ "title": "Приобретение оборудования для учебного кабинета",
+ "status": "completed",
+ "published_at": "2026-02-09T05:00:00Z",
+ "deadline_at": "2026-02-24T05:00:00Z",
+ "completed_at": "2026-03-06T05:00:00Z",
+ "currency": "UZS",
+ "start_price": 190000000,
+ "customer": {
+  "name": "Navoiy kon-metallurgiya kolleji (SYNTHETIC)",
+  "stir": "900000008",
+  "region": "Navoiy viloyati"
+ },
+ "items": [
+  {
+   "name": "Оборудование кабинета",
+   "quantity": 2,
+   "unit": "компл",
+   "unit_price": "95000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 154933636.64,
+  "awarded_at": "2026-03-06T05:00:00Z"
+ }
+}

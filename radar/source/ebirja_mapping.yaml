@@ -1,0 +1,37 @@
+# Field mapping between E-Birja raw JSON and normalized ProcedureRecord.
+list:
+  method: GET
+  items_path: result.data
+  total_path: result.meta.totalCount
+  page_param: currentPage
+  page_size_param: perPage
+  page_size: 20
+  first_page: 0
+  id_field: number
+  completed_at_field: created_at
+detail:
+  id: number
+  source_url_template: "https://ebirja.uz/uz/contracts/{source_id}"
+  procedure_type: procedure_type
+  title: title
+  status: status
+  published_at: created_at
+  completed_at: created_at
+  currency: currency
+  start_price: price
+  customer:
+    name: customer.title
+    stir: customer.tin
+    region: customer.region
+  items:
+    path: items
+    name: name
+    quantity: quantity
+    unit: unit
+    unit_price: price
+  award:
+    path: ""
+    supplier_name: producer.title
+    supplier_stir: producer.tin
+    amount: price
+    awarded_at: created_at

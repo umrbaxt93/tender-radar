@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000041",
+ "procedure_type": "auction",
+ "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)",
+ "status": "completed",
+ "published_at": "2026-04-23T23:00:00Z",
+ "deadline_at": "2026-05-04T23:00:00Z",
+ "completed_at": "2026-05-09T23:00:00Z",
+ "currency": "UZS",
+ "start_price": 6000000,
+ "customer": {
+  "name": "Namangan viloyati statistika boshqarmasi (SYNTHETIC)",
+  "stir": "900000005",
+  "region": "Namangan viloyati"
+ },
+ "items": [
+  {
+   "name": "AI-92",
+   "quantity": 5,
+   "unit": "litr",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 5025879.91,
+  "awarded_at": "2026-05-09T23:00:00Z"
+ }
+}

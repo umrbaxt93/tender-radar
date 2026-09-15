@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000056",
+ "procedure_type": "e-shop",
+ "title": "DLP tizimi litsenziyasi InfoWatch Traffic Monitor 1 yil",
+ "status": "completed",
+ "published_at": "2026-05-17T13:00:00Z",
+ "deadline_at": "2026-05-22T13:00:00Z",
+ "completed_at": "2026-06-06T13:00:00Z",
+ "currency": "UZS",
+ "start_price": 9500000000,
+ "customer": {
+  "name": "Namangan viloyati statistika boshqarmasi (SYNTHETIC)",
+  "stir": "900000005",
+  "region": "Namangan viloyati"
+ },
+ "items": [
+  {
+   "name": "InfoWatch Traffic Monitor",
+   "quantity": 100,
+   "unit": "dona",
+   "unit_price": "95000000"
+  }
+ ]
+}

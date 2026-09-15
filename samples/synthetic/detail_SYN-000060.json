@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000060",
+ "procedure_type": "tender",
+ "title": "Zoom Business obunasi 12 oy",
+ "status": "completed",
+ "published_at": "2026-01-12T20:00:00Z",
+ "deadline_at": "2026-01-23T20:00:00Z",
+ "completed_at": "2026-02-05T20:00:00Z",
+ "currency": "UZS",
+ "start_price": 900000,
+ "customer": {
+  "name": "Xorazm viloyati soliq boshqarmasi (SYNTHETIC)",
+  "stir": "900000007",
+  "region": "Xorazm viloyati"
+ },
+ "items": [
+  {
+   "name": "Zoom Business",
+   "quantity": 2,
+   "unit": "dona",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 713334.1,
+  "awarded_at": "2026-02-05T20:00:00Z"
+ }
+}

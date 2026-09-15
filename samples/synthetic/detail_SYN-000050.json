@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000050",
+ "procedure_type": "auction",
+ "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)",
+ "status": "completed",
+ "published_at": "2026-03-14T22:00:00Z",
+ "deadline_at": "2026-03-19T22:00:00Z",
+ "completed_at": "2026-04-05T22:00:00Z",
+ "currency": "UZS",
+ "start_price": 62500000,
+ "customer": {
+  "name": "Andijon viloyat moliya boshqarmasi (SYNTHETIC)",
+  "stir": "900000003",
+  "region": "Andijon viloyati"
+ },
+ "items": [
+  {
+   "name": "AI-92",
+   "quantity": 5,
+   "unit": "litr",
+   "unit_price": "12500000"
+  }
+ ]
+}

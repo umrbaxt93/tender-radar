@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000058",
+ "procedure_type": "selection",
+ "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)",
+ "status": "completed",
+ "published_at": "2026-05-27T09:00:00Z",
+ "deadline_at": "2026-06-11T09:00:00Z",
+ "completed_at": "2026-06-16T09:00:00Z",
+ "currency": "UZS",
+ "start_price": 19000000,
+ "customer": {
+  "name": "Buxoro davlat universiteti (SYNTHETIC)",
+  "stir": "900000002",
+  "region": "Buxoro viloyati"
+ },
+ "items": [
+  {
+   "name": "AI-92",
+   "quantity": 5,
+   "unit": "litr",
+   "unit_price": "3800000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 15538213.05,
+  "awarded_at": "2026-06-16T09:00:00Z"
+ }
+}
