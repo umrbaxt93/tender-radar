@@ -38,8 +38,10 @@ from radar.source.uzex import (
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_FILE = BASE_DIR / "logs" / "worker.log"
-# Every awarded contract currently fits well inside this; it exists only so a runaway
-# database cannot produce a dashboard too large for a browser to open.
+# The dashboard embeds its rows in the HTML, so this is a browser limit, not a data one:
+# ~600 bytes a row means the full 76k awarded contracts would be a 47 MB page. The cap is
+# therefore real and permanent -- but it must never be silent, so the count that did not
+# fit is written into stats and the log. The Excel export carries every row.
 EXPORT_ROW_LIMIT = 10000
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -252,11 +254,24 @@ def rebuild_and_deploy():
             d["deal_sum"] = float(d["deal_sum"])
             export_items.append(d)
         with_inn = sum(1 for d in export_items if d["winner_inn"])
+        total_awarded = session.execute(text("""
+            SELECT COUNT(*) FROM procedure p
+            JOIN award aw ON aw.procedure_id = p.id
+            JOIN organization s ON s.id = aw.supplier_org_id
+            WHERE COALESCE(TRIM(s.name_canonical), '') <> ''
+        """)).scalar() or 0
+        omitted = max(0, total_awarded - len(export_items))
         stats["export_rows"] = len(export_items)
         stats["export_rows_with_winner_inn"] = with_inn
-        log.info("Export: %d awarded contracts, %d (%.0f%%) carry a winner STIR",
-                 len(export_items), with_inn,
+        stats["export_rows_total"] = total_awarded
+        stats["export_rows_omitted"] = omitted
+        log.info("Export: %d of %d awarded contracts, %d (%.0f%%) carry a winner STIR",
+                 len(export_items), total_awarded, with_inn,
                  100 * with_inn / len(export_items) if export_items else 0)
+        if omitted:
+            log.warning("Dashboard shows the %d most recent awarded contracts; %d older "
+                        "ones do not fit the page. The Excel export carries all of them.",
+                        len(export_items), omitted)
 
     settings = load_settings()
     if not settings.dashboard_data_path:

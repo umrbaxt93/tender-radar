@@ -76,8 +76,11 @@ def _export_10columns_sheet(sheet, session: Session, limit: int | None = None) -
             .outerjoin(LotItem, LotItem.procedure_id == Procedure.id)
             .join(RenewalOpportunity, RenewalOpportunity.procedure_id == Procedure.id, isouter=True)
             .where(Classification.is_it.is_(True), Procedure.completed_at.is_not(None))
-            .order_by(Procedure.completed_at.desc())
-            .limit(limit or 5000))
+            .order_by(Procedure.completed_at.desc()))
+    # No cap. Excel holds a million rows; truncating here would hide awarded contracts
+    # from the one export that can actually carry all of them.
+    if limit:
+        stmt = stmt.limit(limit)
 
     row_count = 0
     for proc, cust_org, award, item, renewal, amount in session.execute(stmt).all():
