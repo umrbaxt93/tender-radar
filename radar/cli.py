@@ -95,6 +95,16 @@ def cmd_renewal(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backfill(args: argparse.Namespace) -> int:
+    from radar.backfill import backfill_etender
+
+    with session_scope() as session:
+        stats = backfill_etender(session, years=args.years, batch_size=args.batch,
+                                 restart=args.restart)
+    print(stats.summary())
+    return 0
+
+
 def cmd_export(args: argparse.Namespace) -> int:
     from radar.export import export_workbook
 
@@ -252,6 +262,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("renewal", help="recompute renewal opportunities")
     s.set_defaults(func=cmd_renewal)
+
+    s = sub.add_parser("backfill", help="walk the UZEX e-tender archive back N years")
+    s.add_argument("--years", type=float, default=3.0, help="how far back to go (default 3)")
+    s.add_argument("--batch", type=int, default=500, help="deals per request (default 500)")
+    s.add_argument("--restart", action="store_true", help="ignore the saved cursor")
+    s.set_defaults(func=cmd_backfill)
 
     s = sub.add_parser("export", help="write out/renewal_radar.xlsx")
     s.set_defaults(func=cmd_export)
