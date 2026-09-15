@@ -192,6 +192,68 @@ def cmd_crm_deal(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_users(args: argparse.Namespace) -> int:
+    from sqlalchemy import select
+
+    from radar.auth import hash_password
+    from radar.models import User
+
+    subcmd = getattr(args, "users_action", None)
+    if subcmd == "create":
+        username = args.username.strip()
+        role = args.role.strip().lower()
+        if role not in ("admin", "sales", "viewer"):
+            print(f"Error: Invalid role '{role}'. Must be one of: admin, sales, viewer")
+            return 1
+        password = args.password
+        if not password:
+            import getpass
+            password = getpass.getpass(f"Password for {username}: ")
+            confirm = getpass.getpass("Confirm password: ")
+            if password != confirm:
+                print("Error: Passwords do not match")
+                return 1
+        if len(password) < 8:
+            print("Error: Password must be at least 8 characters long")
+            return 1
+
+        pwd_hash = hash_password(password)
+        with session_scope() as session:
+            existing = session.scalar(select(User).where(User.username == username))
+            if existing:
+                print(f"User '{username}' already exists. Updating role and password...")
+                existing.role = role
+                existing.password_hash = pwd_hash
+                existing.is_active = True
+            else:
+                new_user = User(
+                    username=username,
+                    password_hash=pwd_hash,
+                    role=role,
+                    is_active=True,
+                )
+                session.add(new_user)
+            session.commit()
+        print(f"User '{username}' with role '{role}' saved successfully.")
+        return 0
+
+    elif subcmd == "list":
+        with session_scope() as session:
+            users = session.scalars(select(User).order_by(User.id)).all()
+            print(f"Total users: {len(users)}")
+            for u in users:
+                status = "ACTIVE" if u.is_active else "DISABLED"
+                last = u.last_login_at.strftime("%Y-%m-%d %H:%M") if u.last_login_at else "Never"
+                print(
+                    f"  [{u.id}] {u.username:<16} role={u.role:<8} "
+                    f"status={status:<8} last={last}"
+                )
+        return 0
+
+    print("Usage: python -m radar users {create,list}")
+    return 1
+
+
 def cmd_crm_push(args: argparse.Namespace) -> int:
     from radar.crm import push_to_bitrix24
     with session_scope() as session:
@@ -223,6 +285,17 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m radar", description="Tender Radar MVP")
     p.add_argument("-v", "--verbose", action="store_true")
     sub = p.add_subparsers(dest="command", required=True)
+
+    s = sub.add_parser("users", help="manage system users and roles")
+    u_sub = s.add_subparsers(dest="users_action", required=True)
+    c_p = u_sub.add_parser("create", help="create or update user")
+    c_p.add_argument("--username", required=True, help="unique username")
+    c_p.add_argument(
+        "--role", required=True, choices=["admin", "sales", "viewer"], help="user role"
+    )
+    c_p.add_argument("--password", help="optional password (will prompt if not provided)")
+    u_sub.add_parser("list", help="list existing users")
+    s.set_defaults(func=cmd_users)
 
     s = sub.add_parser("migrate", help="apply Alembic migrations")
     s.set_defaults(func=cmd_migrate)

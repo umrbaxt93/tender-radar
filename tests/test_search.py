@@ -16,6 +16,7 @@ from radar.models import (
     Organization,
     OrganizationAlias,
     Procedure,
+    User,
 )
 from radar.search import (
     search_competitor_intelligence,
@@ -259,10 +260,22 @@ def test_web_api_search_endpoints(tmp_path, monkeypatch) -> None:
         LotItem.__table__,
         Award.__table__,
         Classification.__table__,
+        User.__table__,
     ]
     Base.metadata.create_all(engine, tables=tables)
 
     with Session(engine) as s:
+        from radar.auth import SESSION_COOKIE_NAME, create_session_token, hash_password
+        test_user = User(
+            username="search_tester",
+            password_hash=hash_password("pwd"),
+            role="admin",
+            is_active=True,
+        )
+        s.add(test_user)
+        s.flush()
+        user_id, username, role = test_user.id, test_user.username, test_user.role
+
         bank = Organization(name_canonical="Aloqabank ATB", stir="200111222")
         smart = Organization(name_canonical="Smart Server MCHJ", stir="305111222")
         s.add_all([bank, smart])
@@ -288,6 +301,8 @@ def test_web_api_search_endpoints(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr(web, "session_scope", mock_scope)
     client = TestClient(web.app)
+    token = create_session_token(user_id, username, role)
+    client.cookies.set(SESSION_COOKIE_NAME, token)
 
     # 1. Keyword search API
     res_kw = client.get("/api/search?q=Kaspersky&type=keyword")

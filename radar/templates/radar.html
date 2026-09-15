@@ -96,9 +96,14 @@
       <h1>Renewal Radar</h1>
       <p class="sub">IT xaridlari, qayta sotib olish (renewal) bashorati va E-Birja tahlili. Yangilangan: {{ generated_at }}.</p>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <a href="https://tender.softy.uz" class="btn btn-outline" target="_blank">🎯 Softy Platforma</a>
-      <button class="btn btn-primary" onclick="switchTab('tab-eimzo')">🔑 E-IMZO & E-Birja</button>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      {% if current_user %}
+      <span style="font-size: 13px; color: var(--muted); background: var(--badge-bg); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);">
+        👤 <strong>{{ current_user.username }}</strong> ({{ current_user.role }})
+      </span>
+      {% endif %}
+      <a href="/api/export/xlsx" class="btn btn-outline" style="text-decoration: none;">📥 Excel Yuklab Olish</a>
+      <a href="/logout" class="btn btn-outline" style="text-decoration: none; color: #b3261e;">Chiqish ↗</a>
     </div>
   </div>
 
@@ -122,7 +127,6 @@
     <button class="tab-btn" onclick="switchTab('tab-search')">🔍 Universal Qidiruv (Lotlar & Shartnomalar)</button>
     <button class="tab-btn" onclick="switchTab('tab-customer')">🏢 Mijozlar Tahlili (Xaridor nima sotib olgan?)</button>
     <button class="tab-btn" onclick="switchTab('tab-competitor')">🥊 Raqobatchilar Tahlili (G'oliblar & Bozor)</button>
-    <button class="tab-btn" onclick="switchTab('tab-eimzo')">🔑 E-Birja & E-IMZO Integratsiyasi</button>
   </div>
 
   <!-- Tab 1: Radar & Renewals -->
@@ -213,117 +217,7 @@
       <input type="text" id="compStir" class="search-input" style="flex:1; min-width:150px;" placeholder="🥊 Raqobatchi STIR (INN): 308904387" onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
       <button class="btn btn-primary" onclick="executeCompetitorSearch()">Raqobatchini tahlil qilish</button>
     </div>
-    <div id="compResultsContainer"></div>
   </div>
-
-  <!-- Tab 5: E-Birja & E-IMZO Integration -->
-  <div id="tab-eimzo" class="tab-content">
-    <div class="intel-card">
-      <div class="intel-header">
-        <h3 class="intel-title">E-IMZO Elektron Kalit & E-Birja Sinxronizatsiyasi</h3>
-        <span id="daemonBadge" class="badge">Tekshirilmoqda...</span>
-      </div>
-      <p>E-IMZO orqali Toshkent tovar xomashyo birjasi davlat xaridlari portaliga (<code>xarid.ebirja.uz</code>) ulanish va yopiq shartnomalarni yuklab tahlil qilish.</p>
-      
-      <div class="cards" style="margin-top: 15px;">
-        <div class="card">
-          <span>Lokal E-IMZO dasturi</span>
-          <b id="daemonStatusText" style="font-size: 16px;">Kutilmoqda...</b>
-        </div>
-        <div class="card">
-          <span>E-Birja Sessiya holati</span>
-          <b id="sessionStatusText" style="font-size: 16px;">Ommaviy API rejimi</b>
-        </div>
-        <div class="card">
-          <span>Korxona STIR</span>
-          <b style="font-size: 16px;">308904387 (SOFTY)</b>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px;">
-        <button class="btn btn-primary" onclick="triggerEbirjaSync('server')">⚡ E-Birja'dan Server va IT Lotlarni Yangilash</button>
-        <button class="btn btn-outline" onclick="triggerEbirjaSync('all')">📥 So'nggi Barcha Shartnomalarni Yuklash</button>
-        <button class="btn btn-outline" onclick="requestEimzoChallenge()">🔑 E-IMZO Challenge Olish</button>
-      </div>
-      <div id="syncResultNotice" style="margin-top: 15px; font-size: 13px;"></div>
-    </div>
-  </div>
-
-  <footer>Score range is 0&ndash;{{ max_score }} using the weights in radar/lifecycle.yaml.
-    Contact window {{ window_days }} days.</footer>
-</div>
-
-<script>
-  function switchTab(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
-    if (btn) btn.classList.add('active');
-    const content = document.getElementById(tabId);
-    if (content) content.classList.add('active');
-    if (tabId === 'tab-eimzo') checkEimzoStatus();
-  }
-
-  async function checkEimzoStatus() {
-    try {
-      const res = await fetch('/api/eimzo/status');
-      const data = await res.json();
-      const daemonBadge = document.getElementById('daemonBadge');
-      const daemonStatusText = document.getElementById('daemonStatusText');
-      const sessionStatusText = document.getElementById('sessionStatusText');
-
-      if (data.daemon && data.daemon.running) {
-        daemonBadge.className = 'badge badge-success';
-        daemonBadge.textContent = 'E-IMZO Faol (' + data.daemon.port + ')';
-        daemonStatusText.textContent = 'Faol (Port ' + data.daemon.port + ')';
-      } else {
-        daemonBadge.className = 'badge';
-        daemonBadge.textContent = 'E-IMZO O\'chiq';
-        daemonStatusText.textContent = 'Ishga tushirilmagan';
-      }
-
-      if (data.session && data.session.authenticated) {
-        sessionStatusText.textContent = 'Avtorizatsiyadan o\'tgan';
-      } else {
-        sessionStatusText.textContent = 'Ommaviy API (Faol)';
-      }
-    } catch(e) {
-      console.warn('Status error:', e);
-    }
-  }
-
-  async function triggerEbirjaSync(term) {
-    const notice = document.getElementById('syncResultNotice');
-    notice.innerHTML = '⏳ E-Birja bilan sinxronizatsiya bajarilmoqda...';
-    try {
-      const kw = (term === 'all') ? '' : term;
-      const res = await fetch('/api/ebirja/sync', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({search: kw, limit: 50})
-      });
-      const data = await res.json();
-      notice.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Muvaffaqiyatli: ' + data.fetched_count + ' ta lot va shartnoma yuklandi (Yangi: ' + (data.imported.inserted || 0) + ', Yangilandi: ' + (data.imported.updated || 0) + ')</span>';
-    } catch(e) {
-      notice.innerHTML = '<span style="color:var(--hot);">Xatolik yuz berdi: ' + e.message + '</span>';
-    }
-  }
-
-  async function requestEimzoChallenge() {
-    const notice = document.getElementById('syncResultNotice');
-    notice.innerHTML = '⏳ E-Birja serveridan challenge olinmoqda...';
-    try {
-      const res = await fetch('/api/eimzo/challenge', {method: 'POST'});
-      const data = await res.json();
-      if (data.challenge) {
-        notice.innerHTML = '<strong>Challenge olindi:</strong> <code>' + data.challenge + '</code> (TTL: ' + data.ttl + 's). E-IMZO kalitingiz orqali imzolashga tayyor.';
-      } else {
-        notice.innerHTML = 'Challenge olindi: ' + JSON.stringify(data);
-      }
-    } catch(e) {
-      notice.innerHTML = 'Challenge xatosi: ' + e.message;
-    }
-  }
 
   <!-- AI Strategy Advisor Modal -->
   <div id="aiModal" style="display:none; position:fixed; z-index:99999; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px;">
@@ -379,75 +273,18 @@
     </div>
   </div>
 
-  <script>
+  <footer>Score range is 0&ndash;{{ max_score }} using the weights in radar/lifecycle.yaml.
+    Contact window {{ window_days }} days.</footer>
+</div>
+
+<script>
   function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    event.target.classList.add('active');
-    const target = document.getElementById(tabId);
-    if (target) target.classList.add('active');
-    if (tabId === 'tab-eimzo') checkEimzoStatus();
-  }
-
-  async function checkEimzoStatus() {
-    try {
-      const res = await fetch('/api/eimzo/status');
-      const data = await res.json();
-      const daemonBadge = document.getElementById('daemonBadge');
-      const daemonStatusText = document.getElementById('daemonStatusText');
-      const sessionStatusText = document.getElementById('sessionStatusText');
-
-      if (data.daemon && data.daemon.running) {
-        daemonBadge.className = 'badge badge-success';
-        daemonBadge.textContent = 'E-IMZO Faol (' + data.daemon.port + ')';
-        daemonStatusText.textContent = 'Faol (Port ' + data.daemon.port + ')';
-      } else {
-        daemonBadge.className = 'badge';
-        daemonBadge.textContent = 'E-IMZO O\'chiq';
-        daemonStatusText.textContent = 'Ishga tushirilmagan';
-      }
-
-      if (data.session && data.session.authenticated) {
-        sessionStatusText.textContent = 'Avtorizatsiyadan o\'tgan';
-      } else {
-        sessionStatusText.textContent = 'Ommaviy API (Faol)';
-      }
-    } catch(e) {
-      console.warn('Status error:', e);
-    }
-  }
-
-  async function triggerEbirjaSync(term) {
-    const notice = document.getElementById('syncResultNotice');
-    notice.innerHTML = '⏳ E-Birja bilan xavfsiz avtorizatsiyalangan sinxronizatsiya bajarilmoqda...';
-    try {
-      const kw = (term === 'all') ? '' : term;
-      const res = await fetch('/api/ebirja/sync', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({search: kw, limit: 100})
-      });
-      const data = await res.json();
-      notice.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Muvaffaqiyatli: ' + data.fetched_count + ' ta shartnoma yuklandi (Yangi: ' + (data.imported.inserted || 0) + ', Yangilandi: ' + (data.imported.updated || 0) + ')</span>';
-    } catch(e) {
-      notice.innerHTML = '<span style="color:var(--hot);">Xatolik yuz berdi: ' + e.message + '</span>';
-    }
-  }
-
-  async function requestEimzoChallenge() {
-    const notice = document.getElementById('syncResultNotice');
-    notice.innerHTML = '⏳ E-Birja serveridan challenge olinmoqda...';
-    try {
-      const res = await fetch('/api/eimzo/challenge', {method: 'POST'});
-      const data = await res.json();
-      if (data.challenge) {
-        notice.innerHTML = '<strong>Challenge olindi:</strong> <code>' + data.challenge + '</code> (TTL: ' + data.ttl + 's). E-IMZO kaliti orqali imzolanadi.';
-      } else {
-        notice.innerHTML = 'Challenge olindi: ' + JSON.stringify(data);
-      }
-    } catch(e) {
-      notice.innerHTML = 'Challenge xatosi: ' + e.message;
-    }
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+    if (btn) btn.classList.add('active');
+    const content = document.getElementById(tabId);
+    if (content) content.classList.add('active');
   }
 
   async function executeKeywordSearch() {

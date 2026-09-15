@@ -255,5 +255,39 @@ class CrmTask(Base):
     procedure: Mapped[Procedure | None] = relationship()
 
 
+class User(Base):
+    """System user for authentication and role-based access control."""
+
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="viewer"
+    )  # 'admin' | 'sales' | 'viewer'
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ExportLog(Base):
+    """Audit log of data export actions by authenticated users."""
+
+    __tablename__ = "export_log"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    export_type: Mapped[str] = mapped_column(String(16), nullable=False)  # 'xlsx' | 'pdf'
+    filter_json: Mapped[dict | None] = mapped_column(JSONB)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    user: Mapped[User] = relationship()
+
+
 Index("ix_organization_alias_name_trgm", OrganizationAlias.name_raw,
       postgresql_using="gin", postgresql_ops={"name_raw": "gin_trgm_ops"})

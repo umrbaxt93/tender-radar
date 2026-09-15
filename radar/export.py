@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from radar.models import Award, Classification, LotItem, Organization, Procedure, RenewalOpportunity
 from radar.renewal import radar_rows
+from radar.security import sanitize_for_spreadsheet
 from radar.stats import collect_stats
 
 log = logging.getLogger(__name__)
@@ -96,16 +97,16 @@ def _export_10columns_sheet(sheet, session: Session, limit: int | None = None) -
         end_date = end_at.strftime("%Y-%m-%d") if end_at else ""
 
         sheet.append([
-            cust_org.name_canonical if cust_org else "",
-            cust_org.stir if cust_org else "",
-            product_name,
+            sanitize_for_spreadsheet(cust_org.name_canonical if cust_org else ""),
+            sanitize_for_spreadsheet(cust_org.stir if cust_org else ""),
+            sanitize_for_spreadsheet(product_name),
             signed_date,
             end_date,
             float(proc.start_price) if proc.start_price is not None else None,
             float(amount) if amount is not None else None,
-            winner_org.name_canonical if winner_org else "",
-            winner_org.stir if winner_org else "",
-            proc.source_url or ""
+            sanitize_for_spreadsheet(winner_org.name_canonical if winner_org else ""),
+            sanitize_for_spreadsheet(winner_org.stir if winner_org else ""),
+            sanitize_for_spreadsheet(proc.source_url or "")
         ])
         row_count += 1
 
@@ -133,11 +134,20 @@ def export_workbook(session: Session, path: str | Path, now: datetime | None = N
 
     rows = radar_rows(session, now=now, limit=limit)
     for row in rows:
-        radar.append([row.customer, row.stir or "", row.region or "", row.category or "",
-                      row.brand or "", _date(row.last_purchase_at),
-                      float(row.amount) if row.amount is not None else None,
-                      _date(row.expected_renewal_at), _date(row.contact_by_at), row.score,
-                      row.source_url or "", row.title])
+        radar.append([
+            sanitize_for_spreadsheet(row.customer),
+            sanitize_for_spreadsheet(row.stir or ""),
+            sanitize_for_spreadsheet(row.region or ""),
+            sanitize_for_spreadsheet(row.category or ""),
+            sanitize_for_spreadsheet(row.brand or ""),
+            _date(row.last_purchase_at),
+            float(row.amount) if row.amount is not None else None,
+            _date(row.expected_renewal_at),
+            _date(row.contact_by_at),
+            row.score,
+            sanitize_for_spreadsheet(row.source_url or ""),
+            sanitize_for_spreadsheet(row.title),
+        ])
     _autosize(radar, {1: 46, 2: 12, 3: 20, 4: 18, 5: 14, 6: 14, 7: 18, 8: 16, 9: 14, 10: 8,
                       11: 40, 12: 50})
 
@@ -152,13 +162,23 @@ def export_workbook(session: Session, path: str | Path, now: datetime | None = N
             .order_by(Procedure.completed_at.desc().nullslast()))
     it_count = 0
     for proc, cls, org, value in session.execute(stmt).all():
-        lots.append([proc.source, proc.source_id, _date(proc.completed_at),
-                     org.name_canonical if org else "", org.stir if org else "",
-                     org.region if org else "", cls.category or "", cls.brand or "",
-                     cls.method, cls.model_name or "",
-                     float(cls.confidence) if cls.confidence is not None else None,
-                     float(value) if value is not None else None, proc.currency or "",
-                     proc.title, proc.source_url or ""])
+        lots.append([
+            sanitize_for_spreadsheet(proc.source),
+            sanitize_for_spreadsheet(proc.source_id),
+            _date(proc.completed_at),
+            sanitize_for_spreadsheet(org.name_canonical if org else ""),
+            sanitize_for_spreadsheet(org.stir if org else ""),
+            sanitize_for_spreadsheet(org.region if org else ""),
+            sanitize_for_spreadsheet(cls.category or ""),
+            sanitize_for_spreadsheet(cls.brand or ""),
+            sanitize_for_spreadsheet(cls.method),
+            sanitize_for_spreadsheet(cls.model_name or ""),
+            float(cls.confidence) if cls.confidence is not None else None,
+            float(value) if value is not None else None,
+            sanitize_for_spreadsheet(proc.currency or ""),
+            sanitize_for_spreadsheet(proc.title),
+            sanitize_for_spreadsheet(proc.source_url or ""),
+        ])
         it_count += 1
     _autosize(lots, {1: 12, 2: 14, 3: 12, 4: 46, 5: 12, 6: 20, 7: 18, 8: 14, 9: 8, 10: 16,
                      11: 10, 12: 18, 13: 9, 14: 60, 15: 40})

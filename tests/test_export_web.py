@@ -77,13 +77,28 @@ def test_empty_export_still_writes_a_file(session, tmp_path):
 def client(session, engine, monkeypatch):
     from contextlib import contextmanager
 
+    from radar.auth import SESSION_COOKIE_NAME, create_session_token, hash_password
+    from radar.models import User
+
+    test_user = User(
+        username="web_test_admin",
+        password_hash=hash_password("pwd123"),
+        role="admin",
+        is_active=True,
+    )
+    session.add(test_user)
+    session.flush()
+
     @contextmanager
     def scope(*args, **kwargs):
         yield session
 
     monkeypatch.setattr(web, "session_scope", scope)
     monkeypatch.setattr(web, "get_engine", lambda *a, **k: engine)
-    return TestClient(web.app)
+    tc = TestClient(web.app)
+    token = create_session_token(test_user.id, test_user.username, test_user.role)
+    tc.cookies.set(SESSION_COOKIE_NAME, token)
+    return tc
 
 
 def test_health_endpoint(client):
@@ -93,7 +108,9 @@ def test_health_endpoint(client):
 
 
 def test_index_lists_endpoints(client):
-    assert client.get("/").json() == {"endpoints": ["/radar", "/health"]}
+    assert client.get("/", headers={"Accept": "application/json"}).json() == {
+        "endpoints": ["/radar", "/health"]
+    }
 
 
 def test_radar_page_renders_rows(client, session):

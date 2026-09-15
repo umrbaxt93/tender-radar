@@ -244,7 +244,22 @@ def test_web_api_crm_endpoints(session, engine, monkeypatch, crm_sample_data):
     monkeypatch.setattr(web, "session_scope", scope)
     monkeypatch.setattr(web, "get_engine", lambda *a, **k: engine)
 
+    from radar.auth import SESSION_COOKIE_NAME, create_session_token, hash_password
+    from radar.models import User
+
+    test_user = User(
+        username="crm_test_admin",
+        password_hash=hash_password("pwd123"),
+        role="admin",
+        is_active=True,
+    )
+    session.add(test_user)
+    session.flush()
+
     client = TestClient(web.app)
+    token = create_session_token(test_user.id, test_user.username, test_user.role)
+    client.cookies.set(SESSION_COOKIE_NAME, token)
+
     org = crm_sample_data["org"]
     proc = crm_sample_data["proc1"]
 

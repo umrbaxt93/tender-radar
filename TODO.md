@@ -33,3 +33,7 @@
 - [x] Bitrix24 idempotent lead/deal/task creation module (`radar/crm.py`) ported from parent project with unique constraint per procedure.
 - [ ] Category to manager mapping and automatic scoring feedback loop into CRM.
 - [ ] Daily import and alerts, competitor and price intelligence.
+
+## Future Phase: E-IMZO Elektron Kalit Autentifikatsiyasi (Deferred)
+- [ ] E-IMZO orqali Toshkent tovar xomashyo birjasi davlat xaridlari portaliga (xarid.ebirja.uz) ulanish va yopiq shartnomalarni yuklab tahlil qilish moduli.
+- [ ] E-IMZO brauzer plagini / E-IMZO daemon (Port 64443 / 127.0.0.1) bilan integratsiya. Hozirda Faza 0 AppSec audit talablariga binoan interfeysdan olib tashlangan va alohida faza sifatida rejalashtirilgan.
