@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -74,6 +75,21 @@ def _pending(session: Session, limit: int | None, refresh: bool,
     if limit:
         stmt = stmt.limit(limit)
     return list(session.execute(stmt).all())
+
+
+# A long classification run meets transient model errors -- 503 "high demand", 429, 500.
+# Ending the whole run on the first one wastes every batch still queued behind it.
+MAX_BATCH_ATTEMPTS = 4
+BACKOFF_BASE_S = 5.0
+MAX_CONSECUTIVE_FAILURES = 5
+_TRANSIENT_MARKERS = ("503", "429", "500", "unavailable", "resource_exhausted",
+                      "deadline", "timeout", "overloaded", "internal")
+_sleep = time.sleep
+
+
+def _is_transient(exc: Exception) -> bool:
+    blob = f"{type(exc).__name__} {exc}".lower()
+    return any(m in blob for m in _TRANSIENT_MARKERS)
 
 
 # PostgreSQL refuses a statement with more than 65535 bind parameters, and one IN clause
@@ -176,6 +192,7 @@ def run_classification(session: Session, settings: Settings, *, use_ai: bool = T
         return report
     ledger = CostLedger(session, settings.classifier_budget_usd, pricing)
 
+    consecutive_failures = 0
     for start in range(0, len(unique), batch_size):
         chunk = unique[start:start + batch_size]
         items = [item for _, item in chunk]
@@ -187,13 +204,41 @@ def run_classification(session: Session, settings: Settings, *, use_ai: bool = T
             report.stopped_reason = f"budget_exceeded: {exc}"
             log.warning("stopping classification: %s", exc)
             break
-        try:
-            response = model.generate(prompt, len(items))
-        except Exception as exc:
-            ledger.fail(row)
-            report.errors.append(f"batch at {start}: {type(exc).__name__}: {exc}")
-            log.error("model call failed: %s", exc)
-            break
+        response = None
+        for attempt in range(1, MAX_BATCH_ATTEMPTS + 1):
+            try:
+                response = model.generate(prompt, len(items))
+                break
+            except Exception as exc:
+                ledger.fail(row)
+                if not _is_transient(exc) or attempt == MAX_BATCH_ATTEMPTS:
+                    report.errors.append(f"batch at {start}: {type(exc).__name__}: {exc}")
+                    log.error("model call failed: %s", exc)
+                    break
+                wait = BACKOFF_BASE_S * (2 ** (attempt - 1))
+                log.warning("model call failed (%s), retrying in %.0fs (attempt %d/%d)",
+                            type(exc).__name__, wait, attempt, MAX_BATCH_ATTEMPTS)
+                _sleep(wait)
+                try:
+                    row = ledger.reserve(prompt, est_in, est_out)
+                except BudgetExceeded as exc:
+                    report.stopped_reason = f"budget_exceeded: {exc}"
+                    break
+
+        if response is None:
+            if report.stopped_reason:
+                break
+            # One dead batch out of thousands must not end the run. A systemic fault --
+            # a rejected key, a withdrawn model -- fails every batch, so consecutive
+            # failures are what stops it.
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                report.stopped_reason = (
+                    f"{consecutive_failures} consecutive batch failures; stopping")
+                log.error("%s", report.stopped_reason)
+                break
+            continue
+        consecutive_failures = 0
         by_ref = {str(r.get("ref")): r for r in response.results}
         missing = 0
         for _pid, item in chunk:

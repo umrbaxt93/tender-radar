@@ -186,3 +186,62 @@ def test_item_names_survives_more_ids_than_postgres_allows_parameters(session):
 
     assert len(names) == 70_000
     assert all(v == [] for v in names.values())
+
+
+@dataclass
+class FlakyModel:
+    """Fails the first `fail_times` calls, then behaves."""
+    name: str = "mock"
+    fail_times: int = 0
+    error: str = "503 UNAVAILABLE. This model is currently experiencing high demand."
+    calls: int = 0
+
+    def generate(self, prompt: str, item_count: int) -> g.ModelResponse:
+        self.calls += 1
+        if self.calls <= self.fail_times:
+            raise RuntimeError(self.error)
+        return g.MockModel().generate(prompt, item_count)
+
+
+def test_a_transient_model_error_is_retried_not_fatal(session, monkeypatch):
+    """A 503 "high demand" on one batch used to end the whole run. Over thousands of
+    batches that means a momentary spike throws away every batch still queued."""
+    from radar.classify import pipeline
+
+    monkeypatch.setattr(pipeline, "_sleep", lambda s: None)
+    add_lot(session, "T1", "Noma'lum tovar yetkazib berish", "Aralash tovarlar")
+    model = FlakyModel(fail_times=2)
+
+    report = run_classification(session, SETTINGS, model=model)
+
+    assert model.calls == 3          # two failures, then the real answer
+    assert report.by_model == 1
+    assert report.stopped_reason == "completed"
+    assert report.errors == []
+
+
+def test_a_permanent_model_error_is_not_retried(session, monkeypatch):
+    from radar.classify import pipeline
+
+    monkeypatch.setattr(pipeline, "_sleep", lambda s: None)
+    add_lot(session, "P1", "Noma'lum tovar yetkazib berish", "Aralash tovarlar")
+    model = FlakyModel(fail_times=99, error="401 API key not valid")
+
+    run_classification(session, SETTINGS, model=model)
+
+    assert model.calls == 1          # no point retrying a rejected key
+
+
+def test_a_run_stops_once_failures_look_systemic(session, monkeypatch):
+    from radar.classify import pipeline
+
+    monkeypatch.setattr(pipeline, "_sleep", lambda s: None)
+    for i in range(12):
+        add_lot(session, f"S{i}", f"Noma'lum tovar {i} yetkazib berish", f"Aralash {i}")
+    model = FlakyModel(fail_times=999)
+
+    report = run_classification(session, SETTINGS, model=model, batch_size=1)
+
+    assert "consecutive batch failures" in (report.stopped_reason or "")
+    # It gave up rather than grinding through every remaining batch.
+    assert model.calls < 12 * pipeline.MAX_BATCH_ATTEMPTS
