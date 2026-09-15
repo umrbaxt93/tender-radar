@@ -76,14 +76,20 @@ def _pending(session: Session, limit: int | None, refresh: bool,
     return list(session.execute(stmt).all())
 
 
+# PostgreSQL refuses a statement with more than 65535 bind parameters, and one IN clause
+# spends one per id. A full-corpus run passes far more than that.
+_ID_CHUNK = 10_000
+
+
 def _item_names(session: Session, procedure_ids: list[int]) -> dict[int, list[str]]:
     names: dict[int, list[str]] = {pid: [] for pid in procedure_ids}
-    rows = session.execute(
-        select(LotItem.procedure_id, LotItem.raw_name)
-        .where(LotItem.procedure_id.in_(procedure_ids))
-    ).all()
-    for pid, name in rows:
-        names[pid].append(name)
+    for start in range(0, len(procedure_ids), _ID_CHUNK):
+        rows = session.execute(
+            select(LotItem.procedure_id, LotItem.raw_name)
+            .where(LotItem.procedure_id.in_(procedure_ids[start:start + _ID_CHUNK]))
+        ).all()
+        for pid, name in rows:
+            names[pid].append(name)
     return names
 
 

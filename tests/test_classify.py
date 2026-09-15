@@ -174,3 +174,15 @@ def test_unsure_only_targets_exactly_the_rows_the_rules_abstained_on(session):
     # The other two modes are unchanged.
     assert bare.id in [pid for pid, _ in _pending(session, None, False)]
     assert len(_pending(session, None, True)) == 5
+
+
+def test_item_names_survives_more_ids_than_postgres_allows_parameters(session):
+    """One IN clause spends one bind parameter per id and PostgreSQL caps them at 65535.
+    A full-corpus run passes more than that, and the query died before sending a batch."""
+    from radar.classify.pipeline import _item_names
+
+    ids = list(range(1, 70_001))
+    names = _item_names(session, ids)
+
+    assert len(names) == 70_000
+    assert all(v == [] for v in names.values())
