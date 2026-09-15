@@ -142,3 +142,58 @@ def test_detail_url_templating():
 
     build(handler, Clock()).detail("ABC-1")
     assert seen["url"].endswith("/detail/ABC-1")
+
+
+class _Resp:
+    status_code = 200
+    headers = {"content-type": "application/json"}
+
+    def json(self):
+        return [{"ok": True}]
+
+
+def test_uzex_adapter_paces_through_the_shared_limiter():
+    """The adapter used to sleep 0.7-1.4 s of its own, under the project's 3 s floor."""
+    from radar.source.uzex import UzexClient
+
+    clock = Clock()
+    client = UzexClient(limiter=RateLimiter(sleep=clock.sleep, clock=clock.monotonic,
+                                            rng=random.Random(0)))
+    client.session.post = lambda *a, **k: _Resp()
+
+    for _ in range(4):
+        client._request("POST", "https://example.invalid/x", json_data={})
+
+    assert len(clock.slept) == 3  # the first call is immediate
+    assert all(gap >= MIN_INTERVAL_S for gap in clock.slept)
+
+
+def test_ebirja_adapter_paces_through_the_shared_limiter():
+    from radar.source.ebirja import EbirjaClient
+
+    clock = Clock()
+    client = EbirjaClient(limiter=RateLimiter(sleep=clock.sleep, clock=clock.monotonic,
+                                              rng=random.Random(0)))
+    for _ in range(3):
+        client.limiter.wait()
+
+    assert len(clock.slept) == 2
+    assert all(gap >= MIN_INTERVAL_S for gap in clock.slept)
+
+
+def test_source_adapters_verify_tls_certificates():
+    import ssl
+
+    from radar.source.ebirja import EbirjaClient
+    from radar.source.uzex import UzexClient
+
+    assert UzexClient().session.verify is True
+    assert EbirjaClient().ctx.verify_mode == ssl.CERT_REQUIRED
+
+
+def test_uzex_sends_no_reverse_engineered_validation_header():
+    """The Validation header was built from an RSA key lifted out of the site's JS bundle.
+    Live checks showed the endpoints answer identically without it, so it is gone."""
+    from radar.source.uzex import UzexClient
+
+    assert "Validation" not in UzexClient()._get_headers()

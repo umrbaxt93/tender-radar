@@ -21,6 +21,7 @@ from radar.classify.rules import build_text, classify_text
 from radar.eimzo import EImzoManager
 from radar.models import Award, Classification, LotItem, Organization, OrganizationAlias, Procedure
 from radar.normalize import normalize_product
+from radar.source.client import RateLimiter
 from radar.source.parser import (
     AwardRecord,
     LotItemRecord,
@@ -42,11 +43,15 @@ class EbirjaClient:
         base_url: str = EBIRJA_BASE_URL,
         eimzo_mgr: EImzoManager | None = None,
         timeout: float = 12.0,
+        limiter: RateLimiter | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.eimzo_mgr = eimzo_mgr or EImzoManager()
         self.timeout = timeout
-        self.ctx = ssl._create_unverified_context()
+        self.ctx = ssl.create_default_context()
+        # Shared limiter, not a local sleep: the 3 s floor is a project-wide rule
+        # (CLAUDE.md, DECISIONS.md) and RateLimiter is where it is enforced.
+        self.limiter = limiter or RateLimiter()
 
     def _request(
         self,
@@ -54,7 +59,6 @@ class EbirjaClient:
         params: dict[str, Any] | None = None,
         retries: int = 3,
     ) -> dict[str, Any]:
-        import random
         import time
 
         params = params or {}
@@ -69,8 +73,7 @@ class EbirjaClient:
         headers["Accept"] = "application/json, text/plain, */*"
         headers["Accept-Language"] = "uz,ru;q=0.9,en;q=0.8"
 
-        # Rate-pacing jitter to prevent bot-detection / WAF triggers
-        time.sleep(random.uniform(0.6, 1.2))
+        self.limiter.wait()
 
         for attempt in range(1, retries + 1):
             req = urllib.request.Request(url, headers=headers)
