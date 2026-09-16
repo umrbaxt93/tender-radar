@@ -141,3 +141,34 @@ def test_the_list_row_alone_fills_customer_and_winner_stir(session, archive):
     assert customer.stir == "300000001"
     assert winner.stir == "310000001"
     assert award.amount is not None
+
+
+def test_a_cursor_ahead_of_the_data_is_reported_not_ignored(session, archive):
+    """The cursor is a claim about work already done. After a wipe it still claims it, so a
+    resume imports nothing and reports success over an empty table — the exact silent gap
+    this job exists to prevent."""
+    from sqlalchemy import delete
+
+    from radar.models import Procedure
+
+    backfill_etender(session, FakeClient(archive), years=3, batch_size=10, now=NOW, job_name=JOB)
+    assert get_cursor(session, JOB).last_page == 30
+
+    # The data goes away; the cursor does not.
+    session.execute(delete(Procedure).where(Procedure.source == "uzex"))
+    session.commit()
+
+    stats = backfill_etender(session, FakeClient(archive), years=3, batch_size=10, now=NOW,
+                             job_name=JOB)
+
+    assert stats.cursor_mismatch is not None
+    assert "30 deals walked" in stats.cursor_mismatch
+    assert "restart=True" in stats.cursor_mismatch
+    assert "WARNING" in stats.summary()
+
+
+def test_no_mismatch_warning_when_the_data_is_there(session, archive):
+    stats = backfill_etender(session, FakeClient(archive), years=3, batch_size=10, now=NOW,
+                             job_name=JOB)
+    assert stats.cursor_mismatch is None
+    assert "WARNING" not in stats.summary()

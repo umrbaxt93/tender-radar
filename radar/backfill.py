@@ -18,9 +18,11 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from radar.importer import get_cursor
+from radar.models import Procedure
 from radar.source.uzex import UzexClient, import_uzex_records, parse_uzex_etender_deal
 
 log = logging.getLogger(__name__)
@@ -40,13 +42,15 @@ class BackfillStats:
     skipped: int = 0
     oldest_seen: datetime | None = None
     stopped_because: str = "not started"
+    cursor_mismatch: str | None = None
     errors: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
         oldest = self.oldest_seen.strftime("%Y-%m-%d") if self.oldest_seen else "-"
+        warning = f" WARNING: {self.cursor_mismatch}" if self.cursor_mismatch else ""
         return (f"backfill: {self.batches} batches, {self.fetched} deals fetched, "
                 f"{self.inserted} new, {self.updated} updated, {self.skipped} unparsable, "
-                f"oldest {oldest}, stopped: {self.stopped_because}")
+                f"oldest {oldest}, stopped: {self.stopped_because}{warning}")
 
 
 def _deal_date(deal: dict) -> datetime | None:
@@ -83,6 +87,21 @@ def backfill_etender(
         cursor.last_page = 0
     start_index = max(cursor.last_page, 0) + 1
     session.commit()  # the cursor row must survive a rolled-back batch
+
+    # The cursor is a claim about work already done. If the rows it claims are not in the
+    # table -- a wipe, a restore from an older dump, a different database -- then resuming
+    # reports success while importing nothing, which is the silent gap this whole job exists
+    # to avoid. Say so loudly rather than returning a clean summary over an empty table.
+    imported = session.scalar(
+        select(func.count()).select_from(Procedure)
+        .where(Procedure.source == "uzex", Procedure.source_id.like("uzex_et_%"))
+    ) or 0
+    if start_index > 1 and imported < (start_index - 1) * 0.5:
+        stats.cursor_mismatch = (
+            f"cursor claims {start_index - 1} deals walked but only {imported} are stored; "
+            f"resuming would import nothing. Re-run with restart=True to refill the gap."
+        )
+        log.warning("Backfill: %s", stats.cursor_mismatch)
 
     log.info("Backfill from index %d back to %s", start_index, cutoff.strftime("%Y-%m-%d"))
 
