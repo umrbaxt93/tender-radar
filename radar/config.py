@@ -24,7 +24,6 @@ def _load_env_file() -> None:
                 os.environ[k] = v
 
 
-
 def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
@@ -53,9 +52,7 @@ class Settings:
     # Trigram similarity above which two customer names are treated as the same
     # organization when neither side carries a STIR. Deliberately strict: merging two
     # real organizations is far worse than keeping a duplicate.
-    org_match_threshold: float = field(
-        default_factory=lambda: _float("ORG_MATCH_THRESHOLD", 0.92)
-    )
+    org_match_threshold: float = field(default_factory=lambda: _float("ORG_MATCH_THRESHOLD", 0.92))
     request_interval_s: float = field(default_factory=lambda: _float("REQUEST_INTERVAL_S", 3.0))
     out_dir: Path = field(default_factory=lambda: ROOT / _env("OUT_DIR", "out"))
     # Dashboard build and deploy. All empty by default: the worker skips deployment
@@ -66,6 +63,16 @@ class Settings:
     deploy_ssh_key: str = field(default_factory=lambda: _env("DEPLOY_SSH_KEY"))
     deploy_ssh_port: str = field(default_factory=lambda: _env("DEPLOY_SSH_PORT", "22"))
     deploy_target: str = field(default_factory=lambda: _env("DEPLOY_TARGET"))
+    # Telegram alerts configuration (sends HOT renewal alerts directly to Umid)
+    telegram_bot_token: str = field(default_factory=lambda: _env("TELEGRAM_BOT_TOKEN"))
+    telegram_chat_id: str = field(default_factory=lambda: _env("TELEGRAM_CHAT_ID"))
+    telegram_alert_min_score: int = field(
+        default_factory=lambda: int(_env("TELEGRAM_ALERT_MIN_SCORE", "80"))
+    )
+
+    @property
+    def telegram_configured(self) -> bool:
+        return bool(self.telegram_bot_token and self.telegram_chat_id)
 
     @property
     def deploy_configured(self) -> bool:

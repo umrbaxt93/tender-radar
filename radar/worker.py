@@ -55,6 +55,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("radar.worker")
 
+
 def _collect(records: list, label: str, fetch, parse) -> None:
     """Fetch one E-Birja page and parse it. A failure here skips the page, never the run."""
     try:
@@ -76,24 +77,35 @@ def sync_ebirja() -> int:
 
     # 1. Recent E-Shop (pages 0..2)
     for p in range(3):
-        _collect(records, f"e-shop p{p}",
-                 lambda p=p: client.fetch_shop_contracts(page=p, per_page=50, shop_type="e-shop"),
-                 lambda it: parse_ebirja_contract(it, contract_type="Shop"))
+        _collect(
+            records,
+            f"e-shop p{p}",
+            lambda p=p: client.fetch_shop_contracts(page=p, per_page=50, shop_type="e-shop"),
+            lambda it: parse_ebirja_contract(it, contract_type="Shop"),
+        )
 
     # 2. Recent National-Shop (pages 0..1)
     for p in range(2):
-        _collect(records, f"national-shop p{p}",
-                 lambda p=p: client.fetch_shop_contracts(page=p, per_page=50,
-                                                         shop_type="national-shop"),
-                 lambda it: parse_ebirja_contract(it, contract_type="National-Shop"))
+        _collect(
+            records,
+            f"national-shop p{p}",
+            lambda p=p: client.fetch_shop_contracts(page=p, per_page=50, shop_type="national-shop"),
+            lambda it: parse_ebirja_contract(it, contract_type="National-Shop"),
+        )
 
     # 3. Recent Tanlov & Taklif
-    _collect(records, "tanlov",
-             lambda: client.fetch_tender_contracts(page=0, per_page=30, tender_type=2),
-             lambda it: parse_ebirja_contract(it, contract_type="Tanlov"))
-    _collect(records, "taklif",
-             lambda: client.fetch_offer_requests(page=0, per_page=30),
-             lambda it: parse_ebirja_contract(it, contract_type="Taklif"))
+    _collect(
+        records,
+        "tanlov",
+        lambda: client.fetch_tender_contracts(page=0, per_page=30, tender_type=2),
+        lambda it: parse_ebirja_contract(it, contract_type="Tanlov"),
+    )
+    _collect(
+        records,
+        "taklif",
+        lambda: client.fetch_offer_requests(page=0, per_page=30),
+        lambda it: parse_ebirja_contract(it, contract_type="Taklif"),
+    )
 
     if not records:
         log.warning("E-Birja returned no usable records this cycle.")
@@ -103,6 +115,7 @@ def sync_ebirja() -> int:
         stats = import_ebirja_records(session, records)
         log.info("E-Birja import result: %s", stats)
         return stats.get("inserted", 0)
+
 
 def sync_uzex(limit_per_module: int = 100) -> int:
     log.info("Starting UZEX synchronization across all modules...")
@@ -123,30 +136,40 @@ def sync_uzex(limit_per_module: int = 100) -> int:
                 log.warning("UZEX %s: skipping record %s: %s", label, d.get("id"), exc)
 
     # 1. Auction Deals + Contract Items
-    each("auction",
-         lambda: client.fetch_auction_deals(from_idx=1, to_idx=limit_per_module),
-         lambda d: parse_uzex_auction_deal(
-             d,
-             products=(client.fetch_auction_deal_products(d["lot_id"])
-                       if d.get("lot_id") else [])))
+    each(
+        "auction",
+        lambda: client.fetch_auction_deals(from_idx=1, to_idx=limit_per_module),
+        lambda d: parse_uzex_auction_deal(
+            d, products=(client.fetch_auction_deal_products(d["lot_id"]) if d.get("lot_id") else [])
+        ),
+    )
 
     # 2. E-Tender & Otbor Deals + Budget Products
-    each("etender",
-         lambda: client.fetch_etender_deals(from_idx=1, to_idx=limit_per_module, system_id=0),
-         lambda d: parse_uzex_etender_deal(
-             d, trade_info=client.fetch_etender_trade_detail(d["trade_id"])
-             if d.get("trade_id") else None))
+    each(
+        "etender",
+        lambda: client.fetch_etender_deals(from_idx=1, to_idx=limit_per_module, system_id=0),
+        lambda d: parse_uzex_etender_deal(
+            d,
+            trade_info=client.fetch_etender_trade_detail(d["trade_id"])
+            if d.get("trade_id")
+            else None,
+        ),
+    )
 
     # 3. Direct Purchases + Detailed Items
-    each("direct",
-         lambda: client.fetch_direct_purchases(from_idx=1, to_idx=limit_per_module),
-         lambda d: parse_uzex_direct_purchase(
-             d, detail=client.fetch_direct_purchase_detail(d["id"]) if d.get("id") else None))
+    each(
+        "direct",
+        lambda: client.fetch_direct_purchases(from_idx=1, to_idx=limit_per_module),
+        lambda d: parse_uzex_direct_purchase(
+            d, detail=client.fetch_direct_purchase_detail(d["id"]) if d.get("id") else None
+        ),
+    )
 
     with session_scope() as session:
         stats = import_uzex_records(session, records)
         log.info("UZEX import result: %s", stats)
         return stats.get("inserted", 0)
+
 
 def refresh_renewals() -> int:
     """Rebuild the Radar from the current classifications.
@@ -174,39 +197,49 @@ def rebuild_and_deploy():
             "xt_count": session.query(Procedure).filter(Procedure.source == "xt_xarid").count(),
             "organizations": session.query(Organization).count(),
             "classified_it": session.query(Classification)
-                                    .filter(Classification.is_it.is_(True)).count(),
+            .filter(Classification.is_it.is_(True))
+            .count(),
             "radar_opportunities": len(r_rows),
         }
 
         radar_data = []
         for idx, r in enumerate(r_rows[:50], 1):
-            ai_sample = generate_ai_recommendation({
-                "title": r.title,
-                "amount": float(r.amount) if r.amount else 0,
-                "customer": {"name": r.customer, "stir": r.stir, "region": r.region},
-                "category": r.category or "IT",
-                "items": [{"raw_name": r.title, "brand": r.brand}],
-                "date": (r.last_purchase_at.strftime("%Y-%m-%d")
-                         if r.last_purchase_at else "2026-03-01"),
-            })
-            radar_data.append({
-                "procedure_id": idx,
-                "customer": r.customer,
-                "score": r.score,
-                "contact_by": r.contact_by_at.strftime("%Y-%m-%d") if r.contact_by_at else "",
-                "category": r.category or "IT",
-                "brand": r.brand or "",
-                "amount": float(r.amount) if r.amount is not None else 0,
-                "expected_renewal": (r.expected_renewal_at.strftime("%Y-%m-%d")
-                                     if r.expected_renewal_at else ""),
-                "last_purchase": (r.last_purchase_at.strftime("%Y-%m-%d")
-                                  if r.last_purchase_at else ""),
-                "stir": r.stir or "",
-                "region": r.region or "",
-                "title": r.title,
-                "source_url": r.source_url or "",
-                "ai_advice": ai_sample,
-            })
+            ai_sample = generate_ai_recommendation(
+                {
+                    "title": r.title,
+                    "amount": float(r.amount) if r.amount else 0,
+                    "customer": {"name": r.customer, "stir": r.stir, "region": r.region},
+                    "category": r.category or "IT",
+                    "items": [{"raw_name": r.title, "brand": r.brand}],
+                    "date": (
+                        r.last_purchase_at.strftime("%Y-%m-%d")
+                        if r.last_purchase_at
+                        else "2026-03-01"
+                    ),
+                }
+            )
+            radar_data.append(
+                {
+                    "procedure_id": idx,
+                    "customer": r.customer,
+                    "score": r.score,
+                    "contact_by": r.contact_by_at.strftime("%Y-%m-%d") if r.contact_by_at else "",
+                    "category": r.category or "IT",
+                    "brand": r.brand or "",
+                    "amount": float(r.amount) if r.amount is not None else 0,
+                    "expected_renewal": (
+                        r.expected_renewal_at.strftime("%Y-%m-%d") if r.expected_renewal_at else ""
+                    ),
+                    "last_purchase": (
+                        r.last_purchase_at.strftime("%Y-%m-%d") if r.last_purchase_at else ""
+                    ),
+                    "stir": r.stir or "",
+                    "region": r.region or "",
+                    "title": r.title,
+                    "source_url": r.source_url or "",
+                    "ai_advice": ai_sample,
+                }
+            )
 
         kw_sample = search_keywords(session, "Server", limit=20)
         cust_sample = search_customer_intelligence(session, "Bank", limit=10)
@@ -254,24 +287,36 @@ def rebuild_and_deploy():
             d["deal_sum"] = float(d["deal_sum"])
             export_items.append(d)
         with_inn = sum(1 for d in export_items if d["winner_inn"])
-        total_awarded = session.execute(text("""
+        total_awarded = (
+            session.execute(
+                text("""
             SELECT COUNT(*) FROM procedure p
             JOIN award aw ON aw.procedure_id = p.id
             JOIN organization s ON s.id = aw.supplier_org_id
             WHERE COALESCE(TRIM(s.name_canonical), '') <> ''
-        """)).scalar() or 0
+        """)
+            ).scalar()
+            or 0
+        )
         omitted = max(0, total_awarded - len(export_items))
         stats["export_rows"] = len(export_items)
         stats["export_rows_with_winner_inn"] = with_inn
         stats["export_rows_total"] = total_awarded
         stats["export_rows_omitted"] = omitted
-        log.info("Export: %d of %d awarded contracts, %d (%.0f%%) carry a winner STIR",
-                 len(export_items), total_awarded, with_inn,
-                 100 * with_inn / len(export_items) if export_items else 0)
+        log.info(
+            "Export: %d of %d awarded contracts, %d (%.0f%%) carry a winner STIR",
+            len(export_items),
+            total_awarded,
+            with_inn,
+            100 * with_inn / len(export_items) if export_items else 0,
+        )
         if omitted:
-            log.warning("Dashboard shows the %d most recent awarded contracts; %d older "
-                        "ones do not fit the page. The Excel export carries all of them.",
-                        len(export_items), omitted)
+            log.warning(
+                "Dashboard shows the %d most recent awarded contracts; %d older "
+                "ones do not fit the page. The Excel export carries all of them.",
+                len(export_items),
+                omitted,
+            )
 
     settings = load_settings()
     if not settings.dashboard_data_path:
@@ -302,13 +347,28 @@ def rebuild_and_deploy():
         return
 
     scp_cmd = [
-        "scp", "-P", settings.deploy_ssh_port,
-        "-i", os.path.expanduser(settings.deploy_ssh_key),
+        "scp",
+        "-P",
+        settings.deploy_ssh_port,
+        "-i",
+        os.path.expanduser(settings.deploy_ssh_key),
         os.path.expanduser(settings.dashboard_html_path),
         settings.deploy_target,
     ]
     subprocess.run(scp_cmd, check=True, timeout=300)
     log.info("Successfully deployed updated dashboard to tender.softy.uz!")
+
+
+def dispatch_alerts() -> dict[str, object]:
+    """Dispatch automated Telegram alerts for unalerted HOT renewal opportunities."""
+    from radar.alerts.telegram import send_hot_opportunity_alerts
+
+    settings = load_settings()
+    with session_scope() as session:
+        stats = send_hot_opportunity_alerts(session, settings)
+        session.commit()
+    return stats
+
 
 def _step(label: str, fn, default=None):
     """Run one cycle stage. A stage that fails is logged and the cycle continues."""
@@ -325,12 +385,15 @@ def run_once() -> dict[str, object]:
     ins_eb = _step("sync_ebirja", sync_ebirja, default=0)
     ins_uz = _step("sync_uzex", sync_uzex, default=0)
     renewals = _step("refresh_renewals", refresh_renewals, default=0)
+    alerts = _step("dispatch_alerts", dispatch_alerts, default={"sent": 0})
     deployed = _step("rebuild_and_deploy", lambda: (rebuild_and_deploy(), True)[1], default=False)
+    alerts_sent = alerts.get("sent", 0) if isinstance(alerts, dict) else 0
     result = {
         "started_at": started.isoformat(),
         "ebirja_inserted": ins_eb,
         "uzex_inserted": ins_uz,
         "renewal_opportunities": renewals,
+        "alerts_sent": alerts_sent,
         "deployed": deployed,
         "duration_s": round((datetime.datetime.now(datetime.UTC) - started).total_seconds(), 1),
     }

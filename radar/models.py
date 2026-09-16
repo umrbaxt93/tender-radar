@@ -315,6 +315,34 @@ class AuditLog(Base):
     user: Mapped[User] = relationship()
 
 
+class AlertLog(Base):
+    """Log of dispatched alerts (e.g. Telegram notifications) for idempotency."""
+
+    __tablename__ = "alert_log"
+    __table_args__ = (
+        UniqueConstraint(
+            "procedure_id",
+            "channel",
+            "recipient",
+            name="uq_alert_procedure_channel_recipient",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    procedure_id: Mapped[int] = mapped_column(
+        ForeignKey("procedure.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    channel: Mapped[str] = mapped_column(String(32), nullable=False, default="telegram")
+    recipient: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    score: Mapped[int | None] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="sent")
+    message_preview: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    procedure: Mapped[Procedure] = relationship()
+
+
 Index(
     "ix_organization_alias_name_trgm",
     OrganizationAlias.name_raw,

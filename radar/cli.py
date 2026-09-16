@@ -355,6 +355,25 @@ def cmd_cleanup(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_alert(args: argparse.Namespace) -> int:
+    from radar.alerts.telegram import send_hot_opportunity_alerts
+
+    settings = load_settings()
+    with session_scope() as session:
+        stats = send_hot_opportunity_alerts(
+            session=session,
+            settings=settings,
+            min_score=args.min_score,
+            limit=args.limit,
+            dry_run=args.dry_run,
+        )
+    print(
+        f"alerts: considered={stats['considered']} sent={stats['sent']} "
+        f"errors={stats['errors']} (recipient={stats['recipient']}, min_score={stats['min_score']})"
+    )
+    return 0 if stats["errors"] == 0 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m radar", description="Tender Radar MVP")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -472,6 +491,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="retention period threshold, e.g. '365d' or '1y' (default: 365d)",
     )
     s.set_defaults(func=cmd_cleanup)
+
+    s = sub.add_parser("alert", help="send Telegram alerts for hot renewal opportunities")
+    s.add_argument(
+        "--min-score",
+        type=int,
+        default=None,
+        help="minimum score threshold (default from env or 80)",
+    )
+    s.add_argument("--limit", type=int, default=20, help="max alerts to dispatch (default 20)")
+    s.add_argument(
+        "--dry-run", action="store_true", help="preview formatted alerts without sending"
+    )
+    s.set_defaults(func=cmd_alert)
     return p
 
 
