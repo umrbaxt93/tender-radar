@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000055",
+ "procedure_type": "selection",
+ "title": "Qurilish materiallari (sement, g'isht)",
+ "status": "completed",
+ "published_at": "2026-01-27T16:00:00Z",
+ "deadline_at": "2026-02-09T16:00:00Z",
+ "completed_at": "2026-02-04T16:00:00Z",
+ "currency": "UZS",
+ "start_price": 450000,
+ "customer": {
+  "name": "Namangan viloyati statistika boshqarmasi (SYNTHETIC)",
+  "stir": "900000005",
+  "region": "Namangan viloyati"
+ },
+ "items": [
+  {
+   "name": "Sement M400",
+   "quantity": 1,
+   "unit": "tonna",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 347536.88,
+  "awarded_at": "2026-02-04T16:00:00Z"
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000011",
+ "procedure_type": "auction",
+ "title": "Принтер МФУ HP LaserJet Pro MFP",
+ "status": "completed",
+ "published_at": "2026-07-20T19:00:00Z",
+ "deadline_at": "2026-08-01T19:00:00Z",
+ "completed_at": "2026-07-31T19:00:00Z",
+ "currency": "UZS",
+ "start_price": 60000000,
+ "customer": {
+  "name": "Buxoro davlat universiteti (SYNTHETIC)",
+  "stir": "900000002",
+  "region": "Buxoro viloyati"
+ },
+ "items": [
+  {
+   "name": "HP LaserJet Pro MFP 4103",
+   "quantity": 50,
+   "unit": "шт",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 46571791.18,
+  "awarded_at": "2026-07-31T19:00:00Z"
+ }
+}

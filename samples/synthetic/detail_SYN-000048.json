@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000048",
+ "procedure_type": "selection",
+ "title": "Avtomobil Chevrolet Cobalt sotib olish",
+ "status": "completed",
+ "published_at": "2025-10-22T20:00:00Z",
+ "deadline_at": "2025-11-04T20:00:00Z",
+ "completed_at": "2025-11-08T20:00:00Z",
+ "currency": "UZS",
+ "start_price": 4750000000,
+ "customer": {
+  "name": "Samarqand viloyati tibbiyot birlashmasi (SYNTHETIC)",
+  "stir": "900000001",
+  "region": "Samarqand viloyati"
+ },
+ "items": [
+  {
+   "name": "Chevrolet Cobalt",
+   "quantity": 50,
+   "unit": "dona",
+   "unit_price": "95000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 3342176341.36,
+  "awarded_at": "2025-11-08T20:00:00Z"
+ }
+}

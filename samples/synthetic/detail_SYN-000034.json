@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000034",
+ "procedure_type": "auction",
+ "title": "Приобретение продуктов питания для столовой",
+ "status": "completed",
+ "published_at": "2026-07-29T16:00:00Z",
+ "deadline_at": "2026-08-05T16:00:00Z",
+ "completed_at": "2026-08-05T16:00:00Z",
+ "currency": "UZS",
+ "start_price": 380000000,
+ "customer": {
+  "name": "Qashqadaryo viloyat hokimligi (SYNTHETIC)",
+  "stir": "900000006",
+  "region": "Qashqadaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Мука высший сорт",
+   "quantity": 100,
+   "unit": "кг",
+   "unit_price": "3800000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 273341803.34,
+  "awarded_at": "2026-08-05T16:00:00Z"
+ }
+}

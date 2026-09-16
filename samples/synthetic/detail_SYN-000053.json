@@ -1,0 +1,25 @@
+{
+ "synthetic": true,
+ "id": "SYN-000053",
+ "procedure_type": "auction",
+ "title": "Ремонт кровли административного здания",
+ "status": "completed",
+ "published_at": "2025-08-15T20:00:00Z",
+ "deadline_at": "2025-08-31T20:00:00Z",
+ "completed_at": "2025-09-04T20:00:00Z",
+ "currency": "UZS",
+ "start_price": 38000000,
+ "customer": {
+  "name": "Farg'ona shahar maktabgacha ta'lim bo'limi (SYNTHETIC)",
+  "stir": "900000004",
+  "region": "Farg'ona viloyati"
+ },
+ "items": [
+  {
+   "name": "Кровельные работы",
+   "quantity": 10,
+   "unit": "м2",
+   "unit_price": "3800000"
+  }
+ ]
+}

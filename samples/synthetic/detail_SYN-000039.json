@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000039",
+ "procedure_type": "auction",
+ "title": "Microsoft 365 Business Standard obunasi 1 yil",
+ "status": "completed",
+ "published_at": "2026-08-08T22:00:00Z",
+ "deadline_at": "2026-08-21T22:00:00Z",
+ "completed_at": "2026-09-04T22:00:00Z",
+ "currency": "UZS",
+ "start_price": 12000000,
+ "customer": {
+  "name": "Buxoro davlat universiteti (SYNTHETIC)",
+  "stir": "900000002",
+  "region": "Buxoro viloyati"
+ },
+ "items": [
+  {
+   "name": "Microsoft 365 Business Standard",
+   "quantity": 10,
+   "unit": "dona",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 11429471.62,
+  "awarded_at": "2026-09-04T22:00:00Z"
+ }
+}

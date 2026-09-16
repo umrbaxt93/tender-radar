@@ -16,7 +16,7 @@ PROVIDERS = (
     ('claude', 'ANTHROPIC_API_KEY_FILE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL'),
     ('codex', 'OPENAI_API_KEY_FILE', 'CODEX_API_KEY', 'CODEX_MODEL'),
 )
-CONTEXT = ('prompts/AGENT_PROMPT.md', 'docs/SPEC.md', 'PROGRESS.md',
+CONTEXT = ('prompts/CLOUD_REVIEW_PROMPT.md', 'docs/SPEC.md', 'PROGRESS.md',
            'DECISIONS.md', 'TODO.md', 'docs/SOURCE_API.md')
 MAX_SECONDS = 180
 
@@ -146,7 +146,7 @@ def main():
     (reports / 'review.md').unlink(missing_ok=True)
     def finish(status, attempts=(), code=0):
         (reports / 'status.json').write_text(json.dumps(
-            {'status': status, 'phase': 'SCAFFOLD_ONLY', 'attempts': list(attempts)}, indent=2)+'\n')
+            {'status': status, 'phase': 'APPLICATION_DEVELOPMENT', 'attempts': list(attempts)}, indent=2)+'\n')
         print('Supervisor: '+status)
         return code
     if not permitted(os.environ):

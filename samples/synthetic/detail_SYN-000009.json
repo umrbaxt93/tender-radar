@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000009",
+ "procedure_type": "tender",
+ "title": "Антивирус Dr.Web Enterprise Security Suite продление на 1 год",
+ "status": "completed",
+ "published_at": "2026-01-06T13:00:00Z",
+ "deadline_at": "2026-01-14T13:00:00Z",
+ "completed_at": "2026-01-18T13:00:00Z",
+ "currency": "UZS",
+ "start_price": 4500000,
+ "customer": {
+  "name": "Toshkent shahar hokimligi axborot-kommunikatsiya boshqarmasi (SYNTHETIC)",
+  "stir": "900000000",
+  "region": "Toshkent shahri"
+ },
+ "items": [
+  {
+   "name": "Dr.Web ESS",
+   "quantity": 10,
+   "unit": "шт",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 4113564.21,
+  "awarded_at": "2026-01-18T13:00:00Z"
+ }
+}

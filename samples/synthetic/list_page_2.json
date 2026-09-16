@@ -1,0 +1,60 @@
+{
+ "synthetic": true,
+ "data": {
+  "items": [
+   {
+    "id": "SYN-000003",
+    "completed_at": "2025-10-25T06:00:00Z",
+    "title": "Принтер МФУ HP LaserJet Pro MFP"
+   },
+   {
+    "id": "SYN-000001",
+    "completed_at": "2025-10-13T23:00:00Z",
+    "title": "Server HPE ProLiant DL380 Gen11 xarid qilish"
+   },
+   {
+    "id": "SYN-000024",
+    "completed_at": "2025-10-07T06:00:00Z",
+    "title": "Texnik jihozlarni modernizatsiya qilish ishlari"
+   },
+   {
+    "id": "SYN-000059",
+    "completed_at": "2025-10-04T12:00:00Z",
+    "title": "Google Workspace Business Starter obunasi"
+   },
+   {
+    "id": "SYN-000008",
+    "completed_at": "2025-09-20T03:00:00Z",
+    "title": "ИБП APC Smart-UPS 3000VA"
+   },
+   {
+    "id": "SYN-000057",
+    "completed_at": "2025-09-08T22:00:00Z",
+    "title": "Yoqilg'i-moylash materiallari (AI-92 benzin)"
+   },
+   {
+    "id": "SYN-000053",
+    "completed_at": "2025-09-04T20:00:00Z",
+    "title": "Ремонт кровли административного здания"
+   },
+   {
+    "id": "SYN-000047",
+    "completed_at": "2025-09-03T18:00:00Z",
+    "title": "Texnik jihozlarni modernizatsiya qilish ishlari"
+   },
+   {
+    "id": "SYN-000025",
+    "completed_at": "2025-08-10T20:00:00Z",
+    "title": "Приобретение спецодежды и СИЗ"
+   },
+   {
+    "id": "SYN-000033",
+    "completed_at": "2025-07-19T16:00:00Z",
+    "title": "Bulutli hosting xizmati (VPS) 12 oy"
+   }
+  ],
+  "total": 60,
+  "page": 2,
+  "size": 50
+ }
+}

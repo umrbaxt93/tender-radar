@@ -1,0 +1,25 @@
+# Install: copy to /etc/systemd/system/, then
+#   systemctl daemon-reload && systemctl enable --now tender-radar-web
+[Unit]
+Description=Tender Radar web (/radar and /health)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=radar
+Group=radar
+WorkingDirectory=/opt/tender-radar
+EnvironmentFile=/opt/tender-radar/.env
+ExecStart=/opt/tender-radar/.venv/bin/python -m radar web --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+# The app only ever writes to out/.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tender-radar/out
+
+[Install]
+WantedBy=multi-user.target

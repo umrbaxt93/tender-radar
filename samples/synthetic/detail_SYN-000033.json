@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000033",
+ "procedure_type": "e-shop",
+ "title": "Bulutli hosting xizmati (VPS) 12 oy",
+ "status": "completed",
+ "published_at": "2025-06-30T16:00:00Z",
+ "deadline_at": "2025-07-09T16:00:00Z",
+ "completed_at": "2025-07-19T16:00:00Z",
+ "currency": "UZS",
+ "start_price": 1200000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "VPS 8 vCPU 32GB",
+   "quantity": 25,
+   "unit": "oy",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 937113680.87,
+  "awarded_at": "2025-07-19T16:00:00Z"
+ }
+}

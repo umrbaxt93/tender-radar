@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000046",
+ "procedure_type": "auction",
+ "title": "Kommunal xizmatlar: elektr energiyasi",
+ "status": "completed",
+ "published_at": "2026-09-01T10:00:00Z",
+ "deadline_at": "2026-09-08T10:00:00Z",
+ "completed_at": "2026-09-10T10:00:00Z",
+ "currency": "UZS",
+ "start_price": 2400000000,
+ "customer": {
+  "name": "Farg'ona shahar maktabgacha ta'lim bo'limi (SYNTHETIC)",
+  "stir": "900000004",
+  "region": "Farg'ona viloyati"
+ },
+ "items": [
+  {
+   "name": "Elektr energiyasi",
+   "quantity": 50,
+   "unit": "kVt·soat",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Universal Trade MChJ (SYNTHETIC)",
+   "stir": "800000003"
+  },
+  "amount": 1855526697.9,
+  "awarded_at": "2026-09-10T10:00:00Z"
+ }
+}

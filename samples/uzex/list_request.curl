@@ -1,0 +1,4 @@
+curl -X POST "https://xarid-api-purchase.uzex.uz/Common/GetCompetitions" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"from": 1, "to": 50}'

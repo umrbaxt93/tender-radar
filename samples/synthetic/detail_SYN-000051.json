@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000051",
+ "procedure_type": "tender",
+ "title": "Kommunal xizmatlar: elektr energiyasi",
+ "status": "completed",
+ "published_at": "2026-02-12T18:00:00Z",
+ "deadline_at": "2026-02-19T18:00:00Z",
+ "completed_at": "2026-02-25T18:00:00Z",
+ "currency": "UZS",
+ "start_price": 11250000,
+ "customer": {
+  "name": "Farg'ona shahar maktabgacha ta'lim bo'limi (SYNTHETIC)",
+  "stir": "900000004",
+  "region": "Farg'ona viloyati"
+ },
+ "items": [
+  {
+   "name": "Elektr energiyasi",
+   "quantity": 25,
+   "unit": "kVt·soat",
+   "unit_price": "450000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 10983315.35,
+  "awarded_at": "2026-02-25T18:00:00Z"
+ }
+}

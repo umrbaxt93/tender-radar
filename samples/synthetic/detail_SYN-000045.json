@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000045",
+ "procedure_type": "e-shop",
+ "title": "Принтер МФУ HP LaserJet Pro MFP",
+ "status": "completed",
+ "published_at": "2026-08-16T23:00:00Z",
+ "deadline_at": "2026-09-01T23:00:00Z",
+ "completed_at": "2026-08-27T23:00:00Z",
+ "currency": "UZS",
+ "start_price": 12500000,
+ "customer": {
+  "name": "Samarqand viloyati tibbiyot birlashmasi (SYNTHETIC)",
+  "stir": "900000001",
+  "region": "Samarqand viloyati"
+ },
+ "items": [
+  {
+   "name": "HP LaserJet Pro MFP 4103",
+   "quantity": 1,
+   "unit": "шт",
+   "unit_price": "12500000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 11020070.91,
+  "awarded_at": "2026-08-27T23:00:00Z"
+ }
+}

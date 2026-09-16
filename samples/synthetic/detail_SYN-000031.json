@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000031",
+ "procedure_type": "e-shop",
+ "title": "Bulutli hosting xizmati (VPS) 12 oy",
+ "status": "completed",
+ "published_at": "2026-03-04T14:00:00Z",
+ "deadline_at": "2026-03-20T14:00:00Z",
+ "completed_at": "2026-03-13T14:00:00Z",
+ "currency": "UZS",
+ "start_price": 3800000,
+ "customer": {
+  "name": "Andijon viloyat moliya boshqarmasi (SYNTHETIC)",
+  "stir": "900000003",
+  "region": "Andijon viloyati"
+ },
+ "items": [
+  {
+   "name": "VPS 8 vCPU 32GB",
+   "quantity": 1,
+   "unit": "oy",
+   "unit_price": "3800000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "IT Solutions Group MChJ (SYNTHETIC)",
+   "stir": "800000000"
+  },
+  "amount": 3083547.7,
+  "awarded_at": "2026-03-13T14:00:00Z"
+ }
+}

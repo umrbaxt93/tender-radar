@@ -8,7 +8,7 @@ ROOT=s.ROOT
 
 def write_status(status, attempts=()):
     (ROOT/'reports').mkdir(exist_ok=True)
-    (ROOT/'reports/status.json').write_text(json.dumps({'status':status,'phase':'SCAFFOLD_ONLY','attempts':list(attempts)},indent=2)+'\n')
+    (ROOT/'reports/status.json').write_text(json.dumps({'status':status,'phase':'APPLICATION_DEVELOPMENT','attempts':list(attempts)},indent=2)+'\n')
     print('Supervisor: '+status)
     for attempt in attempts:
         print('Provider: '+attempt['provider']+'; status: '+attempt['status'])

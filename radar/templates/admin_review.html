@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tender Radar — Admin Review (Shubhali Lotlar)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📋</span>
+          <h1 class="text-xl font-bold text-slate-900">Admin Review — Shubhali Lotlarni Tekshirish</h1>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            {{ items|length }} ta ko'rib chiqish kutilmoqda
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">
+          AI ishonchlilik darajasi 70% dan past (confidence &lt; 0.7) bo'lgan yoki tasdiqlash talab etiladigan IT lotlar
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-medium bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200">
+          👤 {{ current_user.username }} ({{ current_user.role }})
+        </span>
+        <a href="/radar" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">
+          🎯 Radarga qaytish
+        </a>
+      </div>
+    </header>
+
+    <!-- Table of items -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      {% if items %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+          <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">ID / Manba</th>
+              <th class="py-3 px-4">Lot Nomi</th>
+              <th class="py-3 px-4">Xaridor (Mijoz)</th>
+              <th class="py-3 px-4">AI Natijasi</th>
+              <th class="py-3 px-4">Ishonchlilik</th>
+              <th class="py-3 px-4">Kategoriya Beliglash</th>
+              <th class="py-3 px-4 text-right">Amal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="reviewTableBody">
+            {% for it in items %}
+            <tr id="row-{{ it.procedure_id }}" class="hover:bg-slate-50/80 transition">
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="font-mono text-xs font-semibold text-slate-700">#{{ it.procedure_id }}</span>
+                <span class="block text-[11px] text-slate-400">{{ it.source }}: {{ it.source_id }}</span>
+              </td>
+              <td class="py-3 px-4 max-w-md">
+                <a href="{{ it.source_url or '#' }}" target="_blank" rel="noopener" class="font-medium text-slate-900 hover:text-blue-600 line-clamp-2">
+                  {{ it.title }}
+                </a>
+              </td>
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="font-medium text-slate-800 block truncate max-w-[200px]">{{ it.customer_name }}</span>
+                <span class="text-xs font-mono text-slate-400">
+                  STIR: 
+                  {% if it.customer_stir %}
+                    {% if it.customer_stir|is_jshshir %}
+                      <span id="pinfl-rev-{{ loop.index }}">{{ it.customer_stir|mask_stir }}</span>
+                      <button type="button" onclick="unmaskPinfl('{{ it.customer_stir }}', 'pinfl-rev-{{ loop.index }}')" class="ml-1 text-blue-600 hover:text-blue-800" title="PINFL ni ochish (Audit)">👁</button>
+                    {% else %}
+                      <span>{{ it.customer_stir }}</span>
+                    {% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </span>
+              </td>
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  {{ it.category or 'Noaniq' }}
+                </span>
+                {% if it.brand %}
+                <span class="block text-xs font-semibold text-slate-600 mt-0.5">{{ it.brand }}</span>
+                {% endif %}
+              </td>
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="text-xs font-bold {% if it.confidence and it.confidence >= 0.7 %}text-emerald-600{% else %}text-amber-600{% endif %}">
+                  {{ '%.0f'|format((it.confidence or 0) * 100) }}%
+                </span>
+              </td>
+              <td class="py-3 px-4">
+                <select id="cat-{{ it.procedure_id }}" class="text-xs bg-slate-50 border border-slate-300 rounded-lg p-1.5 font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                  {% for c in categories %}
+                  <option value="{{ c }}" {% if c == it.category %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                  <option value="NON_IT" {% if not it.is_it %}selected{% endif %}>❌ Non-IT (IT emas)</option>
+                </select>
+              </td>
+              <td class="py-3 px-4 text-right whitespace-nowrap">
+                <button onclick="submitReview({{ it.procedure_id }})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition">
+                  ✓ Saqlash
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-12 text-center text-slate-500">
+        <span class="text-4xl block mb-2">🎉</span>
+        <h3 class="text-base font-semibold text-slate-800">Barcha lotlar ko'rib chiqilgan!</h3>
+        <p class="text-xs text-slate-400 mt-1">Hozirda tasdiqlash talab etiladigan shubhali tasniflar mavjud emas.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    async function unmaskPinfl(stir, elemId) {
+      try {
+        const res = await fetch('/api/admin/unmask/' + encodeURIComponent(stir));
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Xatolik: ' + (err.detail || 'Huquq yetarli emas'));
+          return;
+        }
+        const data = await res.json();
+        const el = document.getElementById(elemId);
+        if (el) {
+          el.textContent = data.stir;
+          el.classList.add('text-red-600', 'font-bold');
+        }
+      } catch (e) {
+        alert('Xatolik yuz berdi: ' + e.message);
+      }
+    }
+
+    async function submitReview(procId) {
+      const select = document.getElementById(`cat-${procId}`);
+      const val = select.value;
+      const isIt = val !== "NON_IT";
+      const category = isIt ? val : null;
+
+      try {
+        const res = await fetch(`/api/admin/review/${procId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_it: isIt, category: category })
+        });
+        if (res.ok) {
+          const row = document.getElementById(`row-${procId}`);
+          row.classList.add('bg-emerald-50');
+          setTimeout(() => {
+            row.remove();
+            if (document.querySelectorAll('#reviewTableBody tr').length === 0) {
+              location.reload();
+            }
+          }, 350);
+        } else {
+          alert('Xatolik yuz berdi: ' + (await res.text()));
+        }
+      } catch (e) {
+        alert('Serverga ulanishda xatolik: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000025",
+ "procedure_type": "auction",
+ "title": "Приобретение спецодежды и СИЗ",
+ "status": "completed",
+ "published_at": "2025-07-29T20:00:00Z",
+ "deadline_at": "2025-08-07T20:00:00Z",
+ "completed_at": "2025-08-10T20:00:00Z",
+ "currency": "UZS",
+ "start_price": 480000000,
+ "customer": {
+  "name": "Toshkent shahar hokimligi axborot-kommunikatsiya boshqarmasi (SYNTHETIC)",
+  "stir": "900000000",
+  "region": "Toshkent shahri"
+ },
+ "items": [
+  {
+   "name": "Спецодежда летняя",
+   "quantity": 10,
+   "unit": "компл",
+   "unit_price": "48000000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Secure Networks LLC (SYNTHETIC)",
+   "stir": "800000002"
+  },
+  "amount": 430980525.97,
+  "awarded_at": "2025-08-10T20:00:00Z"
+ }
+}

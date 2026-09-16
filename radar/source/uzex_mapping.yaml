@@ -1,0 +1,39 @@
+# Field mapping between the source JSON and the normalized ProcedureRecord.
+# VERIFIED against live public xarid-api-purchase.uzex.uz API (2026-09-14).
+list:
+  method: POST
+  items_path: ""                  # top-level JSON array in GetCompetitions
+  total_path: 0.total_count       # total count from first item
+  page_param: from                # pagination parameter (1-based range)
+  page_size_param: to             # range upper bound
+  page_size: 50
+  first_page: 1
+  id_field: id                    # list entry field holding the source id
+  completed_at_field: end_date_submitting_offers
+detail:
+  id: id
+  source_url_template: "https://xarid.uzex.uz/purchase/detail/{source_id}"
+  procedure_type: procedure_type
+  title: category_name
+  status: status_name
+  published_at: published_date
+  deadline_at: end_date_submitting_offers
+  completed_at: date_of_opening_offers
+  currency: currency_name
+  start_price: cost
+  customer:
+    name: customer_name
+    stir: customer_inn
+    region: customer_region_name
+  items:
+    path: js_details
+    name: product_name
+    quantity: quantity
+    unit: unit_name
+    unit_price: price
+  award:
+    path: winners_ids.0
+    supplier_name: fullname
+    supplier_stir: inn
+    amount_fallback: cost
+    awarded_at_fallback: date_of_opening_offers

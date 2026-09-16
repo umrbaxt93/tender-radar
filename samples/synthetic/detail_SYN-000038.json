@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000038",
+ "procedure_type": "tender",
+ "title": "Bulutli hosting xizmati (VPS) 12 oy",
+ "status": "completed",
+ "published_at": "2025-12-13T07:00:00Z",
+ "deadline_at": "2025-12-27T07:00:00Z",
+ "completed_at": "2026-01-01T07:00:00Z",
+ "currency": "UZS",
+ "start_price": 60000000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "VPS 8 vCPU 32GB",
+   "quantity": 50,
+   "unit": "oy",
+   "unit_price": "1200000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 49041740.13,
+  "awarded_at": "2026-01-01T07:00:00Z"
+ }
+}

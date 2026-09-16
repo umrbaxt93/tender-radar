@@ -1,0 +1,28 @@
+# Install: copy to /etc/systemd/system/, then
+#   systemctl daemon-reload && systemctl enable --now tender-radar-worker
+[Unit]
+Description=Tender Radar worker (import, classify, renewal, export)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=radar
+Group=radar
+WorkingDirectory=/opt/tender-radar
+EnvironmentFile=/opt/tender-radar/.env
+ExecStart=/opt/tender-radar/.venv/bin/python -m radar worker --interval 3600
+# SIGTERM lets the worker finish the cycle in flight instead of cutting a job in half,
+# so give it room before anything harsher.
+KillSignal=SIGTERM
+TimeoutStopSec=900
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tender-radar/out
+
+[Install]
+WantedBy=multi-user.target

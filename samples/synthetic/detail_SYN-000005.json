@@ -1,0 +1,33 @@
+{
+ "synthetic": true,
+ "id": "SYN-000005",
+ "procedure_type": "selection",
+ "title": "Kommunal xizmatlar: elektr energiyasi",
+ "status": "completed",
+ "published_at": "2025-11-26T11:00:00Z",
+ "deadline_at": "2025-12-15T11:00:00Z",
+ "completed_at": "2025-12-13T11:00:00Z",
+ "currency": "UZS",
+ "start_price": 312500000,
+ "customer": {
+  "name": "Sirdaryo viloyati suv xo'jaligi (SYNTHETIC)",
+  "stir": "900000010",
+  "region": "Sirdaryo viloyati"
+ },
+ "items": [
+  {
+   "name": "Elektr energiyasi",
+   "quantity": 25,
+   "unit": "kVt·soat",
+   "unit_price": "12500000"
+  }
+ ],
+ "award": {
+  "supplier": {
+   "name": "Uzbek Digital Systems OOO (SYNTHETIC)",
+   "stir": "800000001"
+  },
+  "amount": 282096370.56,
+  "awarded_at": "2025-12-13T11:00:00Z"
+ }
+}

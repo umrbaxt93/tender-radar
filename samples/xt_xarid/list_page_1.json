@@ -1,0 +1,35 @@
+{
+  "total": 5,
+  "items": [
+    {
+      "lot_id": "5432712",
+      "contract_date": "2025-08-01",
+      "title": "Программное обеспечение в сфере информационных технологий Лицензия для Zoom Профессиональная, для организации мероприятия, в которых могут участвовать до 100 человек за счет дополнения Large Meetings, возможность неограниченных количеств групповых конференций и 10 ГБ для облачных записей (на каждую лицензию) с сроком на 1 год на каждую лицензию.",
+      "final_price": 2400000.0
+    },
+    {
+      "lot_id": "5432728",
+      "contract_date": "2025-08-04",
+      "title": "Программное обеспечение в сфере информационных технологий Лицензия для Zoom Профессиональная, для организации мероприятия, в которых могут участвовать до 100 человек за счет дополнения Large Meetings, возможность неограниченных количеств групповых конференций и 10 ГБ для облачных записей (на каждую лицензию) с сроком на 1 год на каждую лицензию.",
+      "final_price": 5000000.0
+    },
+    {
+      "lot_id": "5438319",
+      "contract_date": "2025-08-05",
+      "title": "Программное обеспечение в сфере информационных технологий Продление Thawte SSL123 — базовый SSL-сертификат с проверкой домена (DV), обеспечивающий надёжное шифрование и защиту данных. Идеально подходит для сайтов, форм входа и онлайн-сервисов. Технические характеристики: Тип валидации: Domain Validation (DV) Шифрование: до 256-бит, ключ RSA 2048-би",
+      "final_price": 1787500.0
+    },
+    {
+      "lot_id": "5441715",
+      "contract_date": "2025-08-04",
+      "title": "Программный продукт",
+      "final_price": 12712000.0
+    },
+    {
+      "lot_id": "5443704",
+      "contract_date": "2025-08-05",
+      "title": "Axborot texnologiyalari sohasidagi dasturiy ta'minot Mahsulot nomi: LMS.uz — Masofaviy o‘quv jarayonlarini boshqarish axborot tizimi. Mahsulot qisqacha tavsif: LMS.uz — Oliy ta’lim muassasalari va tashkilotlar uchun mo‘ljallangan zamonaviy Learning Management System (LMS) bo‘lib, masofaviy va an’anaviy o‘quv jarayonlarini raqamlashtirish, boshqaris",
+      "final_price": 78780000.0
+    }
+  ]
+}
