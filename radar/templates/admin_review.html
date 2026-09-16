@@ -68,7 +68,19 @@
               </td>
               <td class="py-3 px-4 whitespace-nowrap">
                 <span class="font-medium text-slate-800 block truncate max-w-[200px]">{{ it.customer_name }}</span>
-                <span class="text-xs font-mono text-slate-400">STIR: {{ it.customer_stir or 'N/A' }}</span>
+                <span class="text-xs font-mono text-slate-400">
+                  STIR: 
+                  {% if it.customer_stir %}
+                    {% if it.customer_stir|is_jshshir %}
+                      <span id="pinfl-rev-{{ loop.index }}">{{ it.customer_stir|mask_stir }}</span>
+                      <button type="button" onclick="unmaskPinfl('{{ it.customer_stir }}', 'pinfl-rev-{{ loop.index }}')" class="ml-1 text-blue-600 hover:text-blue-800" title="PINFL ni ochish (Audit)">👁</button>
+                    {% else %}
+                      <span>{{ it.customer_stir }}</span>
+                    {% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </span>
               </td>
               <td class="py-3 px-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -112,6 +124,25 @@
   </div>
 
   <script>
+    async function unmaskPinfl(stir, elemId) {
+      try {
+        const res = await fetch('/api/admin/unmask/' + encodeURIComponent(stir));
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Xatolik: ' + (err.detail || 'Huquq yetarli emas'));
+          return;
+        }
+        const data = await res.json();
+        const el = document.getElementById(elemId);
+        if (el) {
+          el.textContent = data.stir;
+          el.classList.add('text-red-600', 'font-bold');
+        }
+      } catch (e) {
+        alert('Xatolik yuz berdi: ' + e.message);
+      }
+    }
+
     async function submitReview(procId) {
       const select = document.getElementById(`cat-${procId}`);
       const val = select.value;

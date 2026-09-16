@@ -36,6 +36,7 @@ from radar.models import (
     RenewalOpportunity,
     User,
 )
+from radar.privacy import is_jshshir, mask_identifier, record_audit_event
 from radar.renewal import load_lifecycle, radar_rows
 from radar.security import SecurityHeadersMiddleware
 from radar.stats import collect_stats
@@ -58,6 +59,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 TEMPLATES.env.autoescape = True
+TEMPLATES.env.filters["mask_stir"] = mask_identifier
+TEMPLATES.env.filters["is_jshshir"] = is_jshshir
 
 
 # -----------------------------------------------------------------------------
@@ -229,7 +232,9 @@ def radar(
                 ORDER BY total_spent DESC
                 LIMIT 10;
             """)
-            ).mappings().all()
+            )
+            .mappings()
+            .all()
         ]
 
         # Top Competitors query (STIR not null)
@@ -257,16 +262,16 @@ def radar(
                 ORDER BY total_amount DESC
                 LIMIT 10;
             """)
-            ).mappings().all()
+            )
+            .mappings()
+            .all()
         ]
 
         # Distinct categories for filter dropdown
         distinct_categories = [
             c
             for c in session.scalars(
-                select(RenewalOpportunity.category)
-                .distinct()
-                .order_by(RenewalOpportunity.category)
+                select(RenewalOpportunity.category).distinct().order_by(RenewalOpportunity.category)
             ).all()
             if c
         ]
@@ -336,19 +341,21 @@ def admin_review_page(request: Request) -> Response:
         )
         items = []
         for clf, proc, cust in session.execute(stmt).all():
-            items.append({
-                "procedure_id": proc.id,
-                "source": proc.source,
-                "source_id": proc.source_id,
-                "source_url": proc.source_url,
-                "title": proc.title,
-                "customer_name": cust.name_canonical if cust else "Noma'lum",
-                "customer_stir": cust.stir if cust else None,
-                "category": clf.category,
-                "brand": clf.brand,
-                "is_it": clf.is_it,
-                "confidence": float(clf.confidence) if clf.confidence is not None else 0.5,
-            })
+            items.append(
+                {
+                    "procedure_id": proc.id,
+                    "source": proc.source,
+                    "source_id": proc.source_id,
+                    "source_url": proc.source_url,
+                    "title": proc.title,
+                    "customer_name": cust.name_canonical if cust else "Noma'lum",
+                    "customer_stir": cust.stir if cust else None,
+                    "category": clf.category,
+                    "brand": clf.brand,
+                    "is_it": clf.is_it,
+                    "confidence": float(clf.confidence) if clf.confidence is not None else 0.5,
+                }
+            )
 
     return TEMPLATES.TemplateResponse(
         request,
@@ -400,12 +407,14 @@ async def api_admin_review_submit(
         is_it,
         category,
     )
-    return JSONResponse({
-        "status": "ok",
-        "procedure_id": procedure_id,
-        "is_it": is_it,
-        "category": category,
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "procedure_id": procedure_id,
+            "is_it": is_it,
+            "category": category,
+        }
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -413,31 +422,46 @@ async def api_admin_review_submit(
 # -----------------------------------------------------------------------------
 @app.get("/api/export/xlsx")
 def api_export_xlsx(
+    request: Request,
     user: Annotated[User, Depends(get_current_user)],
     limit: int = 5000,
 ) -> Response:
     """Download verified radar Excel export with audit logging and max 5,000 rows cap."""
     safe_limit = min(max(1, limit), 5000)
+    is_admin = user.role == "admin"
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
         tmp_path = Path(tmp.name)
 
     with session_scope() as session:
-        _, row_count = export_workbook(session, path=tmp_path, limit=safe_limit)
+        _, row_count = export_workbook(session, path=tmp_path, limit=safe_limit, is_admin=is_admin)
 
-        # Audit log entry
+        # Audit log entry in export_log
         audit_entry = ExportLog(
             user_id=user.id,
             export_type="xlsx",
-            filter_json={"limit": safe_limit},
+            filter_json={"limit": safe_limit, "is_admin": is_admin},
             row_count=row_count,
         )
         session.add(audit_entry)
+
+        # Also log to general audit_log if admin unmasked data is exported
+        if is_admin:
+            record_audit_event(
+                session,
+                user_id=user.id,
+                action="export_unmasked_pinfl",
+                target_type="export",
+                details={"row_count": row_count, "limit": safe_limit},
+                ip_address=request.client.host if request.client else None,
+            )
+
         session.commit()
 
         log.info(
-            "AUDIT: User %s (id=%d) exported %d rows to XLSX",
+            "AUDIT: User %s (id=%d, role=%s) exported %d rows to XLSX",
             user.username,
             user.id,
+            user.role,
             row_count,
         )
 
@@ -446,6 +470,37 @@ def api_export_xlsx(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=f"renewal_radar_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.xlsx",
     )
+
+
+# -----------------------------------------------------------------------------
+# Admin JSHSHIR (PINFL) Unmasking API (Audit Logged)
+# -----------------------------------------------------------------------------
+@app.get("/api/admin/unmask/{stir}")
+def api_admin_unmask_stir(
+    stir: str,
+    request: Request,
+    user: Annotated[User, Depends(get_current_user)],
+) -> JSONResponse:
+    """Unmask a 14-digit JSHSHIR (PINFL). Admin role required. Action is audit logged."""
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="JSHSHIR ma'lumotlarini to'liq ko'rish uchun faqat admin huquqi talab qilinadi",
+        )
+
+    with session_scope() as session:
+        record_audit_event(
+            session,
+            user_id=user.id,
+            action="unmask_pinfl",
+            target_type="stir",
+            target_id=stir,
+            details={"original_length": len(stir)},
+            ip_address=request.client.host if request.client else None,
+        )
+        session.commit()
+
+    return JSONResponse({"stir": stir, "unmasked": True})
 
 
 # -----------------------------------------------------------------------------
@@ -599,11 +654,13 @@ async def api_ebirja_sync(
     with session_scope() as session:
         stats = import_ebirja_records(session, records)
 
-    return JSONResponse({
-        "status": "ok",
-        "fetched_count": len(records),
-        "imported": stats,
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "fetched_count": len(records),
+            "imported": stats,
+        }
+    )
 
 
 @app.get("/api/eimzo/status")
@@ -613,15 +670,17 @@ def api_eimzo_status(user: Annotated[User, Depends(get_current_user)]) -> JSONRe
     mgr = EImzoManager()
     daemon_info = mgr.check_daemon()
     session_info = mgr.get_session()
-    return JSONResponse({
-        "daemon": daemon_info,
-        "session": {
-            "authenticated": session_info.get("authenticated", False),
-            "tin": session_info.get("tin"),
-            "has_token": bool(session_info.get("token")),
-            "last_updated": session_info.get("last_updated"),
-        },
-    })
+    return JSONResponse(
+        {
+            "daemon": daemon_info,
+            "session": {
+                "authenticated": session_info.get("authenticated", False),
+                "tin": session_info.get("tin"),
+                "has_token": bool(session_info.get("token")),
+                "last_updated": session_info.get("last_updated"),
+            },
+        }
+    )
 
 
 @app.post("/api/eimzo/challenge")
@@ -661,5 +720,3 @@ async def api_eimzo_verify(
 @app.get("/")
 def index() -> JSONResponse:
     return JSONResponse({"endpoints": ["/radar", "/health"]})
-
-

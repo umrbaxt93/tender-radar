@@ -28,22 +28,34 @@ def cmd_import(args: argparse.Namespace) -> int:
     fixture_dir = args.fixtures or settings.source_fixture_dir
     if fixture_dir:
         source = FixtureSource(fixture_dir, name=args.source_name or "synthetic")
-        log.warning("importing from FIXTURES %s (source label %r) - not live data",
-                    fixture_dir, source.name)
+        log.warning(
+            "importing from FIXTURES %s (source label %r) - not live data", fixture_dir, source.name
+        )
     else:
-        source = HttpSource(settings.source_list_url, settings.source_detail_url,
-                            settings.contact_email, mapping=load_mapping(),
-                            limiter=RateLimiter(settings.request_interval_s))
+        source = HttpSource(
+            settings.source_list_url,
+            settings.source_detail_url,
+            settings.contact_email,
+            mapping=load_mapping(),
+            limiter=RateLimiter(settings.request_interval_s),
+        )
     with session_scope() as session:
         if args.reset_cursor:
             reset_cursor(session)
-        stats = run_import(session, source, since=_since(args.since), limit=args.limit,
-                           refresh=args.refresh,
-                           match_threshold=settings.org_match_threshold)
-    print(f"import: pages={stats.pages} listed={stats.listed} details={stats.fetched_details} "
-          f"inserted={stats.inserted} updated={stats.updated} "
-          f"skipped={stats.skipped_existing} stopped={stats.stopped_reason} "
-          f"errors={len(stats.errors)}")
+        stats = run_import(
+            session,
+            source,
+            since=_since(args.since),
+            limit=args.limit,
+            refresh=args.refresh,
+            match_threshold=settings.org_match_threshold,
+        )
+    print(
+        f"import: pages={stats.pages} listed={stats.listed} details={stats.fetched_details} "
+        f"inserted={stats.inserted} updated={stats.updated} "
+        f"skipped={stats.skipped_existing} stopped={stats.stopped_reason} "
+        f"errors={len(stats.errors)}"
+    )
     return 0 if not (stats.stopped_reason or "").startswith("Source") else 3
 
 
@@ -52,8 +64,12 @@ def cmd_reparse(args: argparse.Namespace) -> int:
 
     settings = load_settings()
     with session_scope() as session:
-        stats = reparse_from_snapshots(session, limit=args.limit, dry_run=args.dry_run,
-                                       match_threshold=settings.org_match_threshold)
+        stats = reparse_from_snapshots(
+            session,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            match_threshold=settings.org_match_threshold,
+        )
     print(stats.summary() + (" (dry run, nothing written)" if args.dry_run else ""))
     for error in stats.errors[:10]:
         print("  " + error)
@@ -64,8 +80,12 @@ def cmd_worker(args: argparse.Namespace) -> int:
     from radar.worker import run_cycle, run_forever
 
     settings = load_settings()
-    kwargs = dict(fixtures=args.fixtures or "", limit=args.limit, mock_ai=args.mock_ai,
-                  skip_import=args.skip_import)
+    kwargs = dict(
+        fixtures=args.fixtures or "",
+        limit=args.limit,
+        mock_ai=args.mock_ai,
+        skip_import=args.skip_import,
+    )
     if args.interval:
         run_forever(settings, interval_s=args.interval, **kwargs)
         return 0
@@ -125,8 +145,9 @@ def cmd_backfill(args: argparse.Namespace) -> int:
     from radar.backfill import backfill_etender
 
     with session_scope() as session:
-        stats = backfill_etender(session, years=args.years, batch_size=args.batch,
-                                 restart=args.restart)
+        stats = backfill_etender(
+            session, years=args.years, batch_size=args.batch, restart=args.restart
+        )
     print(stats.summary())
     return 0
 
@@ -136,8 +157,9 @@ def cmd_export(args: argparse.Namespace) -> int:
 
     settings = load_settings()
     with session_scope() as session:
-        path, rows = export_workbook(session, settings.out_dir / "renewal_radar.xlsx",
-                                     now=datetime.now(UTC))
+        path, rows = export_workbook(
+            session, settings.out_dir / "renewal_radar.xlsx", now=datetime.now(UTC)
+        )
     print(f"export: {path} ({rows} radar rows)")
     return 0
 
@@ -175,8 +197,10 @@ def cmd_migrate_xt(args: argparse.Namespace) -> int:
     settings = load_settings()
     with session_scope() as session:
         stats = migrate_xt_lots(session, sqlite_path=args.sqlite_path, settings=settings)
-    print(f"migrate-xt: considered={stats['considered']} inserted={stats['inserted']} "
-          f"updated={stats['updated']} items={stats['items']}")
+    print(
+        f"migrate-xt: considered={stats['considered']} inserted={stats['inserted']} "
+        f"updated={stats['updated']} items={stats['items']}"
+    )
     return 0
 
 
@@ -184,6 +208,7 @@ def cmd_crm_timeline(args: argparse.Namespace) -> int:
     import json
 
     from radar.crm import get_company_profile_and_timeline
+
     with session_scope() as session:
         data = get_company_profile_and_timeline(session, args.stir)
     print(json.dumps(data, indent=2, ensure_ascii=False))
@@ -194,6 +219,7 @@ def cmd_crm_proposal(args: argparse.Namespace) -> int:
     import json
 
     from radar.crm import generate_grounded_proposal
+
     with session_scope() as session:
         data = generate_grounded_proposal(session, args.stir)
     print(json.dumps(data, indent=2, ensure_ascii=False))
@@ -202,6 +228,7 @@ def cmd_crm_proposal(args: argparse.Namespace) -> int:
 
 def cmd_crm_deal(args: argparse.Namespace) -> int:
     from radar.crm import push_deal_for_procedure
+
     with session_scope() as session:
         res = push_deal_for_procedure(
             session=session,
@@ -234,6 +261,7 @@ def cmd_users(args: argparse.Namespace) -> int:
         password = args.password
         if not password:
             import getpass
+
             password = getpass.getpass(f"Password for {username}: ")
             confirm = getpass.getpass("Confirm password: ")
             if password != confirm:
@@ -271,8 +299,7 @@ def cmd_users(args: argparse.Namespace) -> int:
                 status = "ACTIVE" if u.is_active else "DISABLED"
                 last = u.last_login_at.strftime("%Y-%m-%d %H:%M") if u.last_login_at else "Never"
                 print(
-                    f"  [{u.id}] {u.username:<16} role={u.role:<8} "
-                    f"status={status:<8} last={last}"
+                    f"  [{u.id}] {u.username:<16} role={u.role:<8} status={status:<8} last={last}"
                 )
         return 0
 
@@ -282,6 +309,7 @@ def cmd_users(args: argparse.Namespace) -> int:
 
 def cmd_crm_push(args: argparse.Namespace) -> int:
     from radar.crm import push_to_bitrix24
+
     with session_scope() as session:
         res = push_to_bitrix24(
             session=session,
@@ -304,6 +332,26 @@ def cmd_health(args: argparse.Namespace) -> int:
     with get_engine().connect() as conn:
         conn.execute(text("SELECT 1"))
     print("db: ok")
+    return 0
+
+
+def cmd_cleanup(args: argparse.Namespace) -> int:
+    from radar.cleanup import cleanup_old_snapshots, parse_retention_period
+
+    try:
+        days = parse_retention_period(args.older_than)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    with session_scope() as session:
+        stats = cleanup_old_snapshots(session, older_than_days=days)
+        session.commit()
+
+    print(
+        f"cleanup: deleted {stats['deleted_snapshots']} raw snapshots "
+        f"older than {stats['older_than_days']} days (cutoff: {stats['cutoff']})"
+    )
     return 0
 
 
@@ -416,13 +464,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("health", help="check database connectivity")
     s.set_defaults(func=cmd_health)
+
+    s = sub.add_parser("cleanup", help="cleanup snapshots by retention policy")
+    s.add_argument(
+        "--older-than",
+        default="365d",
+        help="retention period threshold, e.g. '365d' or '1y' (default: 365d)",
+    )
+    s.set_defaults(func=cmd_cleanup)
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
-                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     return args.func(args)
 
 

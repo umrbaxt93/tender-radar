@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from radar.models import Procedure
+from radar.privacy import sanitize_for_ai
 
 log = logging.getLogger(__name__)
 
@@ -48,12 +49,12 @@ def _generate_gemini_recommendation(proc: dict[str, Any], api_key: str) -> dict[
     supp_dict = proc.get("supplier") or {}
     c_info = f"{cust_dict.get('name')} (STIR: {cust_dict.get('stir')})"
     s_info = f"{supp_dict.get('name')} (STIR: {supp_dict.get('stir')})"
-    items_json = json.dumps(proc.get('items', []) or proc.get('products', []), ensure_ascii=False)
-    cat_name = proc.get('classification', {}).get('category') or proc.get('category')
+    items_json = json.dumps(proc.get("items", []) or proc.get("products", []), ensure_ascii=False)
+    cat_name = proc.get("classification", {}).get("category") or proc.get("category")
 
     prompt = (
         "Siz O'zbekiston davlat xaridlari (Tender, E-Birja, UZEX) bo'yicha "
-        "\"SOFTY\" IT kompaniyasining bosh strategik maslahatchisisiz.\n"
+        '"SOFTY" IT kompaniyasining bosh strategik maslahatchisisiz.\n'
         "Quyidagi xarid/tender ma'lumotlarini tahlil qiling va SOFTY savdo bo'limi uchun "
         "aniq, amaliy va yutish ehtimolini oshiruvchi tavsiya bering.\n\n"
         f"Xarid ma'lumotlari:\n"
@@ -79,9 +80,10 @@ def _generate_gemini_recommendation(proc: dict[str, Any], api_key: str) -> dict[
         "Qat'iy faqat JSON qaytaring.\n"
     )
     model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    clean_prompt = sanitize_for_ai(prompt)
     resp = client.models.generate_content(
         model=model_name,
-        contents=prompt,
+        contents=clean_prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             temperature=0.2,
@@ -219,7 +221,9 @@ def get_recommendation_for_procedure(session: Session, procedure_id: int) -> dic
         "supplier": {
             "name": supp.name_canonical if supp else "Noma'lum",
             "stir": supp.stir if supp else None,
-        } if supp else None,
+        }
+        if supp
+        else None,
         "category": clf.category if clf else "IT",
         "items": items,
     }

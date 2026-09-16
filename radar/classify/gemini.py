@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from radar.classify.rules import CATEGORIES, RuleResult, classify_text
+from radar.privacy import sanitize_for_ai
 
 log = logging.getLogger(__name__)
 
@@ -52,8 +53,7 @@ RESPONSE_SCHEMA: dict[str, Any] = {
 PROMPT_HEADER = (
     "You classify Uzbek public procurement lots for an IT sales team. Input lots are in "
     "Uzbek-Latin, Uzbek-Cyrillic or Russian. For each lot decide whether it is an IT "
-    "purchase and fill the schema. Use only these categories: "
-    + ", ".join(CATEGORIES) + ". "
+    "purchase and fill the schema. Use only these categories: " + ", ".join(CATEGORIES) + ". "
     "is_subscription means a licence, subscription, support or hosting term that will need "
     "renewing. term_months is the stated term in months, omitted when not stated. "
     "confidence is 0..1. Answer for every ref, in the same order. Return JSON only.\n\n"
@@ -70,13 +70,13 @@ def truncate(text: str, limit: int = MAX_INPUT_CHARS) -> str:
 
 @dataclass(frozen=True)
 class BatchItem:
-    ref: str            # stable reference inside the batch (the procedure id as a string)
-    text: str           # normalized title + item names
-    hash: str           # sha256 of the truncated text, the ai_cache key
+    ref: str  # stable reference inside the batch (the procedure id as a string)
+    text: str  # normalized title + item names
+    hash: str  # sha256 of the truncated text, the ai_cache key
 
 
 def make_item(ref: str, text: str) -> BatchItem:
-    body = truncate(text)
+    body = truncate(sanitize_for_ai(text))
     return BatchItem(ref=ref, text=body, hash=input_hash(body))
 
 
@@ -145,18 +145,20 @@ class MockModel:
             ref, _, text = block.partition("\n")
             rule: RuleResult = classify_text(text.strip())
             is_it = rule.likely_it != "no" and rule.category is not None
-            results.append({
-                "ref": ref.strip(),
-                "is_it": is_it,
-                "category": rule.category if is_it else "Other IT",
-                "subcategory": "",
-                "brand": rule.brand or "",
-                "model_hint": "",
-                "is_subscription": rule.is_subscription,
-                "term_months": rule.term_months or 0,
-                "confidence": 0.6 if is_it else 0.55,
-                "summary": "offline mock classification",
-            })
+            results.append(
+                {
+                    "ref": ref.strip(),
+                    "is_it": is_it,
+                    "category": rule.category if is_it else "Other IT",
+                    "subcategory": "",
+                    "brand": rule.brand or "",
+                    "model_hint": "",
+                    "is_subscription": rule.is_subscription,
+                    "term_months": rule.term_months or 0,
+                    "confidence": 0.6 if is_it else 0.55,
+                    "summary": "offline mock classification",
+                }
+            )
         prompt_tokens, output_tokens = estimate_tokens(prompt, item_count)
         return ModelResponse(results, prompt_tokens, output_tokens)
 
@@ -175,6 +177,7 @@ class GeminiModel:
     def client(self) -> Any:
         if self._client is None:
             from google import genai
+
             self._client = genai.Client(api_key=self._api_key)
         return self._client
 

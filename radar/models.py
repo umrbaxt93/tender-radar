@@ -148,9 +148,7 @@ class RenewalOpportunity(Base):
     __tablename__ = "renewal_opportunity"
     __table_args__ = (
         UniqueConstraint("procedure_id", name="uq_renewal_procedure"),
-        UniqueConstraint(
-            "customer_org_id", "procedure_id", name="uq_renewal_customer_procedure"
-        ),
+        UniqueConstraint("customer_org_id", "procedure_id", name="uq_renewal_customer_procedure"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     customer_org_id: Mapped[int | None] = mapped_column(ForeignKey("organization.id"), index=True)
@@ -298,5 +296,28 @@ class ExportLog(Base):
     user: Mapped[User] = relationship()
 
 
-Index("ix_organization_alias_name_trgm", OrganizationAlias.name_raw,
-      postgresql_using="gin", postgresql_ops={"name_raw": "gin_trgm_ops"})
+class AuditLog(Base):
+    """Audit log of sensitive security and privacy actions."""
+
+    __tablename__ = "audit_log"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    target_type: Mapped[str | None] = mapped_column(String(32))
+    target_id: Mapped[str | None] = mapped_column(String(64))
+    details: Mapped[dict | None] = mapped_column(JSONB)
+    ip_address: Mapped[str | None] = mapped_column(String(45))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    user: Mapped[User] = relationship()
+
+
+Index(
+    "ix_organization_alias_name_trgm",
+    OrganizationAlias.name_raw,
+    postgresql_using="gin",
+    postgresql_ops={"name_raw": "gin_trgm_ops"},
+)
