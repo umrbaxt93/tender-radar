@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from radar.models import (
@@ -33,9 +33,27 @@ def collect_stats(session: Session) -> dict[str, object]:
                                                      AiCostLedger.estimated_usd)), 0))
         .where(AiCostLedger.status != "failed")
     )
-    by_source = dict(session.execute(
-        select(Procedure.source, func.count()).group_by(Procedure.source)).all())
-    procedures = count(Procedure)
+    v_row = None
+    try:
+        res = session.execute(text("SELECT * FROM v_dashboard_stats")).mappings().first()
+        if res:
+            v_row = dict(res)
+    except Exception:
+        v_row = None
+
+    if v_row:
+        procedures = int(v_row["total_procedures"])
+        by_source = {
+            "uzex": int(v_row["uzex_count"]),
+            "ebirja": int(v_row["ebirja_count"]),
+            "xt_xarid": int(v_row["xt_count"]),
+        }
+        if v_row.get("other_count"):
+            by_source["other"] = int(v_row["other_count"])
+    else:
+        by_source = dict(session.execute(
+            select(Procedure.source, func.count()).group_by(Procedure.source)).all())
+        procedures = count(Procedure)
     # Coverage tells you how much of the data the analysis can actually rely on. A Radar
     # built on lots without amounts or completion dates would look full and mean nothing.
     with_award = count(Award)
@@ -62,6 +80,7 @@ def collect_stats(session: Session) -> dict[str, object]:
         "classified_it": count(Classification, Classification.is_it.is_(True)),
         "classified_by_rule": count(Classification, Classification.method == "rule"),
         "classified_by_ai": count(Classification, Classification.method == "ai"),
+        "needs_review_count": count(Classification, Classification.needs_review.is_(True)),
         "ai_cache_entries": count(AiCache),
         "ai_calls": count(AiCostLedger),
         "ai_spent_usd": float(spent or 0),

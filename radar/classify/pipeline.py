@@ -135,6 +135,7 @@ def run_classification(session: Session, settings: Settings, *, use_ai: bool = T
                 "is_subscription": rule.is_subscription,
                 "term_months": rule.term_months, "method": "rule", "model_name": None,
                 "confidence": 0.9, "input_hash": g.input_hash(g.truncate(text)),
+                "needs_review": False,
                 "created_at": datetime.now(UTC),
             })
             report.by_rule += 1
@@ -266,11 +267,72 @@ def run_classification(session: Session, settings: Settings, *, use_ai: bool = T
 
 
 def _values_from(values: dict, model_name: str, hash_: str) -> dict:
+    conf = float(values.get("confidence") or 0.0)
+    needs_review = conf < 0.7
     return {
-        "is_it": values["is_it"], "category": values["category"],
-        "subcategory": values["subcategory"], "brand": values["brand"],
-        "model_hint": values["model_hint"], "is_subscription": values["is_subscription"],
-        "term_months": values["term_months"], "method": "ai", "model_name": model_name,
-        "confidence": values["confidence"], "input_hash": hash_,
+        "is_it": values["is_it"],
+        "category": values["category"],
+        "subcategory": values["subcategory"],
+        "brand": values["brand"],
+        "model_hint": values["model_hint"],
+        "is_subscription": values["is_subscription"],
+        "term_months": values["term_months"],
+        "method": "ai",
+        "model_name": model_name,
+        "confidence": values["confidence"],
+        "input_hash": hash_,
+        "needs_review": needs_review,
         "created_at": datetime.now(UTC),
     }
+
+
+def recheck_classifications(session: Session) -> int:
+    """Re-evaluates all existing classifications against the latest rules in keywords.yaml.
+
+    Returns the number of classifications updated.
+    """
+    stmt = (
+        select(Classification, Procedure)
+        .join(Procedure, Procedure.id == Classification.procedure_id)
+        .order_by(Procedure.id)
+    )
+    rows = list(session.execute(stmt).all())
+    pids = [c.procedure_id for c, _ in rows]
+    names = _item_names(session, pids)
+
+    changed = 0
+    for clf, proc in rows:
+        text = build_text(proc.title, names.get(proc.id, []))
+        rule = classify_text(text)
+        if rule.decided:
+            new_is_it = rule.likely_it == "yes"
+            new_cat = rule.category if new_is_it else None
+            new_brand = rule.brand if new_is_it else None
+            new_sub = rule.is_subscription if new_is_it else False
+            new_term = rule.term_months if new_is_it else None
+
+            if (
+                (clf.is_it != new_is_it)
+                or (clf.category != new_cat)
+                or (clf.brand != new_brand and new_brand)
+            ):
+                clf.is_it = new_is_it
+                clf.category = new_cat
+                if new_brand:
+                    clf.brand = new_brand
+                clf.is_subscription = new_sub
+                if new_term:
+                    clf.term_months = new_term
+                clf.method = "rule"
+                clf.confidence = 0.9
+                clf.needs_review = False
+                changed += 1
+        elif clf.method == "ai":
+            conf = float(clf.confidence or 0.0)
+            if conf < 0.7 and not clf.needs_review:
+                clf.needs_review = True
+                changed += 1
+
+    if changed:
+        session.commit()
+    return changed

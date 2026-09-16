@@ -101,6 +101,14 @@
       <span style="font-size: 13px; color: var(--muted); background: var(--badge-bg); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);">
         👤 <strong>{{ current_user.username }}</strong> ({{ current_user.role }})
       </span>
+      {% if current_user.role == 'admin' %}
+      <a href="/admin/review" class="btn btn-outline" style="text-decoration: none; background: #fef3c7; color: #92400e; border-color: #fde68a;">
+        📋 Admin Review
+        {% if (stats.needs_review_count|default(0)) > 0 %}
+        <span style="background: #dc2626; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px;">{{ stats.needs_review_count }}</span>
+        {% endif %}
+      </a>
+      {% endif %}
       {% endif %}
       <a href="/api/export/xlsx" class="btn btn-outline" style="text-decoration: none;">📥 Excel Yuklab Olish</a>
       <a href="/logout" class="btn btn-outline" style="text-decoration: none; color: #b3261e;">Chiqish ↗</a>
@@ -114,10 +122,10 @@
   {% endif %}
 
   <div class="cards">
-    <div class="card"><span>Radar rows</span><b>{{ rows|length }}</b></div>
+    <div class="card"><span>Jami Lotlar</span><b>{{ stats.procedures|default(stats.classified_it|default(0)) }}</b></div>
+    <div class="card"><span>Radar imkoniyatlar</span><b>{{ total_count|default(rows|length) }}</b></div>
     <div class="card"><span>Contact now</span><b>{{ due_now }}</b></div>
-    <div class="card"><span>IT lots</span><b>{{ stats.classified_it }}</b></div>
-    <div class="card"><span>Customers</span><b>{{ stats.organizations }}</b></div>
+    <div class="card"><span>Xaridorlar</span><b>{{ stats.organizations }}</b></div>
     <div class="card"><span>AI spend</span><b>${{ '%.4f'|format(stats.ai_spent_usd) }}</b></div>
   </div>
 
@@ -131,6 +139,22 @@
 
   <!-- Tab 1: Radar & Renewals -->
   <div id="tab-radar" class="tab-content active">
+    <!-- Filter bar -->
+    <form method="get" action="/radar" style="background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <select name="category" class="search-input" style="flex:1; min-width:160px; padding:8px 12px;">
+        <option value="">Barcha toifalar</option>
+        {% for cat in (distinct_categories or []) %}
+        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="brand" class="search-input" style="flex:1; min-width:140px; padding:8px 12px;" placeholder="Brend (Fortinet, Cisco...)" value="{{ selected_brand or '' }}">
+      <input type="number" name="min_amount" class="search-input" style="flex:1; min-width:140px; padding:8px 12px;" placeholder="Min summa (so'm)" value="{{ selected_min_amount or '' }}">
+      <input type="date" name="date_from" class="search-input" style="flex:1; min-width:130px; padding:8px 12px;" value="{{ selected_date_from or '' }}" title="Boshlanish sanasi">
+      <input type="date" name="date_to" class="search-input" style="flex:1; min-width:130px; padding:8px 12px;" value="{{ selected_date_to or '' }}" title="Tugash sanasi">
+      <button type="submit" class="btn btn-primary" style="padding:8px 16px;">Filtrlash</button>
+      <a href="/radar" class="btn btn-outline" style="padding:8px 14px; text-decoration:none;">Tozalash</a>
+    </form>
+
     <div class="tablewrap">
     {% if rows %}
     <table>
@@ -143,7 +167,7 @@
       {% for row in rows %}
         <tr>
           <td class="wide"><strong>{{ row.customer }}</strong></td>
-          <td class="num score {{ 'hot' if row.score >= 60 else 'warm' if row.score >= 40
+          <td class="num score {{ 'hot' if row.score >= 80 else 'warm' if row.score >= 50
                                   else 'cool' }}">{{ row.score }}</td>
           <td>{{ row.contact_by_at.strftime('%Y-%m-%d') if row.contact_by_at else '' }}</td>
           <td><span class="badge">{{ row.category or 'IT' }}</span></td>
@@ -164,8 +188,25 @@
       {% endfor %}
       </tbody>
     </table>
+
+    <!-- Pagination controls -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; flex-wrap:wrap; gap:10px;">
+      <div style="font-size:13px; color:var(--muted);">
+        Jami: <strong>{{ total_count|default(rows|length) }}</strong> ta imkoniyat (Sahifa <strong>{{ current_page|default(1) }}</strong> / {{ total_pages|default(1) }})
+      </div>
+      <div style="display:flex; gap:8px;">
+        {% if (current_page|default(1)) > 1 %}
+        <a href="/radar?page={{ (current_page|default(1)) - 1 }}&category={{ selected_category or '' }}&brand={{ selected_brand or '' }}&min_amount={{ selected_min_amount or '' }}&date_from={{ selected_date_from or '' }}&date_to={{ selected_date_to or '' }}" class="btn btn-outline" style="padding:6px 12px; text-decoration:none;">&larr; Oldingi</a>
+        {% endif %}
+        {% if (current_page|default(1)) < (total_pages|default(1)) %}
+        <a href="/radar?page={{ (current_page|default(1)) + 1 }}&category={{ selected_category or '' }}&brand={{ selected_brand or '' }}&min_amount={{ selected_min_amount or '' }}&date_from={{ selected_date_from or '' }}&date_to={{ selected_date_to or '' }}" class="btn btn-outline" style="padding:6px 12px; text-decoration:none;">Keyingi &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+
     {% else %}
     <p class="empty">No opportunities in the contact window.
+       Belgilangan filtrlarga mos keladigan imkoniyatlar topilmadi.
        Run <code>import</code>, <code>classify</code> and <code>renewal</code> first.</p>
     {% endif %}
     </div>
@@ -208,6 +249,34 @@
       <button class="btn btn-primary" onclick="executeCustomerSearch()">Mijozni tahlil qilish</button>
     </div>
     <div id="custResultsContainer"></div>
+
+    <div style="margin-top:24px;">
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:12px; color:var(--ink);">🏢 Eng Yirik Davlat Buyurtmachilari (Top 10)</h3>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Buyurtmachi (Mijoz)</th>
+              <th>STIR</th>
+              <th>Hudud</th>
+              <th class="num">Xaridlar soni</th>
+              <th class="num">Jami sarflangan (so'm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in top_buyers %}
+            <tr>
+              <td class="wide"><strong>{{ b.name_canonical }}</strong></td>
+              <td><code>{{ b.stir }}</code></td>
+              <td>{{ b.region or 'O\'zbekiston' }}</td>
+              <td class="num"><strong>{{ b.proc_count }}</strong> ta</td>
+              <td class="num"><strong>{{ '{:,.0f}'.format(b.total_spent) }}</strong> so'm</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Tab 4: Competitor Intelligence -->
@@ -216,6 +285,39 @@
       <input type="text" id="compQuery" class="search-input" style="flex:2; min-width:220px;" placeholder="Raqobatchi nomi: Smart Server, Serverland..." onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
       <input type="text" id="compStir" class="search-input" style="flex:1; min-width:150px;" placeholder="🥊 Raqobatchi STIR (INN): 308904387" onkeyup="if(event.key==='Enter') executeCompetitorSearch()">
       <button class="btn btn-primary" onclick="executeCompetitorSearch()">Raqobatchini tahlil qilish</button>
+    </div>
+    <div id="compResultsContainer"></div>
+
+    <div style="margin-top:24px;">
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:12px; color:var(--ink);">🥊 Bozor Yetakchilari va G'olib Yetkazib Beruvchilar (Top 10)</h3>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Yetkazib beruvchi (G'olib)</th>
+              <th>STIR</th>
+              <th>Hudud</th>
+              <th class="num">G'alabalar</th>
+              <th class="num">Xaridorlar</th>
+              <th class="num">O'rtacha chegirma</th>
+              <th class="num">Jami yutilgan summa (so'm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in top_competitors %}
+            <tr>
+              <td class="wide"><strong>{{ c.name_canonical }}</strong></td>
+              <td><code>{{ c.stir }}</code></td>
+              <td>{{ c.region or 'O\'zbekiston' }}</td>
+              <td class="num"><strong>{{ c.wins_count }}</strong> ta</td>
+              <td class="num">{{ c.unique_buyers }} ta</td>
+              <td class="num"><span class="badge" style="background:#ecfdf5; color:#065f46; font-weight:bold;">{{ '%.1f'|format(c.avg_discount * 100) }}%</span></td>
+              <td class="num"><strong>{{ '{:,.0f}'.format(c.total_amount) }}</strong> so'm</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

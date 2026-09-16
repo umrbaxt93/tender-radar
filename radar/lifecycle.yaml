@@ -43,14 +43,17 @@ radar_contact_window_days: 60
 # Days before the expected renewal that a manager should make contact.
 contact_lead_days: 60
 
-# Scoring (docs/SPEC.md). The weights below top out at 75, not 100; DECISIONS.md keeps the
-# original weights and reports the true reachable range instead of silently rescaling.
+# Scoring (0-100 enriched formula).
 scoring:
   contact_within_30_days: 40
   contact_within_31_60_days: 25
+  contact_over_60_days: 10
   amount_above_category_median: 15
   repeat_customer_12_months: 10
   priority_brand: 10
-  max_reachable: 75
+  previous_winner_softy: 15
+  previous_winner_competitor: 5
+  explicit_term_reliability: 10
+  max_reachable: 100
 
-priority_brands: [Fortinet, Microsoft, Kaspersky, Zoom]
+priority_brands: [Fortinet, Microsoft, Kaspersky, Zoom, Cisco, ESET, Autodesk, Adobe]

@@ -79,10 +79,36 @@ def cmd_classify(args: argparse.Namespace) -> int:
 
     settings = load_settings()
     with session_scope() as session:
-        report = run_classification(session, settings, use_ai=not args.rules_only,
-                                    limit=args.limit, mock=args.mock_ai,
-                                    refresh=args.refresh, unsure_only=args.unsure)
+        if getattr(args, "recheck", False):
+            from radar.classify.pipeline import recheck_classifications
+
+            changed = recheck_classifications(session)
+            print(f"classify --recheck: {changed} classifications updated with new rules")
+            return 0
+        report = run_classification(
+            session,
+            settings,
+            use_ai=not args.rules_only,
+            limit=args.limit,
+            mock=args.mock_ai,
+            refresh=args.refresh,
+            unsure_only=args.unsure,
+        )
     print(report.summary())
+    return 0
+
+
+def cmd_dedup(args: argparse.Namespace) -> int:
+    from radar.dedup import find_and_merge_duplicates
+
+    with session_scope() as session:
+        res = find_and_merge_duplicates(session)
+    print(f"dedup: found {res['found']} matching pairs, merged {res['merged']} procedures")
+    for d in res["details"]:
+        print(
+            f"  merged duplicate {d['duplicate_id']} ({d['duplicate_source']}) "
+            f"into primary {d['primary_id']}"
+        )
     return 0
 
 
@@ -330,13 +356,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--rules-only", action="store_true")
     s.add_argument("--mock-ai", action="store_true", help="deterministic offline mock model")
     s.add_argument("--refresh", action="store_true", help="re-classify already classified lots")
+    s.add_argument(
+        "--recheck",
+        action="store_true",
+        help="re-evaluate existing classifications with updated rules",
+    )
     s.add_argument("--limit", type=int)
-    s.add_argument("--unsure", action="store_true",
-                   help="only lots the rules abstained on (the rows AI can actually inform)")
+    s.add_argument(
+        "--unsure",
+        action="store_true",
+        help="only lots the rules abstained on (the rows AI can actually inform)",
+    )
     s.set_defaults(func=cmd_classify)
 
     s = sub.add_parser("renewal", help="recompute renewal opportunities")
     s.set_defaults(func=cmd_renewal)
+
+    s = sub.add_parser("dedup", help="find and merge duplicate procedures across sources")
+    s.set_defaults(func=cmd_dedup)
 
     s = sub.add_parser("backfill", help="walk the UZEX e-tender archive back N years")
     s.add_argument("--years", type=float, default=3.0, help="how far back to go (default 3)")

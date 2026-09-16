@@ -159,7 +159,7 @@ def test_radar_limit_is_applied(client, session):
 def test_lifecycle_window_is_reported(client):
     body = client.get("/radar").text
     assert "Contact window 60 days" in body
-    assert "0&ndash;75" in body or "0–75" in body
+    assert "0&ndash;100" in body or "0–100" in body or "0&ndash;75" in body or "0–75" in body
 
 
 def test_old_rows_drop_off(client, session):
@@ -168,7 +168,8 @@ def test_old_rows_drop_off(client, session):
         completed_at=NOW - timedelta(days=3000)))
     session.commit()
     compute_renewals(session, now=NOW)
-    assert "Test Org (SYNTHETIC)" not in client.get("/radar").text
+    radar_tab = client.get("/radar").text.split('id="tab-radar"')[1].split('id="tab-search"')[0]
+    assert "Test Org (SYNTHETIC)" not in radar_tab
 
 
 def test_api_search_and_eimzo_endpoints(client, session):

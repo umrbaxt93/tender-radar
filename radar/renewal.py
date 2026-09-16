@@ -20,7 +20,7 @@ from typing import Any
 
 import yaml
 from sqlalchemy import delete, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from radar.models import (
     Award,
@@ -72,26 +72,49 @@ class ScoreInput:
     category_median: Decimal | None
     repeat_customer: bool
     brand: str | None
+    previous_winner_softy: bool = False
+    previous_winner_competitor: bool = False
+    explicit_term: bool = False
 
 
 def score_opportunity(data: ScoreInput, config: dict[str, Any] | None = None) -> int:
     config = config or load_lifecycle()
-    weights = config["scoring"]
+    weights = config.get("scoring", {})
     score = 0
-    # Buckets are exclusive (DECISIONS.md). An overdue contact date is at least as urgent as
-    # one due today, so it lands in the first bucket rather than scoring nothing.
+
+    # 1. Contact urgency (0-40)
     if data.days_to_contact <= 30:
-        score += weights["contact_within_30_days"]
+        score += weights.get("contact_within_30_days", 40)
     elif data.days_to_contact <= 60:
-        score += weights["contact_within_31_60_days"]
-    if data.amount is not None and data.category_median is not None \
-            and data.amount > data.category_median:
-        score += weights["amount_above_category_median"]
+        score += weights.get("contact_within_31_60_days", 25)
+
+    # 2. Amount above category median (0-15)
+    if (
+        data.amount is not None
+        and data.category_median is not None
+        and data.amount > data.category_median
+    ):
+        score += weights.get("amount_above_category_median", 15)
+
+    # 3. Repeat customer: >=2 IT purchases in last 12 months (0-10)
     if data.repeat_customer:
-        score += weights["repeat_customer_12_months"]
+        score += weights.get("repeat_customer_12_months", 10)
+
+    # 4. Priority brand (0-10)
     if data.brand and data.brand in (config.get("priority_brands") or []):
-        score += weights["priority_brand"]
-    return score
+        score += weights.get("priority_brand", 10)
+
+    # 5. Previous winner: Softy (+15) or Competitor (+5)
+    if data.previous_winner_softy:
+        score += weights.get("previous_winner_softy", 15)
+    elif data.previous_winner_competitor:
+        score += weights.get("previous_winner_competitor", 5)
+
+    # 6. Explicit term extracted from contract (+10)
+    if data.explicit_term:
+        score += weights.get("explicit_term_reliability", 10)
+
+    return min(score, 100)
 
 
 def _category_medians(session: Session) -> dict[str, Decimal]:
@@ -133,18 +156,33 @@ def compute_renewals(session: Session, now: datetime | None = None) -> int:
     purchases = _purchase_dates(session)
 
     amount_col = func.coalesce(Award.amount, Procedure.start_price)
+    supplier_org = aliased(Organization, name="supplier_org")
     rows = session.execute(
-        select(Procedure.id, Procedure.customer_org_id, Procedure.completed_at, amount_col,
-               Classification.category, Classification.brand, Classification.is_subscription,
-               Classification.term_months)
+        select(
+            Procedure.id,
+            Procedure.customer_org_id,
+            Procedure.completed_at,
+            amount_col,
+            Classification.category,
+            Classification.brand,
+            Classification.is_subscription,
+            Classification.term_months,
+            supplier_org.name_canonical,
+        )
         .join(Classification, Classification.procedure_id == Procedure.id)
         .join(Award, Award.procedure_id == Procedure.id, isouter=True)
-        .where(Classification.is_it.is_(True), Procedure.completed_at.is_not(None))
+        .join(supplier_org, supplier_org.id == Award.supplier_org_id, isouter=True)
+        .where(
+            Classification.is_it.is_(True),
+            Classification.needs_review.is_(False),
+            Procedure.merged_from_id.is_(None),
+            Procedure.completed_at.is_not(None),
+        )
     ).all()
 
     session.execute(delete(RenewalOpportunity))
     created = 0
-    for pid, org_id, completed, amount, category, brand, is_sub, term in rows:
+    for pid, org_id, completed, amount, category, brand, is_sub, term, supp_name in rows:
         months, on_radar = lifecycle_for(category, is_sub, term, config)
         if not on_radar and not is_sub:
             continue  # hardware without a subscription never renews on the Radar
@@ -156,18 +194,45 @@ def compute_renewals(session: Session, now: datetime | None = None) -> int:
             lo = bisect.bisect_left(window, completed - timedelta(days=365))
             hi = bisect.bisect_right(window, completed)
             repeat = (hi - lo) >= 2
-        score = score_opportunity(ScoreInput(
-            days_to_contact=(contact_by - now).days,
-            amount=Decimal(str(amount)) if amount is not None else None,
-            category_median=medians.get(category or ""),
-            repeat_customer=repeat,
-            brand=brand,
-        ), config)
-        session.add(RenewalOpportunity(
-            customer_org_id=org_id, procedure_id=pid, category=category, brand=brand,
-            last_purchase_at=completed, lifecycle_months=months, expected_renewal_at=expected,
-            contact_by_at=contact_by, amount=amount, score=score, computed_at=now,
-        ))
+
+        softy_won = False
+        competitor_won = False
+        if supp_name:
+            if "softy" in supp_name.lower():
+                softy_won = True
+            else:
+                competitor_won = True
+
+        explicit_term = bool(term and 1 <= term <= 120)
+
+        score = score_opportunity(
+            ScoreInput(
+                days_to_contact=(contact_by - now).days,
+                amount=Decimal(str(amount)) if amount is not None else None,
+                category_median=medians.get(category or ""),
+                repeat_customer=repeat,
+                brand=brand,
+                previous_winner_softy=softy_won,
+                previous_winner_competitor=competitor_won,
+                explicit_term=explicit_term,
+            ),
+            config,
+        )
+        session.add(
+            RenewalOpportunity(
+                customer_org_id=org_id,
+                procedure_id=pid,
+                category=category,
+                brand=brand,
+                last_purchase_at=completed,
+                lifecycle_months=months,
+                expected_renewal_at=expected,
+                contact_by_at=contact_by,
+                amount=amount,
+                score=score,
+                computed_at=now,
+            )
+        )
         created += 1
     session.commit()
     log.info("recomputed %d renewal opportunities", created)
@@ -176,6 +241,7 @@ def compute_renewals(session: Session, now: datetime | None = None) -> int:
 
 @dataclass
 class RadarRow:
+    procedure_id: int
     customer: str
     stir: str | None
     region: str | None
@@ -190,32 +256,85 @@ class RadarRow:
     title: str
 
 
-def radar_rows(session: Session, now: datetime | None = None,
-               limit: int | None = None, window_days: int | None = None) -> list[RadarRow]:
+def radar_rows(
+    session: Session,
+    now: datetime | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+    window_days: int | None = None,
+    category: str | None = None,
+    brand: str | None = None,
+    min_amount: float | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    return_total: bool = False,
+) -> list[RadarRow] | tuple[list[RadarRow], int]:
     """Opportunities whose contact window is open, highest score first."""
     now = now or datetime.now(UTC)
     config = load_lifecycle()
-    window = timedelta(days=window_days if window_days is not None
-                       else int(config["radar_contact_window_days"]))
-    stmt = (select(RenewalOpportunity, Organization, Procedure)
-            .join(Organization, Organization.id == RenewalOpportunity.customer_org_id,
-                  isouter=True)
-            .join(Procedure, Procedure.id == RenewalOpportunity.procedure_id)
-            .where(RenewalOpportunity.expected_renewal_at >= now,
-                   RenewalOpportunity.contact_by_at <= now + window)
-            .order_by(RenewalOpportunity.score.desc(),
-                      RenewalOpportunity.contact_by_at.asc()))
+    window = timedelta(
+        days=window_days if window_days is not None else int(config["radar_contact_window_days"])
+    )
+    stmt = (
+        select(RenewalOpportunity, Organization, Procedure)
+        .join(
+            Organization,
+            Organization.id == RenewalOpportunity.customer_org_id,
+            isouter=True,
+        )
+        .join(Procedure, Procedure.id == RenewalOpportunity.procedure_id)
+        .where(
+            Procedure.merged_from_id.is_(None),
+            RenewalOpportunity.expected_renewal_at >= now,
+            RenewalOpportunity.contact_by_at <= now + window,
+        )
+    )
+
+    if category:
+        stmt = stmt.where(RenewalOpportunity.category == category)
+    if brand:
+        stmt = stmt.where(RenewalOpportunity.brand.ilike(f"%{brand}%"))
+    if min_amount is not None:
+        stmt = stmt.where(RenewalOpportunity.amount >= min_amount)
+    if date_from is not None:
+        stmt = stmt.where(RenewalOpportunity.contact_by_at >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(RenewalOpportunity.contact_by_at <= date_to)
+
+    total_count = 0
+    if return_total:
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_count = session.scalar(count_stmt) or 0
+
+    stmt = stmt.order_by(
+        RenewalOpportunity.score.desc(),
+        RenewalOpportunity.contact_by_at.asc(),
+    )
+
+    if offset:
+        stmt = stmt.offset(offset)
     if limit:
         stmt = stmt.limit(limit)
+
     rows = []
     for opp, org, proc in session.execute(stmt).all():
-        rows.append(RadarRow(
-            customer=org.name_canonical if org else "(unknown)",
-            stir=org.stir if org else None,
-            region=org.region if org else None,
-            category=opp.category, brand=opp.brand,
-            last_purchase_at=opp.last_purchase_at, amount=opp.amount,
-            expected_renewal_at=opp.expected_renewal_at, contact_by_at=opp.contact_by_at,
-            score=opp.score, source_url=proc.source_url, title=proc.title,
-        ))
+        rows.append(
+            RadarRow(
+                procedure_id=proc.id,
+                customer=org.name_canonical if org else "(unknown)",
+                stir=org.stir if org else None,
+                region=org.region if org else None,
+                category=opp.category,
+                brand=opp.brand,
+                last_purchase_at=opp.last_purchase_at,
+                amount=opp.amount,
+                expected_renewal_at=opp.expected_renewal_at,
+                contact_by_at=opp.contact_by_at,
+                score=opp.score,
+                source_url=proc.source_url,
+                title=proc.title,
+            )
+        )
+    if return_total:
+        return rows, total_count
     return rows

@@ -9,12 +9,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Form, Request, Response, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from sqlalchemy import select, text
+from sqlalchemy import and_, or_, select, text
 
 from radar.auth import (
     SESSION_COOKIE_NAME,
@@ -23,11 +23,19 @@ from radar.auth import (
     get_current_user,
     get_current_user_optional,
     limiter,
+    require_role,
     verify_password,
 )
 from radar.db import get_engine, session_scope
 from radar.export import export_workbook
-from radar.models import ExportLog, Procedure, User
+from radar.models import (
+    Classification,
+    ExportLog,
+    Organization,
+    Procedure,
+    RenewalOpportunity,
+    User,
+)
 from radar.renewal import load_lifecycle, radar_rows
 from radar.security import SecurityHeadersMiddleware
 from radar.stats import collect_stats
@@ -155,23 +163,133 @@ def logout() -> RedirectResponse:
 # Protected Dashboard
 # -----------------------------------------------------------------------------
 @app.get("/radar", response_class=HTMLResponse)
-def radar(request: Request, limit: int = 200) -> Response:
+def radar(
+    request: Request,
+    page: int = 1,
+    per_page: int = 50,
+    category: str | None = None,
+    brand: str | None = None,
+    min_amount: float | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> Response:
     user = get_current_user_optional(request.cookies.get(SESSION_COOKIE_NAME))
     if not user:
         return RedirectResponse(url="/login?next=/radar", status_code=status.HTTP_302_FOUND)
 
+    safe_page = max(1, page)
+    safe_per_page = max(10, min(100, per_page))
+    offset = (safe_page - 1) * safe_per_page
+
+    dt_from = None
+    if date_from:
+        try:
+            dt_from = datetime.fromisoformat(date_from).replace(tzinfo=UTC)
+        except ValueError:
+            dt_from = None
+
+    dt_to = None
+    if date_to:
+        try:
+            dt_to = datetime.fromisoformat(date_to).replace(tzinfo=UTC)
+        except ValueError:
+            dt_to = None
+
     now = datetime.now(UTC)
     config = load_lifecycle()
     with session_scope() as session:
-        rows = radar_rows(session, now=now, limit=limit)
+        rows, total_count = radar_rows(
+            session,
+            now=now,
+            limit=safe_per_page,
+            offset=offset,
+            category=category,
+            brand=brand,
+            min_amount=min_amount,
+            date_from=dt_from,
+            date_to=dt_to,
+            return_total=True,
+        )
         stats = collect_stats(session)
         sources = sorted(s for s in session.scalars(select(Procedure.source).distinct()) if s)
+
+        # Top Buyers query (STIR not null)
+        top_buyers = [
+            dict(r)
+            for r in session.execute(
+                text("""
+                SELECT o.id, o.name_canonical, o.stir, o.region,
+                       COUNT(p.id) as proc_count,
+                       COALESCE(SUM(COALESCE(a.amount, p.start_price, 0)), 0) as total_spent
+                FROM organization o
+                JOIN procedure p ON p.customer_org_id = o.id AND p.merged_from_id IS NULL
+                LEFT JOIN award a ON a.procedure_id = p.id
+                WHERE o.stir IS NOT NULL AND trim(o.stir) != ''
+                GROUP BY o.id, o.name_canonical, o.stir, o.region
+                ORDER BY total_spent DESC
+                LIMIT 10;
+            """)
+            ).mappings().all()
+        ]
+
+        # Top Competitors query (STIR not null)
+        top_competitors = [
+            dict(r)
+            for r in session.execute(
+                text("""
+                SELECT o.id, o.name_canonical, o.stir, o.region,
+                       COUNT(a.procedure_id) AS wins_count,
+                       COALESCE(SUM(a.amount), 0) AS total_amount,
+                       COUNT(DISTINCT p.customer_org_id) AS unique_buyers,
+                       AVG(CASE
+                           WHEN p.start_price IS NOT NULL
+                                AND p.start_price > 0
+                                AND a.amount IS NOT NULL
+                           THEN (p.start_price - a.amount) / p.start_price
+                           ELSE 0
+                       END) AS avg_discount
+                FROM organization o
+                JOIN award a ON a.supplier_org_id = o.id
+                JOIN procedure p ON p.id = a.procedure_id AND p.merged_from_id IS NULL
+                WHERE o.stir IS NOT NULL AND trim(o.stir) != ''
+                GROUP BY o.id, o.name_canonical, o.stir, o.region
+                HAVING COUNT(a.procedure_id) > 0
+                ORDER BY total_amount DESC
+                LIMIT 10;
+            """)
+            ).mappings().all()
+        ]
+
+        # Distinct categories for filter dropdown
+        distinct_categories = [
+            c
+            for c in session.scalars(
+                select(RenewalOpportunity.category)
+                .distinct()
+                .order_by(RenewalOpportunity.category)
+            ).all()
+            if c
+        ]
+
+    total_pages = max(1, (total_count + safe_per_page - 1) // safe_per_page)
 
     return TEMPLATES.TemplateResponse(
         request,
         "radar.html",
         {
             "rows": rows,
+            "total_count": total_count,
+            "current_page": safe_page,
+            "total_pages": total_pages,
+            "per_page": safe_per_page,
+            "selected_category": category,
+            "selected_brand": brand,
+            "selected_min_amount": min_amount,
+            "selected_date_from": date_from,
+            "selected_date_to": date_to,
+            "distinct_categories": distinct_categories,
+            "top_buyers": top_buyers,
+            "top_competitors": top_competitors,
             "stats": stats,
             "current_user": user,
             "generated_at": now.strftime("%Y-%m-%d %H:%M UTC"),
@@ -181,6 +299,113 @@ def radar(request: Request, limit: int = 200) -> Response:
             "window_days": config["radar_contact_window_days"],
         },
     )
+
+
+# -----------------------------------------------------------------------------
+# Admin Review UI & API (Admin Role Only)
+# -----------------------------------------------------------------------------
+@app.get("/admin/review", response_class=HTMLResponse)
+def admin_review_page(request: Request) -> Response:
+    user = get_current_user_optional(request.cookies.get(SESSION_COOKIE_NAME))
+    if not user:
+        return RedirectResponse(url="/login?next=/admin/review", status_code=status.HTTP_302_FOUND)
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ushbu sahifaga kirish uchun admin huquqi talab qilinadi",
+        )
+
+    from radar.classify.rules import CATEGORIES
+
+    with session_scope() as session:
+        stmt = (
+            select(Classification, Procedure, Organization)
+            .join(Procedure, Procedure.id == Classification.procedure_id)
+            .join(Organization, Organization.id == Procedure.customer_org_id, isouter=True)
+            .where(
+                or_(
+                    Classification.needs_review.is_(True),
+                    and_(
+                        Classification.is_it.is_(True),
+                        Classification.confidence < 0.7,
+                    ),
+                )
+            )
+            .order_by(Classification.confidence.asc().nullslast(), Procedure.id.desc())
+            .limit(100)
+        )
+        items = []
+        for clf, proc, cust in session.execute(stmt).all():
+            items.append({
+                "procedure_id": proc.id,
+                "source": proc.source,
+                "source_id": proc.source_id,
+                "source_url": proc.source_url,
+                "title": proc.title,
+                "customer_name": cust.name_canonical if cust else "Noma'lum",
+                "customer_stir": cust.stir if cust else None,
+                "category": clf.category,
+                "brand": clf.brand,
+                "is_it": clf.is_it,
+                "confidence": float(clf.confidence) if clf.confidence is not None else 0.5,
+            })
+
+    return TEMPLATES.TemplateResponse(
+        request,
+        "admin_review.html",
+        {
+            "items": items,
+            "categories": sorted(CATEGORIES),
+            "current_user": user,
+        },
+    )
+
+
+@app.post("/api/admin/review/{procedure_id}")
+async def api_admin_review_submit(
+    procedure_id: int,
+    request: Request,
+    user: Annotated[User, Depends(require_role("admin"))],
+) -> JSONResponse:
+    from radar.models import Classification
+    from radar.renewal import compute_renewals
+
+    is_json = request.headers.get("content-type", "").startswith("application/json")
+    payload = await request.json() if is_json else {}
+    is_it = bool(payload.get("is_it", True))
+    category = payload.get("category") if is_it else None
+    brand = payload.get("brand") if is_it else None
+
+    with session_scope() as session:
+        clf = session.get(Classification, procedure_id)
+        if not clf:
+            return JSONResponse({"error": "Classification not found"}, status_code=404)
+
+        clf.is_it = is_it
+        clf.category = category
+        if brand is not None:
+            clf.brand = brand
+        clf.method = "manual"
+        clf.confidence = 1.0
+        clf.needs_review = False
+        session.commit()
+
+        # Recompute renewals immediately without caching to AI
+        compute_renewals(session)
+
+    log.info(
+        "ADMIN REVIEW: User %s updated procedure %d -> is_it=%s, category=%s",
+        user.username,
+        procedure_id,
+        is_it,
+        category,
+    )
+    return JSONResponse({
+        "status": "ok",
+        "procedure_id": procedure_id,
+        "is_it": is_it,
+        "category": category,
+    })
 
 
 # -----------------------------------------------------------------------------

@@ -99,7 +99,7 @@ categories:
     - azure
   Google Workspace:
     - google workspace
-    - g suite
+    - "re:\\bg\\s*suite\\b"
     - гугл воркспейс
   Collaboration:
     - zoom
@@ -143,6 +143,9 @@ categories:
     - analitika
     - аналитика
     - business intelligence
+    - ispring
+    - i-spring
+    - айспринг
   Cloud:
     - hosting
     - хостинг
@@ -189,7 +192,6 @@ categories:
     - uzluksiz quvvat
     - источник бесперебойного питания
     - smart-ups
-    - akkumulyator batareya
   CCTV:
     - videokuzatuv
     - видеонаблюдени
@@ -257,11 +259,60 @@ not_it:
   - stol va stul
   - "re:stol\\s*,\\s*stul"
   - стол и стул
+  # Power generation (distinct from UPS)
+  - generator
+  - генератор
+  - dizel generator
+  - дизельный генератор
+  - dizel-generator
+  - benzingenerator
+  # Marketing, Media, and Advertising
+  - reklama
+  - реклама
+  - bloger
+  - блогер
+  - video rolik
+  - видеоролик
+  - rolik tayyorlash
+  - rolik
+  - роликов
+  # Events, Celebrations & Organizing
+  - tadbir
+  - мероприятие
+  - мероприятия
+  - yubiley
+  - юбилей
+  - tashkil etish xizmatlari
+  - xizmatlarini tashkil etish
+  - организация мероприятий
+  - bayram
+  - концерт
+  # Construction, Measurement & Physical Installation
   - qurilish
   - строительн
+  - qurilish-montaj
+  - qurilish montaj
+  - строительно-монтажные
+  - o'lchov
+  - o'lchash
+  - измерительн
+  - montaj ishlari
+  - montaj qilish
+  - demontaj
   - ta'mirlash ishlari
   - ремонт кровли
   - ремонтные работы
+  # Certification, Consulting & Auditing
+  - "re:\\biso\\b"
+  - iso konsalting
+  - консалтинг
+  - consulting
+  - konsalting
+  # Non-IT Training
+  - "re:\\btrening\\b"
+  - "re:\\bтренинг\\b"
+  - malaka oshirish
+  - o'qitish kurslari
   - аудит
   - бухгалтер
   - юридическ
@@ -347,7 +398,7 @@ brands:
   Dell: [dell, poweredge, powervault, latitude]
   Lenovo: [lenovo, thinkpad, thinkcentre]
   Zoom: [zoom]
-  Google: [google workspace, g suite]
+  Google: [google workspace, "re:\\bg\\s*suite\\b"]
   Hikvision: [hikvision]
   Dahua: [dahua]
   APC: [apc, smart-ups]
@@ -356,3 +407,4 @@ brands:
   InfoWatch: [infowatch]
   Adobe: [adobe]
   Autodesk: [autocad, autodesk]
+  iSpring: [ispring, i-spring, айспринг]

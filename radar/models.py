@@ -74,6 +74,9 @@ class Procedure(Base):
     currency: Mapped[str | None] = mapped_column(String(8))
     start_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 2))
     raw_snapshot_id: Mapped[int | None] = mapped_column(ForeignKey("raw_snapshot.id"))
+    merged_from_id: Mapped[int | None] = mapped_column(
+        ForeignKey("procedure.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -134,6 +137,7 @@ class Classification(Base):
     model_name: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
     input_hash: Mapped[str | None] = mapped_column(String(64))
+    needs_review: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -142,7 +146,12 @@ class Classification(Base):
 
 class RenewalOpportunity(Base):
     __tablename__ = "renewal_opportunity"
-    __table_args__ = (UniqueConstraint("procedure_id", name="uq_renewal_procedure"),)
+    __table_args__ = (
+        UniqueConstraint("procedure_id", name="uq_renewal_procedure"),
+        UniqueConstraint(
+            "customer_org_id", "procedure_id", name="uq_renewal_customer_procedure"
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     customer_org_id: Mapped[int | None] = mapped_column(ForeignKey("organization.id"), index=True)
     procedure_id: Mapped[int] = mapped_column(
