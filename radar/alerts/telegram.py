@@ -264,3 +264,13 @@ def send_hot_opportunity_alerts(
         "min_score": threshold,
         "dry_run": dry_run,
     }
+
+
+def get_telegram_client(settings: Settings | None = None) -> TelegramClient:
+    """Create a TelegramClient from system settings."""
+    cfg = settings or Settings()
+    return TelegramClient(
+        bot_token=cfg.telegram_bot_token,
+        default_chat_id=cfg.telegram_chat_id,
+    )
+

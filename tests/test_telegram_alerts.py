@@ -137,7 +137,7 @@ def test_send_hot_opportunity_alerts_idempotent():
             last_purchase_at=datetime.now(UTC) - timedelta(days=330),
             expected_renewal_at=datetime.now(UTC) + timedelta(days=35),
             contact_by_at=datetime.now(UTC) - timedelta(days=5),
-            score=95,  # HOT score >= 80
+            score=99,  # Isolated HOT score >= 99 to prevent DB crosstalk
             computed_at=datetime.now(UTC),
         )
         session.add(opp)
@@ -148,7 +148,7 @@ def test_send_hot_opportunity_alerts_idempotent():
     settings = Settings(
         telegram_bot_token="mock",
         telegram_chat_id=recipient,
-        telegram_alert_min_score=80,
+        telegram_alert_min_score=99,
     )
 
     try:
@@ -157,11 +157,11 @@ def test_send_hot_opportunity_alerts_idempotent():
             stats1 = send_hot_opportunity_alerts(
                 session=session,
                 settings=settings,
-                min_score=80,
+                min_score=99,
                 client=mock_client,
             )
-            assert stats1["considered"] >= 1
-            assert stats1["sent"] >= 1
+            assert stats1["considered"] == 1
+            assert stats1["sent"] == 1
             assert stats1["errors"] == 0
 
         # Verify AlertLog row created
@@ -172,7 +172,7 @@ def test_send_hot_opportunity_alerts_idempotent():
                 .first()
             )
             assert entry is not None
-            assert entry.score == 95
+            assert entry.score == 99
             assert entry.status == "mock"
 
         # Second dispatch (idempotency check): should find 0 unalerted candidates for this procedure
@@ -180,7 +180,7 @@ def test_send_hot_opportunity_alerts_idempotent():
             stats2 = send_hot_opportunity_alerts(
                 session=session,
                 settings=settings,
-                min_score=80,
+                min_score=99,
                 client=mock_client,
             )
             assert stats2["sent"] == 0

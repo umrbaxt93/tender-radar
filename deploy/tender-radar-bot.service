@@ -1,0 +1,21 @@
+# Install: copy to /etc/systemd/system/, then
+#   systemctl daemon-reload && systemctl enable --now tender-radar-bot
+[Unit]
+Description=Tender Radar Telegram Bot daemon (AI Advisor & Renewal Alerts)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=radar
+Group=radar
+WorkingDirectory=/opt/tender-radar
+EnvironmentFile=/opt/tender-radar/.env
+ExecStart=/opt/tender-radar/.venv/bin/python -m radar bot --interval 2.0
+Restart=on-failure
+RestartSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -626,6 +626,30 @@ async def api_ai_recommendation_custom(
     return JSONResponse(data)
 
 
+@app.get("/api/advisor/macro")
+def api_advisor_macro(
+    user: Annotated[User, Depends(get_current_user)],
+) -> JSONResponse:
+    from radar.ai_advisor import generate_macro_business_strategy
+
+    with session_scope() as session:
+        strategy = generate_macro_business_strategy(session)
+    return JSONResponse(strategy)
+
+
+@app.get("/api/advisor/procedure/{procedure_id}")
+def api_advisor_procedure(
+    procedure_id: int,
+    user: Annotated[User, Depends(get_current_user)],
+) -> JSONResponse:
+    from radar.ai_advisor import get_recommendation_for_procedure
+
+    with session_scope() as session:
+        rec = get_recommendation_for_procedure(session, procedure_id)
+    return JSONResponse(rec)
+
+
+
 @app.post("/api/ebirja/sync")
 async def api_ebirja_sync(
     request: Request,

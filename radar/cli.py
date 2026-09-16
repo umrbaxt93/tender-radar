@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from datetime import UTC, datetime
@@ -374,6 +375,71 @@ def cmd_alert(args: argparse.Namespace) -> int:
     return 0 if stats["errors"] == 0 else 1
 
 
+def cmd_migrate_sqlite(args: argparse.Namespace) -> int:
+    from radar.migration import migrate_all_sqlite
+
+    with session_scope() as session:
+        stats = migrate_all_sqlite(session, sqlite_path=args.sqlite_path)
+    print(
+        f"migrate-sqlite: companies={stats['companies_synced']}, "
+        f"lots_considered={stats['lots_considered']}, "
+        f"inserted={stats['procedures_inserted']}, "
+        f"updated={stats['procedures_updated']}, "
+        f"items={stats['items_migrated']}, "
+        f"awards={stats['awards_migrated']}, "
+        f"classifications={stats['classifications_migrated']}"
+    )
+    return 0
+
+
+def cmd_advisor(args: argparse.Namespace) -> int:
+    from radar.ai_advisor import (
+        format_lot_recommendation,
+        format_macro_strategy,
+        generate_macro_business_strategy,
+        get_recommendation_for_procedure,
+    )
+
+    with session_scope() as session:
+        if args.macro or not args.procedure_id:
+            strat = generate_macro_business_strategy(session)
+            if args.format == "json":
+                print(json.dumps(strat, indent=2, ensure_ascii=False))
+            else:
+                print(format_macro_strategy(strat))
+            return 0
+
+        rec = get_recommendation_for_procedure(session, args.procedure_id)
+        if "error" in rec:
+            print(f"Error: {rec['error']}", file=sys.stderr)
+            return 1
+        if args.format == "json":
+            print(json.dumps(rec, indent=2, ensure_ascii=False))
+        else:
+            print(format_lot_recommendation(rec))
+        return 0
+
+
+def cmd_bot(args: argparse.Namespace) -> int:
+    from radar.alerts.bot import TelegramBotDispatcher
+    from radar.alerts.telegram import get_telegram_client
+
+    settings = load_settings()
+    client = get_telegram_client(settings)
+    dispatcher = TelegramBotDispatcher(client, settings)
+
+    if args.once:
+        count = dispatcher.poll_once()
+        print(f"bot: processed {count} updates in single poll.")
+        return 0
+
+    print(
+        f"bot: starting Telegram listener for chat_id={settings.telegram_chat_id or 'mock/all'}..."
+    )
+    dispatcher.run_forever(interval_s=args.interval)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m radar", description="Tender Radar MVP")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -504,6 +570,25 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="preview formatted alerts without sending"
     )
     s.set_defaults(func=cmd_alert)
+
+    s = sub.add_parser("migrate-sqlite", help="migrate all historical lots from SQLite")
+    s.add_argument(
+        "--sqlite-path",
+        default=None,
+        help="optional custom path to SQLite softy_procurement.db",
+    )
+    s.set_defaults(func=cmd_migrate_sqlite)
+
+    s = sub.add_parser("advisor", help="generate AI business and procurement advice")
+    s.add_argument("--procedure-id", type=int, default=None, help="procedure ID for specific lot")
+    s.add_argument("--macro", action="store_true", help="generate macro market strategy")
+    s.add_argument("--format", choices=["text", "json"], default="text", help="output format")
+    s.set_defaults(func=cmd_advisor)
+
+    s = sub.add_parser("bot", help="run interactive Telegram Bot listener daemon")
+    s.add_argument("--interval", type=float, default=2.0, help="polling interval in seconds")
+    s.add_argument("--once", action="store_true", help="poll once and exit (for cron/worker)")
+    s.set_defaults(func=cmd_bot)
     return p
 
 
