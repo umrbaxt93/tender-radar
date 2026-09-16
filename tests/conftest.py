@@ -33,6 +33,12 @@ def _isolate_source_env(monkeypatch):
 def _engine_or_skip():
     if not TEST_DB_URL:
         pytest.skip("TEST_DATABASE_URL not set; database tests skipped")
+    if not any(token in TEST_DB_URL.lower() for token in ["test", "mock"]):
+        msg = (
+            f"CRITICAL SAFETY GUARD: TEST_DATABASE_URL ({TEST_DB_URL}) must contain "
+            "'test' or 'mock'! Refusing to run test fixtures against production database."
+        )
+        raise RuntimeError(msg)
     engine = get_engine(TEST_DB_URL)
     try:
         with engine.connect() as conn:
