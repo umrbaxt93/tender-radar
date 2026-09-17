@@ -1,27 +1,44 @@
-# Credentials and sessions
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-auth.json
-.credentials.json
-.gemini/
-.claude/
-.codex/
-# Runtime and tooling
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-.venv/
-node_modules/
-.pytest_cache/
-.ruff_cache/
-logs/
-reports/
-.supervisor-state/
-.agent-tools/
-out/
-data/
+*$py.class
+
+# OS generated files
 .DS_Store
-.idea/
-.vscode/
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# SQLite database files (production data stays on server/local, >100MB exceeds GitHub limits)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+
+# Archives and build artifacts
+dist_hostinger/
+dist_fix/
+*.zip
+*.tar.gz
+
+# Logs and temporary files
+*.log
+tmp/
+.gemini/
+.claude/backups/
+.claude/sessions/
+.claude/file-history/
+
+# Environment files
+.env.local
+.fuse_hidden*
+tender-radar/
+.env

@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "brain": {
+      "command": "python3",
+      "args": ["/Users/admin/.gemini/config/mcp_servers/brain/server.py"],
+      "env": {
+        "BRAIN_VAULT_PATH": "/Users/admin/Documents/Obsidian Vault"
+      }
+    },
+    "bitrix24": {
+      "command": "python3",
+      "args": ["/Users/admin/.gemini/config/mcp_servers/bitrix24/server.py"],
+      "env": {
+        "BITRIX24_CREDENTIALS_PATH": "/Users/admin/.gemini/config/mcp_servers/bitrix24/credentials.json"
+      }
+    },
+    "didox": {
+      "command": "python3",
+      "args": ["/Users/admin/.gemini/config/mcp_servers/didox/server.py"],
+      "env": {
+        "DIDOX_CREDENTIALS_PATH": "/Users/admin/.gemini/config/mcp_servers/didox/credentials.json"
+      }
+    },
+    "google-sheets": {
+      "command": "python3",
+      "args": ["/Users/admin/.gemini/config/mcp_servers/gsheets/server.py"],
+      "env": {
+        "GOOGLE_CREDENTIALS_PATH": "/Users/admin/.gemini/config/google_sheets_credentials.json"
+      }
+    },
+    "outlook": {
+      "command": "python3",
+      "args": ["/Users/admin/.gemini/config/mcp_servers/outlook/server.py"],
+      "env": {
+        "OUTLOOK_CREDENTIALS_PATH": "/Users/admin/.gemini/config/mcp_servers/outlook/credentials.json"
+      }
+    }
+  }
+}

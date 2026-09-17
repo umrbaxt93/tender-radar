@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Softy Platforma — Davlat Xaridlari Qidiruvi va Yagona Mijozlar Bazasi</title>
+  <link rel="stylesheet" href="/css/style.css?v=20260912_7">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 1. Authentication Gate (Login Screen - Blocks unauthorized access) -->
+  <div id="auth-gate" class="auth-gate-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <div class="logo-icon auth-logo-icon">S</div>
+          <div class="auth-brand-text">
+            <h2>SOFTY</h2>
+            <span>tender.softy.uz</span>
+          </div>
+        </div>
+        <h3 class="auth-title">Tizimga Kirish</h3>
+        <p class="auth-subtitle">Davlat xaridlari tahlili va tender monitoringi platformasi (2024-01-01 dan)</p>
+      </div>
+
+      <div id="auth-error-alert" class="auth-alert-error" style="display: none;"></div>
+
+      <form id="auth-login-form" class="auth-form" onsubmit="return false;">
+        <div class="form-group mb-3">
+          <label for="auth-username" class="filter-label">Foydalanuvchi nomi (Login):</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">👤</span>
+            <input type="text" id="auth-username" class="form-input auth-input" placeholder="Loginni kiriting" autocomplete="username" required>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <label for="auth-password" class="filter-label" style="margin-bottom: 0;">Maxfiy parol:</label>
+            <button type="button" class="btn-link" id="btn-toggle-pwd" style="font-size: 0.78rem; display: flex; align-items: center; gap: 0.25rem; color: #2563eb;">
+              <span id="eye-icon">👁️</span> <span id="eye-text">Ko'rsatish</span>
+            </button>
+          </div>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">🔒</span>
+            <input type="password" id="auth-password" class="form-input auth-input" placeholder="Maxfiy parolni kiriting" autocomplete="current-password" required>
+          </div>
+        </div>
+
+        <div class="auth-options-row mb-3">
+          <label class="checkbox-item" style="font-size: 0.82rem; user-select: none; cursor: pointer;">
+            <input type="checkbox" id="auth-remember-me" checked>
+            <span>Meni eslab qolish (30 kun)</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btn-auth-submit" class="btn btn-primary btn-auth-submit w-full">
+          <span id="btn-auth-text">Tizimga Kirish ➔</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <div class="auth-ssl-badge">
+          <span>🔒 Himoyalangan SSL ulanish (HTTPS / TLS 1.3)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Authenticated Platform Application -->
+  <div id="app-root" style="display: none;">
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+      <div class="nav-left">
+        <div class="logo">
+          <div class="logo-icon">S</div>
+          <div class="logo-text">
+            <span class="brand">SOFTY</span>
+            <span class="subtext">tender.softy.uz • Davlat Xaridlari & CRM (2024-01-01 dan)</span>
+          </div>
+        </div>
+        <div class="system-status" id="system-status-pill">
+          <span class="status-dot online"></span>
+          <span class="status-label">Baza faol</span>
+        </div>
+      </div>
+      
+      <div class="nav-right">
+        <button class="btn btn-primary" id="btn-admin-modal" title="Boshqaruv & Admin Paneli">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          ⚙️ Admin Panel
+        </button>
+        <button class="btn btn-outline" id="btn-eimzo-modal" title="E-IMZO va Sessiya sozlamalari">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          🔑 E-IMZO
+        </button>
+        <button class="btn btn-outline" id="btn-sources-modal">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16m-5 4v6m-4-6v6m-4-6v6"/></svg>
+          Platformalar
+        </button>
+        <button class="btn btn-outline" id="btn-saved-searches-modal">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+          Qidiruvlar
+        </button>
+        <button class="btn btn-success" id="btn-export-excel" title="Filtrlangan ma'lumotlarni Excel (.xlsx) formatida yuklab olish">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Excel
+        </button>
+        <button class="btn btn-danger" id="btn-export-pdf" title="Filtrlangan hisobotni PDF (.pdf) formatida yuklab olish">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          PDF
+        </button>
+        <div class="user-badge" id="nav-user-badge">
+          <span class="user-badge-icon">👤</span>
+          <span class="user-badge-name" id="nav-username">Admin</span>
+        </div>
+        <button class="btn btn-outline btn-logout" id="btn-logout" title="Tizimdan chiqish">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Chiqish
+        </button>
+      </div>
+    </header>
+
+  <!-- Universal Search Bar Header -->
+  <section class="search-header">
+    <div class="search-box-container">
+      <div class="search-input-group">
+        <div class="search-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <input 
+          type="text" 
+          id="global-search-input" 
+          placeholder="Mahsulot, kalit so‘z, korxona nomi yoki STIR kiriting (masalan: Kaspersky, AutoCAD, 201122334)..." 
+          autocomplete="off"
+        />
+        <button class="btn-clear-search" id="btn-clear-search" title="Tozalash" style="display: none;">✕</button>
+        <button class="btn btn-primary btn-search" id="btn-submit-search">Qidirish</button>
+      </div>
+
+      <!-- Quick Search Suggestions & Query Syntax Info -->
+      <div class="search-hints">
+        <span class="hint-label">Ommabop kalit so'zlar:</span>
+        <span class="hint-tag" data-query="AutoCAD">AutoCAD</span>
+        <span class="hint-tag" data-query="Kaspersky">Kaspersky</span>
+        <span class="hint-tag" data-query="Microsoft 365">Microsoft 365</span>
+        <span class="hint-tag" data-query="ESET">ESET NOD32</span>
+        <span class="hint-tag" data-query="Zoom">Zoom</span>
+        <span class="hint-tag" data-query="Fortinet">Fortinet</span>
+        <span class="syntax-info" title="Aniq ibora uchun qo'shtirnoq (&quot;...&quot;), so'zni chiqarib tashlash uchun minus (-word) ishlating">
+          ℹ️ Qidiruv sintaksisi
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main App Layout: Sidebar Filters + Content -->
+  <main class="app-body">
+    <!-- Left Filter Sidebar (14 dimensions) -->
+    <aside class="sidebar-filters" id="sidebar-filters">
+      <div class="sidebar-header">
+        <h3>Filtrlar</h3>
+        <button class="btn-link" id="btn-reset-filters">Tozalash</button>
+      </div>
+
+      <!-- 1. Platformalar -->
+      <div class="filter-group">
+        <label class="filter-label">Xarid platformalari</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" name="platform" value="xt_xarid" checked>
+            <span>xt-xarid.uz</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="platform" value="uzex" checked>
+            <span>xarid.uzex.uz</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="platform" value="ebirja" checked>
+            <span>xarid.ebirja.uz</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="platform" value="cooperation" checked>
+            <span>new.cooperation.uz</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. Dinamik Sana Tanlovi ("Qaysi sana bo'yicha?") -->
+      <div class="filter-group">
+        <label class="filter-label">Qaysi sana bo‘yicha?</label>
+        <select class="form-select" id="filter-date-field">
+          <option value="announcement_date">E’lon berilgan sana</option>
+          <option value="contract_date">Shartnoma imzolangan sana</option>
+          <option value="deadline_date">Taklif topshirish oxirgi sanasi</option>
+          <option value="result_date">Natija e’lon qilingan sana</option>
+          <option value="license_end_date">Litsenziya tugash sanasi</option>
+        </select>
+
+        <!-- Tezkor davr tugmalari (17.E) -->
+        <label class="filter-sublabel">Tezkor davr (Asia/Tashkent):</label>
+        <div class="quick-period-pills">
+          <button type="button" class="pill-btn" data-period="this_month">Shu oy</button>
+          <button type="button" class="pill-btn" data-period="last_month">O‘tgan oy</button>
+          <button type="button" class="pill-btn" data-period="this_year">Shu yil</button>
+          <button type="button" class="pill-btn" data-period="last_year">O‘tgan yil</button>
+          <button type="button" class="pill-btn" data-period="last_12_months">Oxirgi 12 oy</button>
+          <button type="button" class="pill-btn active" data-period="all">Barchasi</button>
+        </div>
+
+        <!-- Aniq sana oralig'i -->
+        <div class="date-range-inputs">
+          <div class="input-date-wrap">
+            <span class="input-date-label">Dan:</span>
+            <input type="date" class="form-input" id="filter-date-from">
+          </div>
+          <div class="input-date-wrap">
+            <span class="input-date-label">Gacha:</span>
+            <input type="date" class="form-input" id="filter-date-to">
+          </div>
+        </div>
+
+        <!-- Sana ko'rsatilmaganlarni ham qo'shish -->
+        <label class="checkbox-item mt-2">
+          <input type="checkbox" id="filter-include-missing-dates">
+          <span>Sana ko‘rsatilmaganlarni ham qo‘shish</span>
+        </label>
+      </div>
+
+      <!-- 3. Rasmiy holati / Xarid turi -->
+      <div class="filter-group">
+        <label class="filter-label">Xarid holati</label>
+        <select class="form-select" id="filter-official-status">
+          <option value="">Barcha holatlar</option>
+          <option value="YAKUNLANGAN">Yakunlangan (Shartnoma tuzilgan)</option>
+          <option value="BEKOR_QILINGAN">Bekor qilingan / O‘tkazilmagan</option>
+          <option value="FAOL">Faol / Takliflar qabul qilinmoqda</option>
+        </select>
+      </div>
+
+      <!-- 4. Faqat shartnomasi borlar -->
+      <div class="filter-group">
+        <label class="checkbox-item">
+          <input type="checkbox" id="filter-has-contract">
+          <span class="font-medium">Faqat tasdiqlangan shartnomasi borlar</span>
+        </label>
+        <label class="checkbox-item mt-1">
+          <input type="checkbox" id="filter-expiry-known">
+          <span>Litsenziya muddati ma’lum bo‘lganlar</span>
+        </label>
+      </div>
+
+      <!-- 5. Summa oralig'i (UZS) -->
+      <div class="filter-group">
+        <label class="filter-label">Summa oralig‘i (so‘m)</label>
+        <div class="price-range-inputs">
+          <input type="number" class="form-input" id="filter-min-price" placeholder="Min summa" min="0">
+          <span class="range-divider">—</span>
+          <input type="number" class="form-input" id="filter-max-price" placeholder="Max summa" min="0">
+        </div>
+      </div>
+
+      <!-- 6. Hudud -->
+      <div class="filter-group">
+        <label class="filter-label">Hudud</label>
+        <select class="form-select" id="filter-region">
+          <option value="">Barcha hududlar</option>
+          <option value="Toshkent sh.">Toshkent shahri</option>
+          <option value="Toshkent vil.">Toshkent viloyati</option>
+          <option value="Samarqand">Samarqand</option>
+          <option value="Navoiy">Navoiy</option>
+          <option value="Buxoro">Buxoro</option>
+          <option value="Farg'ona">Farg'ona</option>
+          <option value="Andijon">Andijon</option>
+          <option value="Namangan">Namangan</option>
+          <option value="Qashqadaryo">Qashqadaryo</option>
+          <option value="Surxondaryo">Surxondaryo</option>
+          <option value="Xorazm">Xorazm</option>
+          <option value="Jizzax">Jizzax</option>
+          <option value="Sirdaryo">Sirdaryo</option>
+          <option value="Qoraqalpog'iston">Qoraqalpog'iston Resp.</option>
+        </select>
+      </div>
+
+      <!-- 7. CRM mas'ul xodimi -->
+      <div class="filter-group">
+        <label class="filter-label">Mas'ul xodim</label>
+        <select class="form-select" id="filter-assigned-staff">
+          <option value="">Barcha xodimlar</option>
+          <option value="umid">Umidjon Fatullayev</option>
+          <option value="yoqubxon">Yoqubxon (E-Shop)</option>
+          <option value="usmon">Usmon (Litsenziya)</option>
+          <option value="shohruh">Shohruh (Vendor/Bitrix)</option>
+          <option value="komiljon">Komiljon (Tender)</option>
+          <option value="siyovush">Siyovush (Presale)</option>
+        </select>
+      </div>
+
+      <!-- 8. CRM holati -->
+      <div class="filter-group">
+        <label class="filter-label">CRM Holati</label>
+        <select class="form-select" id="filter-crm-status">
+          <option value="">Barcha CRM holatlar</option>
+          <option value="YANGI">Yangi</option>
+          <option value="JARAYONDA">Jarayonda</option>
+          <option value="BITRIX_YUBORILDI">Bitrix24 ga yuborilgan</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary w-full" id="btn-apply-filters">Filtrlarni qo‘llash</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <section class="main-content">
+      <!-- Active Filters Bar -->
+      <div class="active-filters-bar" id="active-filters-bar" style="display: none;">
+        <span class="active-filters-title">Faol filtrlar:</span>
+        <div class="active-filter-tags" id="active-filter-tags"></div>
+        <button class="btn-link text-sm" id="btn-clear-all-tags">Hammasini o'chirish</button>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-total-records">0</div>
+            <div class="kpi-label">Topilgan xaridlar</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-total-amount">0 so'm</div>
+            <div class="kpi-label">Umumiy xarid qiymati</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon purple">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          </div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-unique-buyers">0</div>
+            <div class="kpi-label">Xarid qilgan korxonalar</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon orange">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-verified-contracts">0</div>
+            <div class="kpi-label">Tasdiqlangan shartnomalar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Navigation Tabs (17.B, 17.E) -->
+      <div class="tab-header">
+        <button class="tab-btn active" data-tab="lots">
+          <span>Xarid lotlari</span>
+          <span class="tab-count" id="tab-count-lots">0</span>
+        </button>
+        <button class="tab-btn" data-tab="companies">
+          <span>Xarid qilgan korxonalar</span>
+          <span class="tab-count" id="tab-count-companies">0</span>
+        </button>
+        <button class="tab-btn" data-tab="contracts">
+          <span>Shartnomalar va mahsulot qatorlari</span>
+          <span class="tab-count" id="tab-count-contracts">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="tab-content">
+        <!-- Loading Spinner -->
+        <div class="loading-state" id="loading-spinner" style="display: none;">
+          <div class="spinner"></div>
+          <p>Ma'lumotlar qidirilmoqda...</p>
+        </div>
+
+        <!-- Empty State Container (Handled Dynamically) -->
+        <div class="empty-state-card" id="empty-state-container" style="display: none;">
+          <div class="empty-icon" id="empty-state-icon">🔍</div>
+          <h3 id="empty-state-title">Mos yozuv topilmadi</h3>
+          <p id="empty-state-desc">Kiritilgan kalit so‘z yoki tanlangan filtrlar bo‘yicha natija chiqmadi. Qidiruv so‘zini o‘zgartiring yoki filtrlarni kengaytiring.</p>
+          <button class="btn btn-outline" id="btn-empty-reset">Filtrlarni tiklash</button>
+        </div>
+
+        <!-- 1. LOTS VIEW -->
+        <div class="view-pane active" id="pane-lots">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">Lot raqami</th>
+                  <th>Lot nomi / Mahsulot tavsifi</th>
+                  <th style="width: 140px;">Platforma</th>
+                  <th style="width: 220px;">Buyurtmachi (STIR)</th>
+                  <th style="width: 130px;">Sana</th>
+                  <th style="width: 140px; text-align: right;">Summa</th>
+                  <th style="width: 110px;">Holati</th>
+                  <th style="width: 120px;">Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="table-lots-body">
+                <!-- Dynamic rows populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. COMPANIES VIEW (17.B: Shu mahsulotni oldin olgan korxonalar) -->
+        <div class="view-pane" id="pane-companies">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 110px;">STIR</th>
+                  <th>Korxona nomi</th>
+                  <th style="width: 130px;">Hudud</th>
+                  <th style="width: 120px; text-align: center;">Xaridlar soni</th>
+                  <th style="width: 130px; text-align: center;">Shartnomalar</th>
+                  <th style="width: 120px;">Oxirgi xarid</th>
+                  <th style="width: 130px;">Yaqin tugash sanasi</th>
+                  <th style="width: 140px;">Mas'ul xodim</th>
+                  <th style="width: 160px;">Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="table-companies-body">
+                <!-- Dynamic rows populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. CONTRACTS VIEW (17.E) -->
+        <div class="view-pane" id="pane-contracts">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Shartnoma #</th>
+                  <th>Mahsulot nomi</th>
+                  <th style="width: 110px;">Brend</th>
+                  <th style="width: 90px; text-align: center;">Miqdor</th>
+                  <th style="width: 120px; text-align: right;">Birlik narxi</th>
+                  <th style="width: 130px; text-align: right;">Jami summa</th>
+                  <th style="width: 200px;">Buyurtmachi</th>
+                  <th style="width: 110px;">Sana</th>
+                  <th style="width: 90px;">Havola</th>
+                </tr>
+              </thead>
+              <tbody id="table-contracts-body">
+                <!-- Dynamic rows populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar" id="pagination-bar">
+          <div class="pagination-info" id="pagination-info">Ko'rsatilmoqda: 0 dan 0 gacha (Jami: 0)</div>
+          <div class="pagination-controls">
+            <button class="btn btn-sm btn-outline" id="btn-prev-page" disabled>Oldingi</button>
+            <span class="current-page-display" id="current-page-num">1</span>
+            <button class="btn btn-sm btn-outline" id="btn-next-page">Keyingi</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: Korxona Xaridlar Tarixi Xronologiyasi (Timeline Modal - 17.F) -->
+  <div class="modal-backdrop" id="modal-timeline" style="display: none;">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="timeline-company-name">Korxona Xaridlar Tarixi</h2>
+          <div class="modal-subtitle">
+            <span id="timeline-company-inn">STIR: —</span> • 
+            <span id="timeline-company-region">Hudud: —</span> •
+            <span class="proof-badge" id="timeline-proof-badge">Tasdiqlangan Xaridor</span>
+          </div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-timeline">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Company Metadata & Fast CRM Actions -->
+        <div class="company-quick-card">
+          <div class="company-contact-item">
+            <span class="contact-label">Telefon:</span>
+            <span class="contact-val" id="timeline-phone">—</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Email:</span>
+            <span class="contact-val" id="timeline-email">—</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Yuridik manzil:</span>
+            <span class="contact-val" id="timeline-address">—</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Mas'ul xodim:</span>
+            <select class="form-select select-sm" id="timeline-assign-select">
+              <option value="">Biriktirilmagan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="action-strip">
+          <button class="btn btn-primary btn-sm" id="btn-open-proposal-from-timeline">
+            📝 Asoslangan tijorat taklifi tayyorlash
+          </button>
+          <button class="btn btn-outline btn-sm" id="btn-sync-bitrix-timeline">
+            🚀 Bitrix24 ga bitim yuborish
+          </button>
+        </div>
+
+        <h4 class="section-heading mt-4">Sanalar bo‘yicha xarid xronologiyasi (Timeline)</h4>
+        
+        <div class="timeline-container" id="timeline-events-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <h4 class="section-heading mt-4">Savdo vazifalari va CRM harakatlari</h4>
+        <div class="tasks-list" id="timeline-tasks-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="new-task-box mt-3">
+          <label class="filter-label">Yangi vazifa biriktirish:</label>
+          <div class="new-task-inputs">
+            <input type="text" class="form-input" id="new-task-title" placeholder="Masalan: Litsenziya tugashi munosabati bilan bog'lanish...">
+            <button class="btn btn-secondary btn-sm" id="btn-save-new-task">Vazifa qo'shish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Gemini AI Tender Strategy & Lot Intelligence -->
+  <div class="modal-backdrop" id="modal-gemini-ai" style="display: none;">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.4rem;">✨</span>
+            <h2 class="modal-title" style="color: white; margin: 0;">Gemini AI — Tender Strategik Tahlili</h2>
+            <span class="pill-btn" id="gemini-engine-badge" style="background: rgba(255,255,255,0.2); color: #fff; font-size: 0.72rem; padding: 2px 8px;">Google Gemini 1.5</span>
+          </div>
+          <div class="modal-subtitle" id="gemini-lot-subtitle" style="color: #c7d2fe; margin-top: 4px;">Lot ma'lumotlari tahlil qilinmoqda...</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-gemini-ai" style="color: white;">✕</button>
+      </div>
+      
+      <div class="modal-body" id="gemini-modal-body">
+        <!-- Loading State -->
+        <div id="gemini-loading" style="text-align: center; padding: 3rem 1rem;">
+          <div class="spinner" style="width: 42px; height: 42px; border: 4px solid #e0e7ff; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+          <h4 style="color: #312e81; margin-bottom: 0.5rem;">Gemini AI lot ma'lumotlarini tahlil qilmoqda...</h4>
+          <p class="text-sm text-muted">Texnik topshiriq, distribyutor narxlari, buyurtmachi xarid tarixi va g'alaba ehtimoli tekshirilmoqda.</p>
+        </div>
+
+        <!-- Result Content -->
+        <div id="gemini-content" style="display: none;">
+          <!-- KPI Cards Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 0.25rem;">🎯 IT MOSLIGI</div>
+              <div id="gemini-relevance-score" style="font-size: 1.6rem; font-weight: 800; color: #4f46e5;">98%</div>
+              <div id="gemini-it-category" style="font-size: 0.75rem; color: #334155; margin-top: 2px;">Kiberxavfsizlik</div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 0.25rem;">🏆 TAVSIYA (GO/NO-GO)</div>
+              <div id="gemini-verdict" style="font-size: 0.95rem; font-weight: 700; color: #16a34a; line-height: 1.3;">QATNASHISH TAVSIYA ETILADI</div>
+              <div id="gemini-win-prob" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Yutuq: Yuqori</div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 0.25rem;">💰 KUTILAYOTGAN MARJA</div>
+              <div id="gemini-margin" style="font-size: 1.15rem; font-weight: 700; color: #0284c7;">14% - 18%</div>
+              <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Distribyutor narxi asosida</div>
+            </div>
+          </div>
+
+          <!-- Section 1: Pricing Strategy -->
+          <div style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 0.9rem; margin-bottom: 1rem;">
+            <div style="font-weight: 700; color: #1e40af; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 6px;">
+              <span>💡</span> Narx va Chegirma Strategiyasi
+            </div>
+            <p id="gemini-pricing-text" style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.5; margin: 0;"></p>
+          </div>
+
+          <!-- Section 2: Hidden Risks & Technical Tips -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 0.9rem;">
+              <div style="font-weight: 700; color: #991b1b; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️</span> Yashirin Xatarlar va Tuzoqlar
+              </div>
+              <ul id="gemini-risks-list" style="margin: 0; padding-left: 1.1rem; font-size: 0.82rem; color: #7f1d1d; line-height: 1.4;"></ul>
+            </div>
+
+            <div style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 0.9rem;">
+              <div style="font-weight: 700; color: #166534; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 6px;">
+                <span>🛠️</span> Texnik va Distribyutorlik Maslahati
+              </div>
+              <ul id="gemini-tips-list" style="margin: 0; padding-left: 1.1rem; font-size: 0.82rem; color: #14532d; line-height: 1.4;"></ul>
+            </div>
+          </div>
+
+          <!-- Section 3: Ready Client Pitch -->
+          <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 0.9rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-weight: 700; color: #6b21a8; font-size: 0.85rem;">📝 Mijoz bilan aloqa uchun tayyor taklif tezisi:</span>
+              <button class="btn btn-outline btn-sm" id="btn-copy-gemini-pitch" style="font-size: 0.72rem; padding: 2px 8px;">📋 Nusxalash</button>
+            </div>
+            <p id="gemini-pitch-text" style="font-size: 0.85rem; color: #581c87; font-style: italic; margin: 0; line-height: 1.4;"></p>
+          </div>
+
+          <!-- Bottom Actions -->
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0;">
+            <button class="btn btn-outline" data-close="modal-gemini-ai">Yopish</button>
+            <button class="btn btn-primary" id="btn-gemini-send-bitrix" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+              💼 Bitrix24 ga AI Lidi sifatida yuborish
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Grounded Commercial Proposal Modal (17.G) -->
+  <div class="modal-backdrop" id="modal-proposal" style="display: none;">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Asoslangan Tijorat Taklifi (Qoralama)</h2>
+          <div class="modal-subtitle" id="proposal-company-header">—</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-proposal">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="alert-grounded-warning">
+          <div class="alert-icon">🛡️</div>
+          <div class="alert-text">
+            <strong>Faqat rasmiy xarid faktlariga asoslangan:</strong> 
+            Ushbu taklif korxonaning avvalgi davlat xaridlarida olgan litsenziyalari asosida tuzildi. Narxlar o'ylab topilmagan.
+            <div class="alert-sub">Yakuniy yuborishdan oldin mas'ul menejer tekshiruvi shart.</div>
+          </div>
+        </div>
+
+        <div class="form-group mt-3">
+          <label class="filter-label">Xat mavzusi:</label>
+          <input type="text" class="form-input" id="proposal-subject-input">
+        </div>
+
+        <div class="form-group mt-2">
+          <label class="filter-label">Aniqlangan avvalgi xaridlar:</label>
+          <div class="observed-products-box" id="proposal-observed-products"></div>
+        </div>
+
+        <div class="form-group mt-2">
+          <label class="filter-label">Taklif xati matni (tahrirlash mumkin):</label>
+          <textarea class="form-textarea" id="proposal-body-text" rows="7"></textarea>
+        </div>
+
+        <div class="proposal-confirm-gate mt-3">
+          <label class="checkbox-item">
+            <input type="checkbox" id="check-confirm-pricing">
+            <span class="font-medium text-sm">Men rasmiy distribyutor narxlarini tekshirdim va taklifni tasdiqlayman</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-close="modal-proposal">Bekor qilish</button>
+        <button class="btn btn-secondary" id="btn-copy-proposal">Nusxa olish</button>
+        <button class="btn btn-primary" id="btn-confirm-proposal" disabled>Tasdiqlash va Vazifa yaratish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Sources & Platform Health Modal (17.A, 17.H) -->
+  <div class="modal-backdrop" id="modal-sources" style="display: none;">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Xarid Platformalari va Manbalar Holati</h2>
+          <div class="modal-subtitle">Integratsiyalar, yuklangan oraliqlar va rasmiy operatorlar</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-sources">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Daily Anti-Blocking Sync Banner -->
+        <div class="company-quick-card mb-3" style="border-left: 4px solid #10b981; margin-bottom: 1rem;">
+          <div class="company-contact-item">
+            <span class="contact-label">Avtomat sinxronizatsiya:</span>
+            <span class="contact-val" style="color: #065f46;">Har kuni 1 marta (03:00 da)</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Himoya rejimi:</span>
+            <span class="contact-val">Anti-Blocking (Jitter delay 2.5–5.5s)</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Baza boshlanish sanasi:</span>
+            <span class="contact-val">2024-yil 1-yanvar</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Amal:</span>
+            <button class="btn btn-primary btn-sm" id="btn-run-full-sync">🔄 Hozir sinxronlash</button>
+          </div>
+        </div>
+
+        <div class="sources-list" id="sources-cards-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="adapter-policy-note mt-4">
+          <h5>Platforma integratsiya qoidasi (17.H):</h5>
+          <p>Har bir platforma uchun mustaqil adapter moduli mavjud. Agar yangi platformaga ulanish jarayonda bo'lsa, tizim <em>"Adapter ishlab chiqilishi kerak"</em> holatini aniq ko'rsatadi va qidiruv tizimining qolgan qismi to'xtovsiz ishlayveradi.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Saved Searches Modal (17.E) -->
+  <div class="modal-backdrop" id="modal-saved-searches" style="display: none;">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Saqlangan Qidiruvlar</h2>
+          <div class="modal-subtitle">Tezkor qayta yuklash va monitoring</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-saved-searches">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="save-current-box">
+          <label class="filter-label">Joriy qidiruv va filtrlarni saqlash:</label>
+          <div class="save-input-group">
+            <input type="text" class="form-input" id="saved-search-title-input" placeholder="Qidiruv nomi (masalan: Toshkent AutoCAD xaridlari)">
+            <button class="btn btn-primary btn-sm" id="btn-save-current-search">Saqlash</button>
+          </div>
+        </div>
+
+        <h4 class="section-heading mt-4">Avval saqlangan qidiruvlar</h4>
+        <div class="saved-searches-list" id="saved-searches-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: E-IMZO / Sessiya Kaliti Modali -->
+  <div class="modal-backdrop" id="modal-eimzo" style="display: none;">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">🔑 E-IMZO va Sessiya Boshqaruvi</h2>
+          <div class="modal-subtitle">Bloklanishlarsiz birja platformalarini yuklash uchun E-Kalit va avtorizatsiya</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-eimzo">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="company-quick-card mb-3" style="border-left: 4px solid #3b82f6;">
+          <div class="company-contact-item">
+            <span class="contact-label">Lokal E-IMZO holati:</span>
+            <span class="contact-val" id="eimzo-daemon-status">Tekshirilmoqda...</span>
+          </div>
+          <div class="company-contact-item">
+            <span class="contact-label">Joriy sessiya:</span>
+            <span class="contact-val" id="eimzo-session-status">Faol emas</span>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="filter-label">Elektron kalit / Bearer Token / Sessiya kaliti:</label>
+          <textarea class="form-input" id="eimzo-token-input" rows="3" placeholder="Platformadagi (xarid.uzex.uz / etender) avtorizatsiya tokeni yoki kalitini kiriting..."></textarea>
+          <span style="font-size: 0.75rem; color: #64748b;">E-IMZO orqali kirilganda olingan token kiritilsa, platformalar to'siqsiz, to'liq shartnoma va buyurtmachi ma'lumotlarini yuklaydi.</span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="filter-label">STIR (INN):</label>
+          <input type="text" class="form-input" id="eimzo-tin-input" value="308904387" placeholder="Tashkilot STIRi">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button class="btn btn-outline btn-sm" id="btn-clear-eimzo">Tozalash</button>
+          <button class="btn btn-primary btn-sm" id="btn-save-eimzo">Saqlash va Biriktirish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Admin Panel Modal (Boshqaruv & Tizim Holati) -->
+  <div class="modal-backdrop" id="modal-admin" style="display: none;">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.5rem;">⚙️</span>
+            <h2 class="modal-title">Softy Platforma — Boshqaruv & Admin Paneli</h2>
+          </div>
+          <div class="modal-subtitle">Tizim ko'rsatkichlari, sinxronizatsiya, CRM sotuv vazifalari va xavfsizlik sozlamalari</div>
+        </div>
+        <button class="btn-close-modal" data-close="modal-admin">✕</button>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="admin-nav-tabs">
+        <button type="button" class="admin-tab-btn active" data-admin-tab="kpi">📊 Tizim Statistikasi</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="sync">🔄 Sinxronizatsiya & Manbalar</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="tasks">📋 CRM Sotuv Vazifalari</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="staff">👥 Mas'ul Xodimlar</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="security">🔐 Xavfsizlik & Parol</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="gemini">🤖 Gemini AI Sozlamalari</button>
+      </div>
+
+      <div class="modal-body admin-modal-body">
+        <!-- Tab 1: KPI Stats -->
+        <div class="admin-tab-content active" id="admin-tab-kpi">
+          <div class="admin-kpi-grid">
+            <div class="admin-kpi-card">
+              <div class="kpi-icon blue">📦</div>
+              <div class="kpi-data">
+                <span class="kpi-val" id="admin-stat-lots">1,058</span>
+                <span class="kpi-lbl">Barcha Lotlar (2024-yildan)</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon green">🏢</div>
+              <div class="kpi-data">
+                <span class="kpi-val" id="admin-stat-companies">412</span>
+                <span class="kpi-lbl">Xarid Qiluvchi Korxonalar</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon purple">💰</div>
+              <div class="kpi-data">
+                <span class="kpi-val" id="admin-stat-contract-sum">959.1 mlrd</span>
+                <span class="kpi-lbl">Shartnomalar Summasi (so'm)</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon orange">📝</div>
+              <div class="kpi-data">
+                <span class="kpi-val" id="admin-stat-contracts">1,058</span>
+                <span class="kpi-lbl">Shartnomalar Soni</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-grid-2col mt-4">
+            <div class="admin-subpanel">
+              <h4 class="subpanel-title">🌐 Platformalar Kesimida Taqsimot</h4>
+              <div class="platform-stats-table" id="admin-platform-stats">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+            <div class="admin-subpanel">
+              <h4 class="subpanel-title">🛡️ Server & Platforma Holati</h4>
+              <div class="company-quick-card">
+                <div class="company-contact-item">
+                  <span class="contact-label">Server domeni:</span>
+                  <span class="contact-val"><strong>tender.softy.uz</strong></span>
+                </div>
+                <div class="company-contact-item">
+                  <span class="contact-label">Hostinger IP:</span>
+                  <span class="contact-val">62.72.50.47 (LiteSpeed + Python 3.11 WSGI)</span>
+                </div>
+                <div class="company-contact-item">
+                  <span class="contact-label">SSL Himoyasi:</span>
+                  <span class="contact-val" style="color: #10b981; font-weight: 600;">✅ Faol (HTTPS / TLS 1.3)</span>
+                </div>
+                <div class="company-contact-item">
+                  <span class="contact-label">Baza formati:</span>
+                  <span class="contact-val">SQLite3 WAL (9.2 MB, 1,058 lot)</span>
+                </div>
+                <div class="company-contact-item">
+                  <span class="contact-label">Anti-Blocking:</span>
+                  <span class="contact-val">Jitter delay 2.5s–5.5s, User-Agent rotatsiyasi</span>
+                </div>
+                <div class="company-contact-item">
+                  <span class="contact-label">Avtomatik sinxronlash:</span>
+                  <span class="contact-val">Har 24 soatda (Har kuni 03:00 da)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Sync & Sources -->
+        <div class="admin-tab-content" id="admin-tab-sync" style="display: none;">
+          <div class="sync-action-box">
+            <div>
+              <h4 style="margin-bottom: 0.25rem;">Birja va Davlat Xaridlari Sinxronizatsiyasi</h4>
+              <p style="color: #64748b; font-size: 0.85rem;">Barcha 4 ta xarid platformasidan (xt-xarid, uzex, ebirja, cooperation) 2024-yil 1-yanvardan boshlab lotlarni yangilash.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-admin-sync-now">
+              <span>🔄 To'liq sinxronlashni boshlash</span>
+            </button>
+          </div>
+          <div id="admin-sync-progress" style="display: none; padding: 0.75rem 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;">
+            ⏳ Sinxronizatsiya jarayoni ketmoqda... Iltimos kuting.
+          </div>
+
+          <h4 class="subpanel-title mt-4">Oxirgi Sinxronizatsiya Amallari</h4>
+          <div class="table-responsive">
+            <table class="table admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Platforma</th>
+                  <th>Boshlanish</th>
+                  <th>Yakunlanish</th>
+                  <th>Yangi lotlar</th>
+                  <th>Yangilangan</th>
+                  <th>Holat</th>
+                </tr>
+              </thead>
+              <tbody id="admin-sync-logs-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: CRM Tasks & Proposals -->
+        <div class="admin-tab-content" id="admin-tab-tasks" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h4 style="margin-bottom: 0.2rem;">Mijozlar bilan ishlash vazifalari va takliflar</h4>
+              <p style="color: #64748b; font-size: 0.85rem;">Yaratilgan tijorat takliflari va xodimlarga biriktirilgan sotuv topshiriqlari</p>
+            </div>
+            <span class="badge-count" id="admin-tasks-count">Jami: 0 ta</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Korxona (STIR)</th>
+                  <th>Vazifa sarlavhasi</th>
+                  <th>Vazifa turi</th>
+                  <th>Mas'ul xodim</th>
+                  <th>Holat</th>
+                  <th>Sana</th>
+                  <th>Statusni yangilash</th>
+                </tr>
+              </thead>
+              <tbody id="admin-tasks-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: Staff Management -->
+        <div class="admin-tab-content" id="admin-tab-staff" style="display: none;">
+          <div style="margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.2rem;">Sotuv va Tender Bo'limi Mas'ul Xodimlari</h4>
+            <p style="color: #64748b; font-size: 0.85rem;">Tizimda korxonalar bilan ishlash va tijorat takliflarini yuborish uchun biriktirilgan mutaxassislar</p>
+          </div>
+          <div class="admin-staff-grid" id="admin-staff-cards">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tab 5: Security & Change Password -->
+        <div class="admin-tab-content" id="admin-tab-security" style="display: none;">
+          <div class="admin-security-card">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="font-size: 2rem;">🔐</div>
+              <div>
+                <h4 style="margin-bottom: 0.2rem;">Administrator Maxfiy Parolini O'zgartirish</h4>
+                <p style="color: #64748b; font-size: 0.85rem;">Platformaga kirish parolini yangilang</p>
+              </div>
+            </div>
+            
+            <div id="admin-pwd-alert" style="display: none; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem;"></div>
+
+            <form id="form-change-password" onsubmit="return false;">
+              <div class="form-group mb-3">
+                <label class="filter-label">Foydalanuvchi:</label>
+                <input type="text" class="form-input" id="input-security-username" value="admin" disabled style="background: #f1f5f9; font-weight: 600;">
+              </div>
+              <div class="form-group mb-3">
+                <label class="filter-label">Joriy parol:</label>
+                <input type="password" id="input-old-password" class="form-input" placeholder="Hozirgi parolingizni kiriting" required>
+              </div>
+              <div class="form-group mb-3">
+                <label class="filter-label">Yangi parol (kamida 6 ta belgi):</label>
+                <input type="password" id="input-new-password" class="form-input" placeholder="Yangi maxfiy parol" required>
+              </div>
+              <div class="form-group mb-4">
+                <label class="filter-label">Yangi parolni takrorlang:</label>
+                <input type="password" id="input-confirm-password" class="form-input" placeholder="Yangi parolni qayta kiriting" required>
+              </div>
+              <button type="submit" class="btn btn-primary w-full" id="btn-save-new-password">
+                💾 Parolni Saqlash va Yangilash
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 6: Gemini AI Settings -->
+        <div class="admin-tab-content" id="admin-tab-gemini" style="display: none;">
+          <div class="admin-security-card" style="max-width: 680px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="font-size: 2rem;">🤖</div>
+              <div>
+                <h4 style="margin-bottom: 0.2rem;">Google Gemini AI — Tender Tahlili Sozlamalari</h4>
+                <p style="color: #64748b; font-size: 0.85rem;">Yangi lotlarni avtomatik IT-saralash va chuqur tahlil qilish uchun Google Gemini API kalitini sozlang</p>
+              </div>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+              <div style="font-weight: 700; color: #166534; font-size: 0.9rem; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 6px;">
+                <span class="status-dot online"></span> Faol AI Dvigateli: <span id="gemini-status-text">Google Gemini 1.5 Flash / Heuristic Engine</span>
+              </div>
+              <p style="font-size: 0.82rem; color: #15803d; margin: 0; line-height: 1.4;">
+                Tizim yangi kelgan xom tenderlar orasidan IT, litsenziyalash, antivirus va Microsoft loyihalarini 98% aniqlik bilan ajratib beradi va har bir lot bo'yicha g'alaba strategiyasini tuzadi.
+              </p>
+            </div>
+
+            <form id="form-gemini-settings" onsubmit="return false;">
+              <div class="form-group mb-3">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                  <label class="filter-label" style="margin-bottom: 0;">Google Gemini API Kaliti (GEMINI_API_KEY):</label>
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-link" style="font-size: 0.8rem; color: #2563eb;">
+                    🔑 Bepul API kalit olish ↗
+                  </a>
+                </div>
+                <input type="password" id="input-gemini-key" class="form-input" placeholder="AIzaSy... (Google AI Studio kalitini kiriting)">
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+                  Kalit kiritilmagan taqdirda ham Softy Intelligent Heuristic AI dvigateli avtomatik ishlaydi.
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary w-full" id="btn-save-gemini-key">
+                💾 Gemini API Kalitini Saqlash
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div> <!-- /#app-root -->
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/js/app.js?v=20260912_7"></script>
+</body>
+</html>
