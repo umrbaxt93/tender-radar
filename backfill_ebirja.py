@@ -15,8 +15,12 @@ rounds = int(sys.argv[2]) if len(sys.argv) > 2 else 100
 
 def remaining():
     with db_session() as c:
-        return c.execute("SELECT COUNT(*) n FROM lots WHERE platform_id='ebirja' "
-                         "AND (buyer_inn IS NULL OR buyer_inn='')").fetchone()["n"]
+        return c.execute(
+            "SELECT COUNT(*) n FROM lots WHERE platform_id='ebirja' "
+            "  AND id LIKE 'ebirja_ebirja_c_%' "
+            "  AND (buyer_inn IS NULL OR buyer_inn='' "
+            "       OR supplier_inn IS NULL OR supplier_inn='' "
+            "       OR title LIKE 'E-Birja shartnoma%')").fetchone()["n"]
 
 a = E.EbirjaAdapter()
 start = remaining()

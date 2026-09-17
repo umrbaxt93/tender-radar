@@ -251,11 +251,22 @@ class EbirjaAdapter(BasePlatformAdapter):
         bajariladi va qayta boshlanadi: to'ldirilmagan qator qolmaguncha
         har yurish navbatdagi bo'lakni oladi.
         """
+        # Faqat `buyer_inn` bo'shligiga qarash YETARLI EMAS: bazada ~4 900 qator
+        # bor, ularda xaridor INN si bor, lekin sotuvchi INN si ham, mahsulot
+        # nomi ham yo'q (sarlavha hali ham "E-Birja shartnoma ..." zaglushkasi).
+        # Uch shartning birortasi bajarilsa, qator to'ldirilishi kerak.
+        #
+        # `id LIKE 'ebirja_ebirja_c_%'` sharti muhim: qo'lda kiritilgan namuna
+        # qatorlar (ebirja_ms_445 kabi) API id siga ega emas, ular tanlansa
+        # LIMIT o'rnini bekorga egallab, har yurishda qayta tanlanardi.
         with db_session() as conn:
             rows = conn.execute("""
                 SELECT id FROM lots
                  WHERE platform_id = 'ebirja'
-                   AND (buyer_inn IS NULL OR buyer_inn = '')
+                   AND id LIKE 'ebirja_ebirja_c_%'
+                   AND (buyer_inn IS NULL OR buyer_inn = ''
+                        OR supplier_inn IS NULL OR supplier_inn = ''
+                        OR title LIKE 'E-Birja shartnoma%')
                  ORDER BY announcement_date DESC
                  LIMIT ?;""", (limit,)).fetchall()
 
