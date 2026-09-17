@@ -42,3 +42,7 @@ tmp/
 .fuse_hidden*
 tender-radar/
 .env
+
+# Zaxira nusxalar va lokal jurnallar
+*.bak
+data/*.log
