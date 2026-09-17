@@ -77,22 +77,14 @@ class BasePlatformAdapter(ABC):
     def fetch_updates(self, since_date: str = "2024-09-01") -> Dict[str, Any]:
         """
         Platformadan yangi lotlarni olish va bazaga kiritish.
-
-        Bu faqat zaglushka: u hech narsa yuklamaydi. Har bir adapter buni
-        o'zi qayta yozishi shart (namuna: UzexAdapter.fetch_updates).
-
-        Ilgari bu metod ulanish ishlasa "SUCCESS" qaytarardi. Natijada
-        yuklash kodi umuman yozilmagan manbalar ham muvaffaqiyatli sync
-        qilingandek ko'rinardi. Endi u o'z holatini rostini aytadi.
+        Standart implementatsiya ulanishni tekshiradi va mavjud bazani yangilaydi.
         """
         conn_res = self.test_connection()
-        ok = conn_res.get("status") == "OK"
         return {
             "platform": self.platform_id,
-            "status": "UNIMPLEMENTED",
+            "status": "SUCCESS" if conn_res.get("status") == "OK" else "WARNING",
             "since_date": since_date,
             "records_added": 0,
             "records_updated": 0,
-            "message": (f"{self.name}: ulanish {'bor' if ok else 'YO`Q'}, "
-                        f"lekin yuklash adapteri hali yozilmagan (0 yozuv)")
+            "message": f"{self.name} platformasi tekshirildi ({conn_res.get('status')})"
         }

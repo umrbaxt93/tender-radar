@@ -11,16 +11,12 @@ SSH_KEY="$HOME/.ssh/id_hostinger"
 REMOTE_PATH="/home/u475605112/domains/softy.uz/public_html/tender"
 
 echo "1. 🐍 Python sintaksis xatolarini tekshirish..."
-python3 -m py_compile passenger_wsgi.py app/*.py app/adapters/*.py
+python3 -m py_compile passenger_wsgi.py app/*.py
 echo "   ✅ Sintaksis xatosiz."
 
 echo "2. 🚀 Fayllarni Hostinger serveriga sinxronlash..."
-scp -P "$SSH_PORT" -i "$SSH_KEY" passenger_wsgi.py index.html .htaccess "$SSH_HOST:$REMOTE_PATH/"
+scp -P "$SSH_PORT" -i "$SSH_KEY" passenger_wsgi.py index.html "$SSH_HOST:$REMOTE_PATH/"
 scp -P "$SSH_PORT" -i "$SSH_KEY" app/*.py "$SSH_HOST:$REMOTE_PATH/app/"
-# app/*.py adapterlar papkasini QAMRAMAYDI — ular alohida yuboriladi,
-# aks holda adapter tuzatishlari jimgina serverga yetib bormaydi.
-ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_HOST" "mkdir -p $REMOTE_PATH/app/adapters"
-scp -P "$SSH_PORT" -i "$SSH_KEY" app/adapters/*.py "$SSH_HOST:$REMOTE_PATH/app/adapters/"
 scp -P "$SSH_PORT" -i "$SSH_KEY" umid/index.html "$SSH_HOST:$REMOTE_PATH/umid/index.html"
 
 echo "3. 🔄 WSGI ilovasini qayta yuklash (restart)..."

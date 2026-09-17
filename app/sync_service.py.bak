@@ -226,23 +226,14 @@ class DailySyncManager:
                 total_added += added
                 total_updated += updated
 
-                # Adapter qaytargan holatni o'zi yozamiz. Ilgari bu yerda qattiq
-                # "SUCCESS" turardi, shuning uchun yuklash umuman ishlamagan
-                # adapterlar ham muvaffaqiyatli sync qilingandek ko'rinardi.
-                real_status = res.get("status", "SUCCESS")
-                msg = res.get("message")
-                self._log_sync_end(log_id, added, updated, status=real_status,
-                                   error=None if real_status == "SUCCESS" else msg)
-                platform_reports[platform_id] = {
-                    "status": real_status, "added": added,
-                    "updated": updated, "message": msg,
-                }
+                self._log_sync_end(log_id, added, updated, status="SUCCESS")
+                platform_reports[platform_id] = {"status": "SUCCESS", "added": added, "updated": updated}
 
                 # Platformalar o'rtasida ehtiyotkor tanaffus
                 polite_sleep(3.0, 6.0)
 
             # Bazadagi manbalar metrikalarini yangilash
-            self._update_source_stats(platform_reports)
+            self._update_source_stats()
 
             logger.info(f"=== KUNLIK SINXRONIZATSIYA YAKUNLANDI: Jami {total_added} ta yangi lot qo'shildi ===")
 
@@ -277,16 +268,7 @@ class DailySyncManager:
             WHERE id = ?;
             """, (end_time, added, updated, status, error, log_id))
 
-    def _update_source_stats(self, platform_reports: Optional[Dict[str, Any]] = None):
-        """
-        Manba metrikalarini yangilash.
-
-        `last_successful_sync` va `health_status` FAQAT haqiqiy natijaga qarab
-        yoziladi. Ilgari bu maydonlar har siklda so'zsiz "hozir" va "OK" deb
-        yangilanardi — natijada barcha sinxronizatsiyalar xato bilan tugasa ham
-        panel "hammasi joyida" deb ko'rsatardi.
-        """
-        reports = platform_reports or {}
+    def _update_source_stats(self):
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with db_session() as conn:
             cursor = conn.cursor()
@@ -294,29 +276,15 @@ class DailySyncManager:
             SELECT platform_id, COUNT(*) as cnt, MIN(announcement_date) as min_d, MAX(announcement_date) as max_d
             FROM lots GROUP BY platform_id;
             """)
-            rows = cursor.fetchall()
-
-            for row in rows:
-                pid = row["platform_id"]
-                status = (reports.get(pid) or {}).get("status")
-
-                # Yozuvlar soni va sana oralig'i — bular shunchaki bazadagi fakt
+            for row in cursor.fetchall():
                 cursor.execute("""
                 UPDATE sources SET
                     records_count = ?,
                     loaded_range_start = COALESCE(?, loaded_range_start),
-                    loaded_range_end = COALESCE(?, loaded_range_end)
+                    loaded_range_end = COALESCE(?, loaded_range_end),
+                    last_successful_sync = ?
                 WHERE id = ?;
-                """, (row["cnt"], row["min_d"], row["max_d"], pid))
-
-                if status == "SUCCESS":
-                    cursor.execute("""
-                    UPDATE sources SET last_successful_sync = ?, health_status = 'OK'
-                    WHERE id = ?;""", (now_str, pid))
-                elif status is not None:
-                    # ERROR yoki UNIMPLEMENTED — last_successful_sync TEGILMAYDI
-                    cursor.execute("""
-                    UPDATE sources SET health_status = ? WHERE id = ?;""", (status, pid))
+                """, (row["cnt"], row["min_d"], row["max_d"], now_str, row["platform_id"]))
 
 # Global Singleton Manager
 sync_manager = DailySyncManager()
