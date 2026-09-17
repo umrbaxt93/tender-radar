@@ -5,12 +5,39 @@ xarid.ebirja.uz (Toshkent tovar xomashyo birjasi AJ - ТТСБ / TTXB) adapteri.
 
 import ssl
 import time
+import json
+import logging
 import urllib.request
 import urllib.error
-import json
+import urllib.parse
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from app.adapters.base import BasePlatformAdapter
+from app.database import db_session
+
+logger = logging.getLogger(__name__)
+
+# E-Birja ommaviy REST API. Jonli sahifadan kuzatilgan (2026-09-17).
+# MUHIM: E-IMZO talab qilinmaydi. Eski xulosa (`xarid.ebirja.uz` 404 qaytaradi,
+# faqat EDS bilan kiriladi) eskirgan — sayt `ebirja.uz` ga ko'chgan va
+# `/common/` endpointlari autentifikatsiyasiz ochiq.
+API_BASE = "https://xarid-api.ebirja.uz"
+LIST_PATH = "/common/contract/shop-list"
+VIEW_PATH = "/common/contract/shop-view"
+
+MIN_REQUEST_INTERVAL_S = 3.0
+
+PAGE_SIZE = 100
+MAX_PAGES_PER_RUN = 12
+MAX_NEW_PER_RUN = 120
+
+# Mavjud 28 000+ yozuv INN va mahsulot nomisiz saqlangan. Ularni to'ldirish
+# har biriga bitta so'rov talab qiladi (3s tanaffus bilan ~3s/yozuv), shuning
+# uchun ish bo'lak-bo'lak bajariladi va qayta boshlanadi.
+#
+# 400 ta ≈ 20 daqiqa — tungi cron uchun mos. Bir martalik katta backfill
+# uchun `backfill_ebirja.py` skripti bu qiymatni oshirib chaqiradi.
+MAX_ENRICH_PER_RUN = 400
 
 class EbirjaAdapter(BasePlatformAdapter):
     """
@@ -99,6 +126,222 @@ class EbirjaAdapter(BasePlatformAdapter):
             "contract_url": raw.get("contract_url"),
             "license_end_date": raw.get("license_end_date")
         }
+
+    # ────────────────────────────────────────────────────────────────────
+    # HAQIQIY YUKLASH — ebirja.uz ommaviy REST API orqali (E-IMZO kerak emas)
+    # ────────────────────────────────────────────────────────────────────
+
+    _last_request_ts = 0.0
+
+    def _throttle(self):
+        elapsed = time.time() - EbirjaAdapter._last_request_ts
+        if elapsed < MIN_REQUEST_INTERVAL_S:
+            time.sleep(MIN_REQUEST_INTERVAL_S - elapsed)
+        EbirjaAdapter._last_request_ts = time.time()
+
+    def _get(self, path: str, params: dict) -> Any:
+        self._throttle()
+        url = f"{API_BASE}{path}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        })
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = json.loads(resp.read().decode("utf-8", errors="replace"))
+        return payload.get("result") if isinstance(payload, dict) else payload
+
+    def _detail(self, contract_id: int) -> Dict[str, Any]:
+        res = self._get(VIEW_PATH, {"id": contract_id})
+        return res if isinstance(res, dict) else {}
+
+    @staticmethod
+    def _row_id(contract_id: Any) -> str:
+        # Bazadagi tarixiy shakl: ebirja_ebirja_c_<id>
+        return f"ebirja_ebirja_c_{contract_id}"
+
+    def _map(self, d: Dict[str, Any]) -> Dict[str, Any]:
+        """shop-view javobini `lots` sxemasiga o'tkazish."""
+        cid = d.get("id")
+        cust = d.get("customer") or {}
+        prod = d.get("producer") or {}
+        order = d.get("order") or {}
+        plog = order.get("product_log") or {}
+
+        title = (plog.get("title") or plog.get("description")
+                 or f"E-Birja shartnoma {d.get('number')}")
+
+        def _dt(v):
+            return str(v)[:10] if v else None
+
+        return {
+            "id": self._row_id(cid),
+            "lot_number": f"ebirja_c_{cid}",
+            "title": str(title)[:500],
+            "description": str(plog.get("description") or title)[:2000],
+            "platform_id": "ebirja",
+            "source_url": f"https://ebirja.uz/uz/contracts/shop?search={d.get('number')}",
+            "procurement_type": plog.get("platform_display") or "e-shop",
+            "official_status": str(d.get("status")),
+            "announcement_date": _dt(d.get("created_at")),
+            "result_date": _dt(order.get("trade_end_date")),
+            "start_price": float(order.get("total_price") or d.get("price") or 0),
+            "final_price": float(d.get("price") or 0),
+            "contract_amount": float(d.get("price") or 0),
+            "contract_number": d.get("number"),
+            "contract_date": _dt(d.get("created_at")),
+            "contract_url": f"https://ebirja.uz/uz/contracts/shop?search={d.get('number')}",
+            "has_contract": 1,
+            "currency": "UZS",
+            "buyer_inn": str(cust.get("tin") or "").strip(),
+            "buyer_name": cust.get("title"),
+            "supplier_inn": str(prod.get("tin") or "").strip(),
+            "supplier_name": prod.get("title"),
+            "winner_name": prod.get("title"),
+            "region": cust.get("region") if isinstance(cust.get("region"), str) else None,
+            "extracted_text": " ".join(filter(None, [
+                str(plog.get("title") or ""), str(plog.get("brand_title") or ""),
+                str(plog.get("product_model") or ""), str(plog.get("description") or ""),
+            ]))[:4000],
+            "raw_data_json": json.dumps(d, ensure_ascii=False, default=str),
+        }
+
+    def _upsert_companies(self, rows: List[Dict[str, Any]], conn) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        cur = conn.cursor()
+        for r in rows:
+            for inn, name in ((r.get("buyer_inn"), r.get("buyer_name")),
+                              (r.get("supplier_inn"), r.get("supplier_name"))):
+                inn = (inn or "").strip()
+                if not inn:
+                    continue
+                cur.execute("""
+                    INSERT INTO companies (inn, name, first_seen_date, last_seen_date,
+                                           total_lots_count, proof_status)
+                    VALUES (?, ?, ?, ?, 0, 'ANNOUNCED_ONLY')
+                    ON CONFLICT(inn) DO UPDATE SET last_seen_date = excluded.last_seen_date;
+                """, (inn, name or inn, today, today))
+
+    def _insert(self, rows: List[Dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+        cols = list(rows[0].keys())
+        marks = ",".join("?" * len(cols))
+        sql = (f"INSERT OR IGNORE INTO lots ({','.join(cols)}, created_in_db_date) "
+               f"VALUES ({marks}, ?);")
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        added = 0
+        with db_session() as conn:
+            self._upsert_companies(rows, conn)
+            cur = conn.cursor()
+            for r in rows:
+                cur.execute(sql, [r[c] for c in cols] + [now])
+                added += cur.rowcount
+        return added
+
+    def enrich_existing(self, limit: int = MAX_ENRICH_PER_RUN) -> int:
+        """
+        Eski yozuvlarni to'ldirish.
+
+        Bazadagi 28 000+ e-birja qatori INN va mahsulot nomisiz saqlangan
+        (sarlavha o'rnida "E-Birja shartnoma XD... (Shop)" turadi), chunki
+        ro'yxat endpointi bu maydonlarni bermaydi. Detal endpointi beradi.
+
+        Har yozuv uchun bitta so'rov kerak, shuning uchun ish bo'laklab
+        bajariladi va qayta boshlanadi: to'ldirilmagan qator qolmaguncha
+        har yurish navbatdagi bo'lakni oladi.
+        """
+        with db_session() as conn:
+            rows = conn.execute("""
+                SELECT id FROM lots
+                 WHERE platform_id = 'ebirja'
+                   AND (buyer_inn IS NULL OR buyer_inn = '')
+                 ORDER BY announcement_date DESC
+                 LIMIT ?;""", (limit,)).fetchall()
+
+        done = 0
+        for r in rows:
+            raw_id = str(r["id"]).replace("ebirja_ebirja_c_", "")
+            if not raw_id.isdigit():
+                continue
+            try:
+                d = self._detail(int(raw_id))
+                if not d:
+                    continue
+                m = self._map(d)
+                with db_session() as conn:
+                    self._upsert_companies([m], conn)
+                    conn.execute("""
+                        UPDATE lots SET title = ?, description = ?, buyer_inn = ?,
+                               buyer_name = ?, supplier_inn = ?, supplier_name = ?,
+                               winner_name = ?, extracted_text = ?, raw_data_json = ?
+                         WHERE id = ?;""",
+                        (m["title"], m["description"], m["buyer_inn"], m["buyer_name"],
+                         m["supplier_inn"], m["supplier_name"], m["winner_name"],
+                         m["extracted_text"], m["raw_data_json"], r["id"]))
+                done += 1
+            except Exception as ex:
+                logger.warning(f"E-Birja boyitish xatosi ({raw_id}): {ex}")
+        return done
+
+    def fetch_updates(self, since_date: str = "2024-09-01") -> Dict[str, Any]:
+        """Yangi shartnomalarni yuklaydi, so'ng eski yozuvlarni boyitadi."""
+        added = seen = 0
+        errors: List[str] = []
+
+        try:
+            for page in range(MAX_PAGES_PER_RUN):
+                if added >= MAX_NEW_PER_RUN:
+                    break
+                res = self._get(LIST_PATH, {
+                    "type": "e-shop", "currentPage": page,
+                    "perPage": PAGE_SIZE, "search": " ",
+                })
+                batch = (res or {}).get("data") or []
+                if not batch:
+                    break
+                seen += len(batch)
+
+                ids = [c.get("id") for c in batch if c.get("id") is not None]
+                with db_session() as conn:
+                    marks = ",".join("?" * len(ids))
+                    known = {r["id"] for r in conn.execute(
+                        f"SELECT id FROM lots WHERE id IN ({marks});",
+                        [self._row_id(i) for i in ids]).fetchall()}
+                fresh = [i for i in ids if self._row_id(i) not in known]
+
+                if not fresh:
+                    # Ro'yxat eng yangisidan boshlanadi — narigisi ham tanish
+                    break
+
+                rows = []
+                for cid in fresh:
+                    if added + len(rows) >= MAX_NEW_PER_RUN:
+                        break
+                    try:
+                        d = self._detail(int(cid))
+                        if d:
+                            rows.append(self._map(d))
+                    except Exception as ex:
+                        errors.append(f"{cid}: {ex}")
+                added += self._insert(rows)
+
+            enriched = self.enrich_existing()
+
+            msg = (f"{added} ta yangi shartnoma, {enriched} ta eski yozuv to'ldirildi "
+                   f"({seen} yozuv ko'rildi)")
+            if errors:
+                msg += f"; {len(errors)} ta xato"
+            return {"platform": self.platform_id, "status": "SUCCESS",
+                    "since_date": since_date, "records_added": added,
+                    "records_updated": enriched, "message": msg}
+
+        except Exception as ex:
+            logger.error(f"E-Birja yuklashda xato: {ex}")
+            return {"platform": self.platform_id, "status": "ERROR",
+                    "since_date": since_date, "records_added": added,
+                    "records_updated": 0,
+                    "message": f"E-Birja yuklash xatosi: {ex}"}
 
     def health_check(self) -> Dict[str, Any]:
         conn_test = self.test_connection()
