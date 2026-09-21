@@ -9,12 +9,20 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 RewriteRule ^api/(.*)$ api.php [QSA,L]
 RewriteRule ^api$ api.php [QSA,L]
 
+# Xavfsizlik: data/ papkasi hech qachon veb orqali to'g'ridan-to'g'ri berilmasin.
+# U yerda ishchi baza, zaxira nusxalar (*.db), jurnal va sessiya fayllari
+# saqlanadi — bularning barchasi statik fayl sifatida so'ralsa, pastdagi
+# "mavjud faylni to'g'ridan-to'g'ri ber" qoidasi ularni HECH QANDAY tokensiz
+# ochiб yuborardi (aniqlangan: 153 MB'lik to'liq baza zaxirasi ochiq edi).
+# Bu qoida shu qoidadan OLDIN turishi shart.
+RewriteRule ^data/ - [F,L]
+
 # Statik fayllar mavjud bo'lsa to'g'ridan-to'g'ri berish
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Xavfsizlik: Baza va konfiguratsiyani yashirish
-<FilesMatch "(softy_procurement\.db|\.py|\.env|\.git)">
+# Xavfsizlik: Baza va konfiguratsiyani yashirish (data/ tashqarisidagi holatlar uchun ham)
+<FilesMatch "(softy_procurement\.db|\.py|\.env|\.git|\.db|\.log)$">
     Require all denied
 </FilesMatch>
 
