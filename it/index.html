@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IT Xaridlar — Softy Tender Radar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body { background:#f8fafc; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen">
+
+  <!-- ================= LOGIN KERAK PARDASI ================= -->
+  <div id="need-login" class="hidden fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl text-center space-y-4">
+      <div class="text-4xl">🔒</div>
+      <h2 class="text-xl font-black text-slate-900">Avval tizimga kiring</h2>
+      <p class="text-sm text-slate-500">Bu sahifa asosiy portal orqali kirilgan sessiyani ishlatadi.</p>
+      <a href="/umid/" class="block w-full py-3 bg-indigo-900 text-white font-bold rounded-xl hover:bg-indigo-800 transition">
+        Kirish sahifasiga o'tish →
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= ASOSIY SAHIFA ================= -->
+  <div id="app" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-4">
+
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <a href="/umid/" class="text-slate-400 hover:text-slate-700 text-sm font-semibold">← Asosiy panel</a>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 mt-1">💻 IT Xaridlar — Davlat Xaridlari Bazasi</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Dasturiy ta'minot, litsenziya, server va IT xizmatlari — barcha 4 birjadan, jonli baza</p>
+      </div>
+      <button onclick="logout()" class="px-3 py-1.5 text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-100">🚪 Chiqish</button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jami IT xaridlar</div>
+        <div id="kpi-total" class="text-2xl font-black mt-1 text-indigo-600">—</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ko'rsatilayotgan</div>
+        <div id="kpi-shown" class="text-2xl font-black mt-1 text-slate-900">—</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jami summa (shu sahifa)</div>
+        <div id="kpi-sum" class="text-lg font-black mt-1 text-emerald-700">—</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sahifa</div>
+        <div id="kpi-page" class="text-2xl font-black mt-1 text-slate-900">—</div>
+      </div>
+    </div>
+
+    <!-- Filtrlar -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div class="md:col-span-2">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Qidiruv (brend, mahsulot, STIR...)</label>
+          <input id="f-query" type="text" placeholder="Masalan: Kaspersky, Microsoft, 200244767..."
+                 class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Manba</label>
+          <select id="f-source" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+            <option value="">Barchasi</option>
+            <option value="uzex">UZEX</option>
+            <option value="ebirja">E-Birja</option>
+            <option value="xt_xarid">XT-Xarid</option>
+            <option value="cooperation">Kooperatsiya</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sanadan</label>
+          <input id="f-date-from" type="date" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sanagacha</label>
+          <input id="f-date-to" type="date" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 pt-1">
+        <button onclick="runSearch(0)" class="px-4 py-2 bg-indigo-900 text-white text-sm font-bold rounded-lg hover:bg-indigo-800 transition">🔍 Qidirish</button>
+        <button onclick="clearFilters()" class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition">Tozalash</button>
+        <div class="flex-1"></div>
+        <button onclick="exportExcel()" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition">📊 Excel (.xlsx) yuklash</button>
+      </div>
+    </div>
+
+    <!-- Natijalar jadvali -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-left text-slate-500 uppercase tracking-wider">
+            <tr>
+              <th class="py-2.5 px-3">Sana</th>
+              <th class="py-2.5 px-3">Buyurtmachi</th>
+              <th class="py-2.5 px-3">STIR</th>
+              <th class="py-2.5 px-3">Mahsulot / Xarid nomi</th>
+              <th class="py-2.5 px-3 text-right">Summa</th>
+              <th class="py-2.5 px-3">G'olib</th>
+              <th class="py-2.5 px-3">Manba</th>
+              <th class="py-2.5 px-3 text-center">Havola</th>
+            </tr>
+          </thead>
+          <tbody id="results-body" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="hidden text-center py-10 text-slate-400 text-sm">Hech narsa topilmadi</div>
+      <div id="loading-state" class="hidden text-center py-10 text-slate-400 text-sm">⏳ Yuklanmoqda...</div>
+    </div>
+
+    <!-- Sahifalash -->
+    <div class="flex items-center justify-between text-sm text-slate-600">
+      <div id="page-info">—</div>
+      <div class="flex gap-2">
+        <button onclick="prevPage()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-semibold hover:bg-slate-50">← Oldingi</button>
+        <button onclick="nextPage()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-semibold hover:bg-slate-50">Keyingi →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PAGE_SIZE = 50;
+    let currentOffset = 0;
+    let currentTotal = 0;
+    let currentItems = [];
+
+    function getToken() {
+      try {
+        const raw = localStorage.getItem('softy_token') || sessionStorage.getItem('softy_token');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed.token || null;
+      } catch (e) { return null; }
+    }
+
+    function logout() {
+      localStorage.removeItem('softy_token');
+      sessionStorage.removeItem('softy_token');
+      window.location.href = '/umid/';
+    }
+
+    function authHeaders() {
+      const t = getToken();
+      return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+
+    function fmtMoney(n) {
+      n = Number(n) || 0;
+      return n.toLocaleString('ru-RU').replace(/,/g, ' ');
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function clearFilters() {
+      document.getElementById('f-query').value = '';
+      document.getElementById('f-source').value = '';
+      document.getElementById('f-date-from').value = '';
+      document.getElementById('f-date-to').value = '';
+      runSearch(0);
+    }
+
+    async function runSearch(offset) {
+      currentOffset = offset || 0;
+      const body = {
+        query: document.getElementById('f-query').value.trim(),
+        it_only: true,
+        limit: PAGE_SIZE,
+        offset: currentOffset,
+        sort_by: 'announcement_date',
+        sort_desc: true
+      };
+      const source = document.getElementById('f-source').value;
+      if (source) body.platforms = [source];
+      const df = document.getElementById('f-date-from').value;
+      const dt = document.getElementById('f-date-to').value;
+      if (df) body.date_from = df;
+      if (dt) body.date_to = dt;
+
+      document.getElementById('loading-state').classList.remove('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('results-body').innerHTML = '';
+
+      try {
+        const resp = await fetch('/api/search', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+        if (resp.status === 401) { showNeedLogin(); return; }
+        const data = await resp.json();
+        currentTotal = data.total_count || 0;
+        currentItems = data.items || [];
+        renderResults();
+      } catch (e) {
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('empty-state').classList.remove('hidden');
+        document.getElementById('empty-state').innerText = 'Xatolik: ' + e.message;
+      }
+    }
+
+    function renderResults() {
+      document.getElementById('loading-state').classList.add('hidden');
+      const tbody = document.getElementById('results-body');
+
+      if (!currentItems.length) {
+        document.getElementById('empty-state').classList.remove('hidden');
+        document.getElementById('empty-state').innerText = 'Hech narsa topilmadi';
+      } else {
+        document.getElementById('empty-state').classList.add('hidden');
+      }
+
+      let sum = 0;
+      tbody.innerHTML = currentItems.map(it => {
+        const amount = Number(it.final_price || it.contract_amount || it.start_price || 0);
+        sum += amount;
+        const url = it.source_url || it.contract_url || '';
+        const winner = it.winner_name || it.supplier_name || '';
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-2.5 px-3 font-mono text-slate-500 whitespace-nowrap">${esc((it.announcement_date||'').slice(0,10))}</td>
+            <td class="py-2.5 px-3 font-semibold text-slate-900 max-w-[220px] truncate" title="${esc(it.buyer_name)}">${esc(it.buyer_name)}</td>
+            <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${esc(it.buyer_inn)}</td>
+            <td class="py-2.5 px-3 text-slate-800 max-w-md truncate" title="${esc(it.title)}">${esc(it.title)}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">${fmtMoney(amount)} so'm</td>
+            <td class="py-2.5 px-3 text-slate-700 max-w-[180px] truncate" title="${esc(winner)}">${esc(winner) || '—'}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold uppercase">${esc(it.platform_id)}</span></td>
+            <td class="py-2.5 px-3 text-center">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">↗</a>` : '—'}</td>
+          </tr>`;
+      }).join('');
+
+      document.getElementById('kpi-total').innerText = currentTotal.toLocaleString('ru-RU').replace(/,/g, ' ');
+      document.getElementById('kpi-shown').innerText = currentItems.length;
+      document.getElementById('kpi-sum').innerText = fmtMoney(sum) + " so'm";
+      const page = Math.floor(currentOffset / PAGE_SIZE) + 1;
+      const totalPages = Math.max(1, Math.ceil(currentTotal / PAGE_SIZE));
+      document.getElementById('kpi-page').innerText = page + ' / ' + totalPages;
+      document.getElementById('page-info').innerText =
+        `${currentTotal ? (currentOffset+1) : 0}–${Math.min(currentOffset+currentItems.length, currentTotal)} / jami ${currentTotal.toLocaleString('ru-RU').replace(/,/g,' ')} ta`;
+    }
+
+    function nextPage() {
+      if (currentOffset + PAGE_SIZE < currentTotal) runSearch(currentOffset + PAGE_SIZE);
+    }
+    function prevPage() {
+      if (currentOffset > 0) runSearch(Math.max(0, currentOffset - PAGE_SIZE));
+    }
+
+    function exportExcel() {
+      if (!currentItems.length) { alert("Eksport qilish uchun ma'lumot yo'q!"); return; }
+      const rows = currentItems.map(it => ({
+        "Sana": (it.announcement_date||'').slice(0,10),
+        "Buyurtmachi": it.buyer_name || '',
+        "STIR": it.buyer_inn || '',
+        "Mahsulot / Xarid nomi": it.title || '',
+        "Summa (so'm)": Number(it.final_price || it.contract_amount || it.start_price || 0),
+        "G'olib": it.winner_name || it.supplier_name || '',
+        "Manba": it.platform_id || '',
+        "Havola": it.source_url || it.contract_url || ''
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "IT Xaridlar");
+      const dateStr = new Date().toISOString().slice(0,10);
+      XLSX.writeFile(workbook, `IT_xaridlar_${dateStr}.xlsx`);
+    }
+
+    function showNeedLogin() {
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('need-login').classList.remove('hidden');
+    }
+
+    function init() {
+      const token = getToken();
+      if (!token) { showNeedLogin(); return; }
+      document.getElementById('app').classList.remove('hidden');
+      runSearch(0);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

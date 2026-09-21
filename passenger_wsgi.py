@@ -106,6 +106,14 @@ def application(environ, start_response):
             start_response("200 OK", list(CORS_HEADERS) + [("Content-Type", "text/html; charset=utf-8")])
             return [content]
 
+    # IT xaridlar — alohida sahifa (bir xil login/token, /umid/ bilan bir manba)
+    if path in ("/it", "/it/", "/it/index.html"):
+        it_idx = CURRENT_DIR / "it" / "index.html"
+        if it_idx.exists():
+            content = it_idx.read_bytes()
+            start_response("200 OK", list(CORS_HEADERS) + [("Content-Type", "text/html; charset=utf-8")])
+            return [content]
+
     # Root / and /index.html (404 niqob sahifasi)
     if path in ("/", "/index.html"):
         idx = CURRENT_DIR / "index.html"

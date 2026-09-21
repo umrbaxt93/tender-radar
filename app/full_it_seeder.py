@@ -17,12 +17,39 @@ DB_PATH = BASE_DIR / "data" / "softy_procurement.db"
 SCRATCH_DIR = Path("/Users/admin/.gemini/antigravity/scratch")
 
 IT_KEYWORDS = [
-    'dastur', 'litsenz', 'software', 'программ', 'лицензи', 'autocad', 'autodesk',
+    # "dastur" va "программ" bare o'zaklari ATAYIN OLIB TASHLANDI: o'zbek tilida
+    # "dastur" — "tadbir dasturi"/"milliy dastur" (reja, jadval) degan ma'noda
+    # ham keng ishlatiladi, rus tilida esa "программ" — "программируемый
+    # kontroller" (sanoat asbob-uskunasi) va "мероприятий дастур" (tadbirlar
+    # rejasi) kabi IT'ga aloqasi bo'lmagan matnlarda ham uchraydi. Tekshirildi:
+    # "программ" bitta bare o'zak vakuum pech (sanoat jihozi) tavsifidagi
+    # "программируемый" so'zi bilan mos kelib, soxta IT belgisi bergan edi.
+    # Ular o'rniga faqat DASTURIY TA'MINOT ma'nosini beradigan to'liq iboralar
+    # qoldirildi — bular ham xuddi shu o'zakni "ushlaydi", lekin faqat aniq
+    # kontekstda.
+    "dasturiy ta'minot", "dasturiy majmua", "dasturiy mahsulot", "dasturiy kompleks",
+    "программное обеспечение", "программный продукт", "программные средства",
+    'software', 'autocad', 'autodesk',
+    # "litsenz"/"лицензи" ATAYIN olib tashlandi: bu o'zak dasturiy litsenziya
+    # bilan bir qatorda turoператор, tibbiyot, efir tarqatish, sug'urta kabi
+    # HAR QANDAY litsenziyaga tegishli matnda uchraydi (tekshirildi: Samarqand
+    # sayohat turi tavsifida "лицензия туроператора" shu o'zak orqali soxta IT
+    # belgisi bergan edi). Aniq brend nomlari (kaspersky, microsoft va h.k.)
+    # va "dasturiy ta'minot"/"программное обеспечение" iboralari haqiqiy
+    # dasturiy litsenziyalarni baribir tutib qoladi.
     'microsoft', 'office', 'windows', 'kaspersky', 'касперский', 'eset', 'nod32',
-    'zoom', 'fortinet', 'fortigate', 'cisco', 'oracle', '1c', '1с', 'redhat',
-    'vmware', 'veeam', 'adobe', 'figma', 'corel', 'jetbrains', 'chatgpt', 'openai',
+    'zoom', 'fortinet', 'fortigate', 'cisco', 'oracle', 'redhat',
+    "1c:", "1с:",  # ":" bilan — "1C:Предприятие" kabi, bare "1c" o'chirildi
+                    # (tasodifiy alifbo-raqam kodlarga mos kelib qolmasligi uchun)
+    'vmware', 'veeam', 'adobe', 'figma', 'coreldraw', 'jetbrains', 'chatgpt', 'openai',
+    # "corel" (bare) o'rniga "coreldraw" — Philips "CoreLine" yoritish mahsulot
+    # chizig'i nomiga tasodifan mos kelib, soxta IT belgisi bergan edi.
     'copilot', 'directum', 'scada', 'antivirus', 'антивирус', 'kiberxavfsizlik',
-    'crm', 'erp', 'lms', 'billing', 'it xizmat', 'axborot xavfsizligi', 'server',
+    'crm', 'billing', 'it xizmat', 'axborot xavfsizligi', 'server',
+    # "lms" va "erp" olib tashlandi — qisqa bare qisqartmalar, tasodifiy
+    # so'z/brend nomi ichida substring sifatida mos kelib, soxta signal
+    # berardi (tekshirildi: "lms" kitoblar to'plamida, "erp" — "WaterPRO"
+    # quvur brendi nomi ichida: wat-ERP-ro).
     'check point', 'palo alto', 'bitrix', 'red hat', 'sql server'
 ]
 

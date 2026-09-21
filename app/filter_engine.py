@@ -72,7 +72,8 @@ def build_search_filter_query(
     include_missing_dates: bool = False,
     sort_by: str = "announcement_date",
     sort_desc: bool = True,
-    limit: int = 50,
+    it_only: Optional[bool] = None,
+    limit: Optional[int] = 50,
     offset: int = 0
 ) -> Tuple[str, List[Any], Set[str]]:
     """
@@ -169,6 +170,11 @@ def build_search_filter_query(
     elif has_contract is False:
         conditions.append("(l.has_contract = 0 AND l.contract_url IS NULL AND l.contract_number IS NULL)")
 
+    # 9b. IT toifasi (oldindan hisoblangan l.is_it ustuniga qarab — tezkor,
+    # har so'rovda kalit so'zlarni qayta tekshirmaydi)
+    if it_only:
+        conditions.append("l.is_it = 1")
+
     # 10. Tugash sanasi ma'lum/noma'lum
     if expiry_known is True:
         conditions.append("l.license_end_date IS NOT NULL AND l.license_end_date != ''")
@@ -220,6 +226,13 @@ def build_search_filter_query(
     sort_dir = "DESC" if sort_desc else "ASC"
     order_col = f"l.{sort_by}" if sort_by in ALLOWED_DATE_FIELDS or sort_by in ["final_price", "start_price"] else "l.announcement_date"
 
+    # limit=None -> LIMIT/OFFSET qatori umuman qo'shilmaydi (faqat COUNT(*) uchun
+    # ishlatiladi). Avval bu joyda limit=100000 qattiq yozilgan edi va COUNT(*)
+    # shu 100000ga cheklangan quyi so'rov ustidan hisoblanardi — natijada
+    # 100 000dan katta baza uchun total_count doim noto'g'ri, kichraytirilgan
+    # holda qaytardi (120k+ yozuv borida ham 100000 deb ko'rsatardi).
+    limit_clause = f"LIMIT {int(limit)} OFFSET {int(offset)}" if limit is not None else ""
+
     if view_mode == "lots":
         sql = f"""
         SELECT 
@@ -251,7 +264,7 @@ def build_search_filter_query(
         LEFT JOIN sources s ON l.platform_id = s.id
         {where_clause}
         ORDER BY {order_col} {sort_dir}
-        LIMIT {limit} OFFSET {offset};
+        {limit_clause};
         """
     elif view_mode == "companies":
         sql = f"""
@@ -280,7 +293,7 @@ def build_search_filter_query(
         {where_clause}
         GROUP BY c.inn
         ORDER BY latest_purchase_date DESC
-        LIMIT {limit} OFFSET {offset};
+        {limit_clause};
         """
     else: # 'contracts'
         sql = f"""
@@ -313,7 +326,7 @@ def build_search_filter_query(
         LEFT JOIN sources s ON l.platform_id = s.id
         {where_clause}
         ORDER BY l.contract_date DESC
-        LIMIT {limit} OFFSET {offset};
+        {limit_clause};
         """
 
     return sql, params, query_words
@@ -356,6 +369,7 @@ def execute_search(filters: Dict[str, Any]) -> Dict[str, Any]:
         include_missing_dates=filters.get("include_missing_dates", False),
         sort_by=filters.get("sort_by", "announcement_date"),
         sort_desc=filters.get("sort_desc", True),
+        it_only=filters.get("it_only"),
         limit=limit,
         offset=offset
     )
@@ -392,7 +406,8 @@ def execute_search(filters: Dict[str, Any]) -> Dict[str, Any]:
             include_missing_dates=filters.get("include_missing_dates", False),
             sort_by=filters.get("sort_by", "announcement_date"),
             sort_desc=filters.get("sort_desc", True),
-            limit=100000,
+            it_only=filters.get("it_only"),
+            limit=None,
             offset=0
         )
         
