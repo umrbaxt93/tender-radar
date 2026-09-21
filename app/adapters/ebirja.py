@@ -168,8 +168,11 @@ class EbirjaAdapter(BasePlatformAdapter):
         order = d.get("order") or {}
         plog = order.get("product_log") or {}
 
+        # Fallback ATAYIN "E-Birja shartnoma" bilan boshlanmaydi: bu naqsh
+        # boyitilmagan yozuvni belgilaydi, shuning uchun boyitilgan yozuv undan
+        # farq qilishi shart — aks holda qayta-qayta tanlanadi.
         title = (plog.get("title") or plog.get("description")
-                 or f"E-Birja shartnoma {d.get('number')}")
+                 or f"E-shop lot {d.get('number')}")
 
         def _dt(v):
             return str(v)[:10] if v else None
@@ -251,10 +254,12 @@ class EbirjaAdapter(BasePlatformAdapter):
         bajariladi va qayta boshlanadi: to'ldirilmagan qator qolmaguncha
         har yurish navbatdagi bo'lakni oladi.
         """
-        # Faqat `buyer_inn` bo'shligiga qarash YETARLI EMAS: bazada ~4 900 qator
-        # bor, ularda xaridor INN si bor, lekin sotuvchi INN si ham, mahsulot
-        # nomi ham yo'q (sarlavha hali ham "E-Birja shartnoma ..." zaglushkasi).
-        # Uch shartning birortasi bajarilsa, qator to'ldirilishi kerak.
+        # Tanlash FAQAT placeholder sarlavhaga qaraydi ("E-Birja shartnoma ...").
+        # Bu — boyitilmaganning yagona ishonchli va MONOTON belgisi: har boyitilgan
+        # yozuv placeholder'dan chiqadi va qayta tanlanmaydi. Supplier yoki buyer
+        # bo'shligiga qarab bo'lmaydi — ba'zi shartnomalarda yetkazib beruvchi
+        # umuman yo'q, ular boyitilgan bo'lsa ham supplier bo'sh qoladi va aks holda
+        # abadiy qayta tanlanardi (bu jarayonni to'sib turardi).
         #
         # `id LIKE 'ebirja_ebirja_c_%'` sharti muhim: qo'lda kiritilgan namuna
         # qatorlar (ebirja_ms_445 kabi) API id siga ega emas, ular tanlansa
@@ -264,9 +269,7 @@ class EbirjaAdapter(BasePlatformAdapter):
                 SELECT id FROM lots
                  WHERE platform_id = 'ebirja'
                    AND id LIKE 'ebirja_ebirja_c_%'
-                   AND (buyer_inn IS NULL OR buyer_inn = ''
-                        OR supplier_inn IS NULL OR supplier_inn = ''
-                        OR title LIKE 'E-Birja shartnoma%')
+                   AND title LIKE 'E-Birja shartnoma%'
                  ORDER BY announcement_date DESC
                  LIMIT ?;""", (limit,)).fetchall()
 
@@ -278,6 +281,12 @@ class EbirjaAdapter(BasePlatformAdapter):
             try:
                 d = self._detail(int(raw_id))
                 if not d:
+                    # API ma'lumot bermadi — sentinel sarlavha qo'yamiz, aks holda
+                    # bu qator har bo'lakda qayta tanlanib, jarayonni to'sib turadi.
+                    with db_session() as conn:
+                        conn.execute("UPDATE lots SET title = ? WHERE id = ?;",
+                                     (f"E-shop lot {raw_id}", r["id"]))
+                    done += 1
                     continue
                 m = self._map(d)
                 with db_session() as conn:

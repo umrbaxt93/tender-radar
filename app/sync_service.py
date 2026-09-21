@@ -195,9 +195,20 @@ class DailySyncManager:
         logger.info(f"=== KUNLIK SINXRONIZATSIYA BOSHLANDI ({since_date} dan boshlab) ===")
 
         try:
+            # cooperation.uz chet el/datacenter IP'larni bloklaydi — production
+            # server (Hostinger) unga ulana olmaydi. Uning ma'lumoti O'zbekiston
+            # IP'sidan (Mac yoki VPS) alohida yuklanadi, shuning uchun kundalik
+            # server sync'da o'tkazib yuboriladi va health holati o'zgartirilmaydi.
+            SKIP_LIVE_SYNC = {"cooperation"}
+
             for platform_id, config in PLATFORMS.items():
+                if platform_id in SKIP_LIVE_SYNC:
+                    logger.info(f"{platform_id}: serverdan ulana olmaydi — o'tkazib yuborildi")
+                    platform_reports[platform_id] = {"status": "SKIPPED", "added": 0,
+                                                     "message": "Server ulana olmaydi (IP blok); ma'lumot alohida yuklanadi"}
+                    continue
                 logger.info(f"Platforma tekshirilmoqda: {config['name']}...")
-                
+
                 # Sinxronlash jurnali yozuvi
                 log_id = self._log_sync_start(platform_id, start_time)
 
