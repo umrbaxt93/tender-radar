@@ -22,6 +22,8 @@ scp -P "$SSH_PORT" -i "$SSH_KEY" app/*.py "$SSH_HOST:$REMOTE_PATH/app/"
 ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_HOST" "mkdir -p $REMOTE_PATH/app/adapters"
 scp -P "$SSH_PORT" -i "$SSH_KEY" app/adapters/*.py "$SSH_HOST:$REMOTE_PATH/app/adapters/"
 scp -P "$SSH_PORT" -i "$SSH_KEY" umid/index.html "$SSH_HOST:$REMOTE_PATH/umid/index.html"
+ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_HOST" "mkdir -p $REMOTE_PATH/it"
+scp -P "$SSH_PORT" -i "$SSH_KEY" it/index.html "$SSH_HOST:$REMOTE_PATH/it/index.html"
 
 echo "3. 🔄 WSGI ilovasini qayta yuklash (restart)..."
 ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_HOST" "touch $REMOTE_PATH/tmp/restart.txt"

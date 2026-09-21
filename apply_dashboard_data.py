@@ -146,44 +146,62 @@ def main():
     hot_n = h["radar_hot"]
     it_comp_n = h["it_competitors"]
     total_k = f"{round(h['total_lots'] / 1000)}k"
+    total_space = f"{h['total_lots']:,}".replace(",", " ")
 
-    repl = [
-        ('UZEX, E-Birja, XT-Xarid va Kooperatsiya portallari bo\'yicha 101k+ xaridlar, STIR tahlili, Bitrix24 integratsiyasi va AI maslahatchi.',
-         f'UZEX, E-Birja, XT-Xarid va Kooperatsiya portallari bo\'yicha {total_k}+ xaridlar, STIR tahlili, Bitrix24 integratsiyasi va AI maslahatchi.',
-         1, "hero matn"),
-        ('<div class="text-2xl font-black mt-1 text-slate-900">101,851</div>',
-         f'<div class="text-2xl font-black mt-1 text-slate-900">{total_fmt}</div>', 1, "KPI jami"),
-        ('<div class="text-[11px] text-emerald-600 mt-1 font-medium">UZEX: 73,299 | E-Birja: 28,173</div>',
-         f'<div class="text-[11px] text-emerald-600 mt-1 font-medium">{esc(h["source_breakdown"])}</div>',
-         1, "manba taqsimoti"),
-        ('<div class="text-2xl font-black mt-1 text-teal-600">22,625</div>',
-         f'<div class="text-2xl font-black mt-1 text-teal-600">{comp_fmt}</div>', 1, "kompaniyalar"),
-        ('<div class="text-2xl font-black mt-1 text-amber-600">41</div>',
-         f'<div class="text-2xl font-black mt-1 text-amber-600">{radar_n}</div>', 1, "radar KPI"),
-        ('<div class="text-[11px] text-rose-600 mt-1 font-bold">🔥 10 ta HOT (Score ≥ 80)</div>',
-         f'<div class="text-[11px] text-rose-600 mt-1 font-bold">🔥 {hot_n} ta HOT (Score ≥ 80)</div>',
-         1, "HOT KPI"),
-        ('<div class="text-2xl font-black mt-1 text-indigo-600">1,997</div>',
-         f'<div class="text-2xl font-black mt-1 text-indigo-600">{it_fmt}</div>', 1, "IT xaridlar"),
-        ('<div class="text-2xl font-black mt-1 text-blue-600">50</div>',
-         f'<div class="text-2xl font-black mt-1 text-blue-600">{it_comp_n}</div>', 1, "IT raqobatchilar"),
-        ('<span class="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-bold">🔥 10 HOT</span>',
-         f'<span class="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-bold">🔥 {hot_n} HOT</span>',
-         1, "tab badge HOT"),
-        ('<span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-bold">101k Baza</span>',
-         f'<span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-bold">{total_k} Baza</span>',
-         1, "tab badge baza"),
-        ('Jami bazadagi to\'liq xaridlar soni: <strong>101,851</strong> ta',
-         f'Jami bazadagi to\'liq xaridlar soni: <strong>{total_fmt}</strong> ta', 1, "eksport izoh"),
-        ('Jami <strong>41</strong> ta imkoniyat aniqlandi — <strong class="text-rose-600">🔥 10 ta HOT</strong> qayta xarid arafasida',
-         f'Jami <strong>{radar_n}</strong> ta imkoniyat aniqlandi — <strong class="text-rose-600">🔥 {hot_n} ta HOT</strong> qayta xarid arafasida',
-         1, "radar izoh"),
-        ('''onclick="filterRadarTable('hot')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200">🔥 HOT (10)</button>''',
-         f'''onclick="filterRadarTable('hot')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200">🔥 HOT ({hot_n})</button>''',
-         1, "HOT filtr tugmasi"),
+    def replace_regex(html_text, pattern, build_new, count, label):
+        """
+        Raqamlar har qayta ishga tushirishda o'zgarishi mumkin (41 -> 61 -> 56
+        kabi), shuning uchun qattiq eski-qiymat satri o'rniga STABIL HTML
+        qobig'iga (class nomi va h.k.) qarab regex bilan qidiriladi — necha
+        marta qayta ishga tushirilsa ham, joriy qiymatdan qat'i nazar to'g'ri
+        almashtiradi. Lambda ishlatiladi (re.sub satr emas!): satr sifatida
+        berilsa, "\\1" kabi qochish belgilari re moduli tomonidan qayta
+        talqin qilinib, natijani buzadi (bu loyihada avval haqiqiy xatoga
+        sabab bo'lgan).
+        """
+        matches = list(re.finditer(pattern, html_text))
+        if len(matches) != count:
+            raise SystemExit(f"XATO [{label}]: kutilgan {count} marta, "
+                             f"topilgani {len(matches)} marta (pattern: {pattern})")
+        return re.sub(pattern, lambda m: build_new(m), html_text, count=count)
+
+    # (regex, natija_quruvchi, soni, yorliq)
+    regex_repl = [
+        (r"bo'yicha \d+k\+ xaridlar, STIR tahlili",
+         lambda m: f"bo'yicha {total_k}+ xaridlar, STIR tahlili", 1, "hero matn"),
+        (r'(<div class="text-2xl font-black mt-1 text-slate-900">)[\d, ]+(</div>)',
+         lambda m: f"{m.group(1)}{total_fmt}{m.group(2)}", 1, "KPI jami"),
+        (r'(<div class="text-\[11px\] text-emerald-600 mt-1 font-medium">).*?(</div>)',
+         lambda m: f'{m.group(1)}{esc(h["source_breakdown"])}{m.group(2)}', 1, "manba taqsimoti"),
+        (r'(<div class="text-2xl font-black mt-1 text-teal-600">)[\d, ]+(</div>)',
+         lambda m: f"{m.group(1)}{comp_fmt}{m.group(2)}", 1, "kompaniyalar"),
+        (r'(<div class="text-2xl font-black mt-1 text-amber-600">)\d+(</div>)',
+         lambda m: f"{m.group(1)}{radar_n}{m.group(2)}", 1, "radar KPI"),
+        (r'(<div class="text-\[11px\] text-rose-600 mt-1 font-bold">🔥 )\d+( ta HOT \(Score ≥ 80\)</div>)',
+         lambda m: f"{m.group(1)}{hot_n}{m.group(2)}", 1, "HOT KPI"),
+        (r'(<div class="text-2xl font-black mt-1 text-indigo-600">)[\d, ]+(</div>)',
+         lambda m: f"{m.group(1)}{it_fmt}{m.group(2)}", 1, "IT xaridlar"),
+        (r'(<div class="text-2xl font-black mt-1 text-blue-600">)\d+(</div>)',
+         lambda m: f"{m.group(1)}{it_comp_n}{m.group(2)}", 1, "IT raqobatchilar"),
+        (r'(bg-rose-100 text-rose-700 font-bold">🔥 )\d+( HOT</span>)',
+         lambda m: f"{m.group(1)}{hot_n}{m.group(2)}", 1, "tab badge HOT"),
+        (r'(bg-blue-100 text-blue-700 font-bold">)\d+k( Baza</span>)',
+         lambda m: f"{m.group(1)}{total_k}{m.group(2)}", 1, "tab badge baza"),
+        (r"(Jami bazadagi to'liq xaridlar soni: <strong>)[\d, ]+(</strong> ta)",
+         lambda m: f"{m.group(1)}{total_fmt}{m.group(2)}", 1, "eksport izoh"),
+        (r'(Jami <strong>)\d+(</strong> ta imkoniyat aniqlandi — <strong class="text-rose-600">🔥 )\d+( ta HOT</strong>)',
+         lambda m: f"{m.group(1)}{radar_n}{m.group(2)}{hot_n}{m.group(3)}", 1, "radar izoh"),
+        (r'(bg-rose-100 text-rose-700 hover:bg-rose-200">🔥 HOT \()\d+(\)</button>)',
+         lambda m: f"{m.group(1)}{hot_n}{m.group(2)}", 1, "HOT filtr tugmasi"),
+        # "101 851" (bo'sh joy formatida) — qidiruv tab sarlavhasi va
+        # kompaniya modalida alohida qo'lda yozilgan, yuqoridagi vergulli
+        # almashtirish bularni qamramaydi.
+        (r"[\d]{1,3}(?: \d{3})* ta (Davlat Xaridlari Bo'yicha Qidiruv|lot\)|birja savdolari bazasi)",
+         lambda m: f"{total_space} ta {m.group(1)}", 4, "bo'sh joy formatidagi son"),
     ]
-    for old, new, count, label in repl:
-        text = replace_exact(text, old, new, count, label)
+    for pattern, build_new, count, label in regex_repl:
+        text = replace_regex(text, pattern, build_new, count, label)
+
     print(f"✅ sarlavha raqamlari yangilandi: jami={total_fmt}, kompaniya={comp_fmt}, "
           f"IT={it_fmt}, radar={radar_n} (HOT {hot_n})", file=sys.stderr)
 
