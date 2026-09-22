@@ -46,3 +46,4 @@ tender-radar/
 # Zaxira nusxalar va lokal jurnallar
 *.bak
 data/*.log
+exports/
