@@ -108,6 +108,58 @@ def replace_radar_tbody(html_text, radar_items):
     return new_text
 
 
+def build_customer_card(item):
+    name = esc(item["name"])
+    stir = esc(item["stir"])
+    region = esc(item.get("region") or "O'zbekiston")
+    proc_count = item["proc_count"]
+    spend_m = item["total_spend"] / 1_000_000.0
+    return f"""
+      <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2.5 hover:border-indigo-400 transition">
+        <div class="flex items-start justify-between gap-2">
+          <div class="font-bold text-xs text-slate-900 leading-snug">{name}</div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 whitespace-nowrap">{proc_count} ta xarid</span>
+        </div>
+        <div class="text-xs text-slate-500 font-mono">STIR: <strong class="text-slate-800">{stir}</strong> | {region}</div>
+        <div class="text-xs text-slate-600">Jami xarid summasi: <strong class="text-emerald-700 font-mono font-bold">{spend_m:,.1f} M so'm</strong></div>
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <button onclick="filterByCustInn('{stir}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            <span>Shartnomalarini ko'rish</span> <span>→</span>
+          </button>
+          <button onclick="copyToClipboard('{stir}')" class="text-[11px] text-slate-400 hover:text-slate-600">
+            📋 Nusxalash
+          </button>
+        </div>
+      </div>
+    """
+
+
+def replace_customers_grid(html_text, customers):
+    """
+    #customers-grid — Radar jadvali kabi statik HTML, JS massividan hech
+    qachon qayta yasalmagan edi (DOMContentLoaded uni render qilmaydi).
+    Natijada eskirgan kartalar va ba'zi tugmalarda bo'sh STIR
+    (filterByCustInn('')) qolib ketgan — ular bosilganda filtr ishlamaydi.
+
+    Yopilish tegi butun faylda noyob emas (bir nechta joyda xuddi shu
+    bo'shliq ketma-ketligi uchraydi), shuning uchun regex o'rniga: noyob
+    BOSHLANISH tegining pozitsiyasidan keyin BIRINCHI mos yopilish
+    ketma-ketligini qidiramiz — bu doim to'g'ri qamrovni topadi.
+    """
+    start_tag = '<div id="customers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">'
+    close_seq = "        </div>\n      </div>\n\n      <!-- ======="
+
+    start_count = html_text.count(start_tag)
+    if start_count != 1:
+        raise SystemExit(f"XATO: customers-grid boshlanish tegi {start_count} marta topildi (1 kutilgan)")
+
+    start_idx = html_text.index(start_tag) + len(start_tag)
+    close_idx = html_text.index(close_seq, start_idx)
+
+    cards = "".join(build_customer_card(c) for c in customers)
+    return html_text[:start_idx] + cards + html_text[close_idx:]
+
+
 def replace_exact(html_text, old, new, count=1, label=""):
     n = html_text.count(old)
     if n != count:
@@ -134,9 +186,12 @@ def main():
     text = replace_js_array(text, "ALL_COMPETITORS", data["ALL_COMPETITORS"], 1)
     print(f"✅ 5 ta JS massiv yangilandi", file=sys.stderr)
 
-    # ── 2) Radar jadvalining statik qatorlari ───────────────────────────────
+    # ── 2) Radar jadvali va mijozlar panelining statik qatorlari ────────────
     text = replace_radar_tbody(text, data["RADAR_ITEMS"])
     print(f"✅ Radar jadvali qayta yasaldi ({len(data['RADAR_ITEMS'])} qator)", file=sys.stderr)
+
+    text = replace_customers_grid(text, data["TOP_CUSTOMERS"])
+    print(f"✅ Mijozlar paneli qayta yasaldi ({len(data['TOP_CUSTOMERS'])} karta)", file=sys.stderr)
 
     # ── 3) Sarlavha raqamlari ────────────────────────────────────────────
     total_fmt = h["total_lots_fmt"]
