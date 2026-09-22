@@ -37,6 +37,11 @@ else
         echo "$TODAY" > "$APP_DIR/data/last_sync_day"
         echo "$(date '+%Y-%m-%d %H:%M') kundalik sync boshlandi" >> "$APP_DIR/data/sync_cron.log"
         "$PY" run_sync.py 150 20 >> "$APP_DIR/data/sync_cron.log" 2>&1
+        # Yangi kelgan lotlarni IT/IT-emas deb tasniflash — busiz ular
+        # is_it=NULL holida qolib, /it/ sahifasida va IT raqobatchilar
+        # qidiruvida hafta bo'lib ko'rinmay qolardi (faqat haftalik
+        # cooperation sinxronizatsiyasi tasodifan tasniflardi).
+        "$PY" classify_it.py 50000 >> "$APP_DIR/data/sync_cron.log" 2>&1
         echo "$(date '+%Y-%m-%d %H:%M') kundalik sync tugadi" >> "$APP_DIR/data/sync_cron.log"
     fi
 fi
