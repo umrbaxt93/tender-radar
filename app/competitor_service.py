@@ -9,13 +9,24 @@ from typing import Dict, Any, List, Optional
 from app.config import DB_PATH
 from app.date_utils import calculate_accurate_end_date
 
-IT_SEARCH_KEYWORDS = [
-    "server", "litsenziya", "dastur", "kompyuter", "noutbuk",
-    "printer", "tarmoq", "antivirus", "cctv", "kamera",
-    "kartridj", "monitoring", "cloud", "telekom", "erp",
-    "crm", "texnik", "internet", "proyektor", "1c",
-    "modem", "router", "switch", "ssd", "hdd", "axborot", "informatika"
-]
+# G'oliblarni topish uchun ikkita maydon bor: `supplier_inn`/`supplier_name`
+# (yangi manbalar — E-Birja, XT-Xarid) va `winner_name` (asosan UZEX, INN'siz,
+# faqat matn). Bazaning yarmidan ko'pi (UZEX, 73k+ yozuv) faqat winner_name'ga
+# ega — faqat supplier_inn'ga qaraladigan eski so'rov shu manbani BUTUNLAY
+# tashlab ketardi (tekshirildi: haqiqiy 20+ g'alabasi bo'lgan kompaniya
+# "3 ta g'alaba" deb ko'rsatilgan edi).
+_WINNER_PRESENT = (
+    "((supplier_inn IS NOT NULL AND supplier_inn != '') "
+    " OR (supplier_name IS NOT NULL AND supplier_name != '') "
+    " OR (winner_name IS NOT NULL AND winner_name != ''))"
+)
+# INN bo'lsa shu bo'yicha, bo'lmasa (asosan UZEX) nom bo'yicha guruhlash —
+# aks holda INN'siz yozuvlar butunlay yo'qolib qolardi.
+_GROUP_KEY = (
+    "COALESCE(NULLIF(supplier_inn,''), "
+    "'N:' || lower(COALESCE(NULLIF(supplier_name,''), winner_name)))"
+)
+_AMOUNT = "COALESCE(final_price, contract_amount, start_price, 0)"
 
 
 def search_competitors(
@@ -27,7 +38,10 @@ def search_competitors(
     """
     Raqobatchilarni qidirish:
     - mode == 'it': Faqat IT yo'nalishidagi lotlarda yutgan korxonalar
-    - mode == 'all': Barcha birja savdolari (101k+ lot, 14k+ korxona)
+      (lots.is_it — app/full_it_seeder.py bilan bir xil, oldindan hisoblangan
+      tasnif; ilgari bu yerda alohida, sinovdan o'tmagan kalit so'zlar
+      ro'yxati bor edi)
+    - mode == 'all': Barcha birja savdolari
     - query: STIR yoki korxona nomi
     """
     limit = min(max(int(limit), 10), 100)
@@ -38,41 +52,45 @@ def search_competitors(
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    where_clauses = ["supplier_inn IS NOT NULL AND supplier_inn != ''"]
+    where_clauses = [_WINNER_PRESENT]
     params: List[Any] = []
 
     if mode == "it":
-        it_clause = " OR ".join(["lower(title) LIKE ?" for _ in IT_SEARCH_KEYWORDS])
-        where_clauses.append(f"({it_clause})")
-        params.extend([f"%{kw}%" for kw in IT_SEARCH_KEYWORDS])
+        where_clauses.append("is_it = 1")
 
     if query and query.strip():
         q = query.strip()
         clean_q = q.replace('"', '').replace("'", "")
-        where_clauses.append("(supplier_inn LIKE ? OR lower(supplier_name) LIKE ?)")
-        params.extend([f"%{q}%", f"%{clean_q.lower()}%"])
+        where_clauses.append(
+            "(supplier_inn LIKE ? OR lower(supplier_name) LIKE ? OR lower(winner_name) LIKE ?)"
+        )
+        params.extend([f"%{q}%", f"%{clean_q.lower()}%", f"%{clean_q.lower()}%"])
 
     where_sql = " AND ".join(where_clauses)
 
-    # Jami soni
-    cursor.execute(f"SELECT COUNT(DISTINCT supplier_inn) FROM lots WHERE {where_sql}", params)
+    # Jami soni (noyob raqobatchi, guruhlash kaliti bo'yicha)
+    cursor.execute(f"SELECT COUNT(DISTINCT {_GROUP_KEY}) FROM lots WHERE {where_sql}", params)
     total_count = cursor.fetchone()[0]
 
-    # Saralangan ro'yxat
+    # Saralangan ro'yxat. avg_discount_pct: haqiqiy start>final solishtirilgan
+    # yozuvlar bo'yichagina hisoblanadi (SQL AVG NULL'larni o'zi e'tiborsiz
+    # qoldiradi) — ilgari solishtirish imkonsiz bo'lgan holatda ham 8.5%
+    # degan o'ylab topilgan son qo'yilardi, bu haqiqiy ma'lumot sifatida
+    # ko'rsatilardi.
     sql = f"""
-        SELECT 
-            COALESCE(MAX(supplier_name), 'Noma''lum') as name,
-            supplier_inn as stir,
+        SELECT
+            COALESCE(NULLIF(MAX(supplier_name),''), MAX(winner_name), 'Noma''lum') as name,
+            COALESCE(NULLIF(MAX(supplier_inn),''), '') as stir,
             COUNT(*) as wins_count,
-            SUM(COALESCE(final_price, contract_amount, 0)) as total_won,
+            SUM({_AMOUNT}) as total_won,
             MAX(COALESCE(contract_date, announcement_date)) as last_win,
             COUNT(DISTINCT buyer_inn) as unique_buyers,
-            ROUND(AVG(CASE WHEN start_price > 0 AND final_price > 0 AND start_price > final_price 
-                           THEN ((start_price - final_price) * 100.0 / start_price) 
-                           ELSE 8.5 END), 1) as avg_discount_pct
+            ROUND(COALESCE(AVG(CASE WHEN start_price > 0 AND {_AMOUNT} > 0 AND start_price > {_AMOUNT}
+                           THEN ((start_price - {_AMOUNT}) * 100.0 / start_price)
+                           ELSE NULL END), 0), 1) as avg_discount_pct
         FROM lots
         WHERE {where_sql}
-        GROUP BY supplier_inn
+        GROUP BY {_GROUP_KEY}
         ORDER BY total_won DESC
         LIMIT ? OFFSET ?;
     """
@@ -108,63 +126,71 @@ def get_competitor_deep_intel(q_inn_or_name: str) -> Dict[str, Any]:
         conn.close()
         return {"success": False, "error": "STIR yoki korxona nomi kiritilmadi"}
 
+    # `winner_name`ga ham qarash SHART: UZEX yozuvlarining aksariyatida
+    # supplier_inn/supplier_name umuman yo'q, faqat winner_name (matn) bor —
+    # busiz bu yozuvlar qidiruvda ko'rinmasdi.
+    supplier_match = "(l.supplier_inn = ? OR lower(l.supplier_name) LIKE ? OR lower(l.winner_name) LIKE ?)"
+    supplier_params = (q, f"%{clean_q.lower()}%", f"%{clean_q.lower()}%")
+
     # 1. Supplier sifatida tekshirish (Yetkazib beruvchi / G'olib bo'lgan lotlar)
-    cursor.execute("""
-        SELECT 
+    cursor.execute(f"""
+        SELECT
             COALESCE(l.buyer_inn, 'Noma''lum') as org_inn,
             COALESCE(l.buyer_name, 'Noma''lum') as org_name,
             'Buyurtmachi (Mijoz)' as org_role,
             COUNT(*) as lot_count,
-            SUM(COALESCE(l.final_price, l.contract_amount, 0)) as total_sum,
+            SUM({_AMOUNT}) as total_sum,
             MIN(COALESCE(l.contract_date, l.announcement_date)) as first_date,
             MAX(COALESCE(l.contract_date, l.announcement_date)) as last_date
         FROM lots l
-        WHERE l.supplier_inn = ? OR lower(l.supplier_name) LIKE ?
+        WHERE {supplier_match}
         GROUP BY COALESCE(l.buyer_inn, l.buyer_name)
         ORDER BY total_sum DESC;
-    """, (q, f"%{clean_q.lower()}%"))
+    """, supplier_params)
     supplier_orgs = [dict(r) for r in cursor.fetchall()]
 
-    cursor.execute("""
-        SELECT 
+    cursor.execute(f"""
+        SELECT
             l.id, l.lot_number, l.title, l.lot_category,
             l.buyer_name, l.buyer_inn, l.platform_id,
-            COALESCE(l.final_price, l.contract_amount, 0) as contract_amount,
+            {_AMOUNT} as contract_amount,
             l.start_price, l.contract_date, l.license_end_date,
-            l.supplier_name as winner_name, l.supplier_inn as winner_inn,
+            COALESCE(NULLIF(l.supplier_name,''), l.winner_name) as winner_name,
+            l.supplier_inn as winner_inn,
             l.has_contract, l.source_url, l.announcement_date,
             'supplier' as my_role
         FROM lots l
-        WHERE l.supplier_inn = ? OR lower(l.supplier_name) LIKE ?
+        WHERE {supplier_match}
         ORDER BY COALESCE(l.contract_date, l.announcement_date) DESC
         LIMIT 500;
-    """, (q, f"%{clean_q.lower()}%"))
+    """, supplier_params)
     supplier_lots = [dict(r) for r in cursor.fetchall()]
 
     # 2. Buyer sifatida tekshirish (Buyurtmachi bo'lgan lotlar)
-    cursor.execute("""
-        SELECT 
-            COALESCE(l.supplier_inn, 'Noma''lum') as org_inn,
-            COALESCE(l.supplier_name, 'Noma''lum') as org_name,
+    cursor.execute(f"""
+        SELECT
+            COALESCE(NULLIF(l.supplier_inn,''), 'N:'||lower(COALESCE(NULLIF(l.supplier_name,''), l.winner_name))) as org_inn,
+            COALESCE(NULLIF(l.supplier_name,''), l.winner_name, 'Noma''lum') as org_name,
             'Yetkazib beruvchi (G''olib)' as org_role,
             COUNT(*) as lot_count,
-            SUM(COALESCE(l.final_price, l.contract_amount, 0)) as total_sum,
+            SUM({_AMOUNT}) as total_sum,
             MIN(COALESCE(l.contract_date, l.announcement_date)) as first_date,
             MAX(COALESCE(l.contract_date, l.announcement_date)) as last_date
         FROM lots l
         WHERE l.buyer_inn = ? OR lower(l.buyer_name) LIKE ?
-        GROUP BY COALESCE(l.supplier_inn, l.supplier_name)
+        GROUP BY org_inn
         ORDER BY total_sum DESC;
     """, (q, f"%{clean_q.lower()}%"))
     buyer_orgs = [dict(r) for r in cursor.fetchall()]
 
-    cursor.execute("""
-        SELECT 
+    cursor.execute(f"""
+        SELECT
             l.id, l.lot_number, l.title, l.lot_category,
             l.buyer_name, l.buyer_inn, l.platform_id,
-            COALESCE(l.final_price, l.contract_amount, 0) as contract_amount,
+            {_AMOUNT} as contract_amount,
             l.start_price, l.contract_date, l.license_end_date,
-            l.supplier_name as winner_name, l.supplier_inn as winner_inn,
+            COALESCE(NULLIF(l.supplier_name,''), l.winner_name) as winner_name,
+            l.supplier_inn as winner_inn,
             l.has_contract, l.source_url, l.announcement_date,
             'buyer' as my_role
         FROM lots l
