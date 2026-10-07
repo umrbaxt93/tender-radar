@@ -44,7 +44,7 @@ Ushbu hujjat **Claude Code**, **Codex**, **Antigravity** va boshqa barcha AI age
 ---
 
 ## 5. BITRIX24 INTEGRATSIYASI
-- **Bitrix24 Webhook:** `https://softytest.bitrix24.uz/rest/22/zc9msevile69qb6l`
+- **Bitrix24 Webhook:** `~/.gemini/config/mcp_servers/bitrix24/credentials.json` faylidagi `webhook_url` (yoki `BITRIX_WEBHOOK` muhit o'zgaruvchisi) — URL'ni bu yerga yozmang
 - **Mas'ul xodim (Umidjon Fatullaev):** `ID: 22` (Topshiriqlar Umid nomidan Umidga yuklanadi, admin aralashmaydi).
 - **Qayta yubormaslik qoidasi:** 1 marta Bitrix24 ga yuborilgan topshiriq bazaga (`tasks_and_proposals`) yoziladi va platformada "✅ Yuborilgan" deb belgilanadi, qayta yuborilmaydi.
 - **Topshiriq formati:** AI radar tavsiyasi, imkoniyat balli kabi shovqin so'zlarsiz, aniq va litsenziyani avval kim yetkazib bergani haqidagi qisqa va lo'nda faktlar bilan ochiladi.
@@ -71,3 +71,7 @@ Ushbu hujjat **Claude Code**, **Codex**, **Antigravity** va boshqa barcha AI age
 - **1 marta buyruq berilganda 100% mustaqil yakunlash:** Oraliq to'xtashlarsiz barcha bosqichlarni to'liq oxirigacha yetkazing.
 - **Texnik to'siqlarni mustaqil bartaraf etish:** Muammolar chiqsa, barcha mavjud vositalar orqali mustaqil yechim topib davom eting.
 - **Doimo tekshirilgan va ishlaydigan natija taqdim eting.**
+
+## Ma'lumotlar joyi (2026-10-06)
+- Barcha ma'lumotlar xaritasi: `data/README_MALUMOTLAR.md`. Davlat xaridlari uchun asosiy tizim — `tender-radar/` (PostgreSQL); eski platforma birlashtirilmoqda (`BIRLASHTIRISH_REJASI.md`).
+- Yangi tahlil va eksport fayllarini `~/.gemini/antigravity/scratch` ga emas, `data/` ichiga saqlang.

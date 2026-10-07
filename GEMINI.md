@@ -11,3 +11,7 @@
 - Run checks relevant to changed scaffold/automation. Report what was verified and what remains blocked. A model's successful exit is not product completion.
 - STATUS: DONE is reserved for independently verified application Definition of Done. Scaffold readiness is tracked separately.
 - Antigravity is optional, user-operated and not an unattended cloud dependency.
+
+## Ma'lumotlar joyi (2026-10-06)
+- Barcha ma'lumotlar xaritasi: `data/README_MALUMOTLAR.md`. Davlat xaridlari uchun asosiy tizim — `tender-radar/` (PostgreSQL); eski platforma birlashtirilmoqda (`BIRLASHTIRISH_REJASI.md`).
+- Yangi tahlil va eksport fayllarini `~/.gemini/antigravity/scratch` ga emas, `data/` ichiga saqlang.

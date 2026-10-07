@@ -47,3 +47,19 @@ tender-radar/
 *.bak
 data/*.log
 exports/
+
+# --- 2026-10-06 (Claude): sync_deploy.sh dagi `git add -A` GitHub'ga yubormasin ---
+# Alohida loyiha (o'z .env, hh.uz brauzer profili, nomzodlar bazasi bor)
+Softy xodim yollash/
+# Virtual muhitlar
+.venv/
+venv/
+# Shaxsiy hujjatlar (kadastr, soliq va h.k.) — repo ildizidagi PDF/DOCX
+/*.pdf
+/*.docx
+# E-IMZO sessiya tokeni va xato jurnallari
+data/eimzo_session.json
+data/*.err
+
+# Arxivlangan tahlil va moliya fayllari (GitHub'ga yuborilmaydi)
+data/arxiv/

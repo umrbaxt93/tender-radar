@@ -23,7 +23,7 @@
 <body class="bg-slate-50 text-slate-900 antialiased min-h-screen">
 
   <!-- ======================================================= -->
-  <!-- 1. AUTH GATEWAY (2-STEP LOGIN & GMAIL OTP VERIFICATION) -->
+  <!-- 1. AUTH GATEWAY (XAVFSIZ LOGIN VA PAROL BILAN KIRISH)   -->
   <!-- ======================================================= -->
   <div id="login-view" class="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
@@ -34,7 +34,7 @@
         </div>
         <h2 class="text-2xl font-black tracking-tight text-slate-900">SOFTY & TENDER RADAR</h2>
         <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Yagona Davlat Xaridlari Razvedkasi Platformasi</p>
-        <p class="text-xs text-slate-500">2-bosqichli tasdiqlash bilan himoyalangan kirish</p>
+        <p class="text-xs text-slate-500 font-medium">🔒 Xavfsiz Tizimga Kirish (Login & Parol)</p>
       </div>
 
       <div id="login-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
@@ -42,7 +42,7 @@
         <span id="login-error-msg">Noto'g'ri login yoki parol kiritildi!</span>
       </div>
 
-      <!-- STEP 1: LOGIN & PASSWORD FORM -->
+      <!-- LOGIN & PASSWORD FORM -->
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Login (Foydalanuvchi)</label>
@@ -64,48 +64,14 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-          <span class="text-xs text-slate-600 font-medium">Meni eslab qolish</span>
+          <input type="checkbox" id="login-remember" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+          <label for="login-remember" class="text-xs text-slate-600 font-medium cursor-pointer">Meni eslab qolish</label>
         </div>
 
         <button type="submit" id="login-btn" class="w-full py-3 px-4 bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-950/20 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
           <span id="login-btn-text">Tizimga Kirish →</span>
         </button>
       </form>
-
-      <!-- STEP 2: GMAIL OTP VERIFICATION (umrbaxt93@gmail.com) -->
-      <div id="otp-form-block" class="hidden space-y-4">
-        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center space-y-1.5">
-          <div class="text-3xl">📧</div>
-          <div class="text-sm font-bold text-blue-900">Tasdiqlash kodi yuborildi!</div>
-          <div class="text-xs text-blue-700">
-            Sizning <strong>umrbaxt93@gmail.com</strong> pochtangizga<br>6 xonali tasdiqlash kodi yuborildi.
-          </div>
-          <div class="text-[11px] text-blue-600 font-mono bg-blue-100/60 rounded px-2.5 py-0.5 inline-block mt-1">
-            ⏱ Kod 5 daqiqa davomida amal qiladi
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-2 text-center">📱 Tasdiqlash Kodini Kiriting</label>
-          <input type="text" id="otp-code" maxlength="6" inputmode="numeric" placeholder="• • • • • •"
-            onkeyup="if(this.value.length===6) handleOtpVerify()"
-            class="w-full text-center text-3xl tracking-[0.4em] font-mono py-3.5 bg-slate-50 border-2 border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-500 transition">
-        </div>
-
-        <div id="otp-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-          ⚠️ Kod noto'g'ri yoki muddati tugagan!
-        </div>
-
-        <button onclick="handleOtpVerify()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20">
-          <span>✅ Kodni Tasdiqlash va Kirish</span>
-        </button>
-
-        <div class="flex items-center justify-between text-xs pt-1">
-          <button onclick="cancelOtp()" class="text-slate-500 hover:text-slate-700 underline">← Parolga qaytish</button>
-          <button onclick="resendOtp()" class="text-indigo-600 hover:text-indigo-800 underline font-semibold">🔄 Kodni qayta yuborish</button>
-        </div>
-      </div>
 
       <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
         <span>🛡️ 256-bit Xavfsiz Tizim</span>
@@ -141,9 +107,9 @@
           👤 <span id="user-badge-name">Umidjon (Softy Admin)</span>
         </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-          🛡️ Gmail 2FA Tasdiqlangan
+          🔒 Xavfsiz Sessiya
         </span>
-        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition flex items-center gap-1">
+        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition flex items-center gap-1 cursor-pointer">
           <span>🚪 Chiqish</span>
         </button>
       </div>
@@ -2472,21 +2438,48 @@
       }
     }
 
-    // 1. AUTHENTICATION (GMAIL OTP 2FA)
-    function checkAuth() {
+    // 1. AUTHENTICATION & SESSION MANAGEMENT
+    async function checkAuth() {
       const stored = localStorage.getItem('softy_token') || sessionStorage.getItem('softy_token');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          _authToken = parsed.token;
-          _userInfo = parsed.user;
-          document.getElementById('login-view').classList.add('hidden');
-          document.getElementById('app-view').classList.remove('hidden');
-          const nm = (_userInfo && (_userInfo.full_name || _userInfo.username)) || 'Admin';
-          document.getElementById('user-badge-name').innerText = nm;
-          return true;
+          if (parsed && parsed.token) {
+            _authToken = parsed.token;
+            _userInfo = parsed.user;
+
+            // Serverda tokenni tekshirish (haqiqatan faolmi)
+            try {
+              const resp = await fetch(API + '/api/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + _authToken }
+              });
+              if (resp.ok) {
+                const check = await resp.json();
+                if (check && check.authenticated) {
+                  document.getElementById('login-view').classList.add('hidden');
+                  document.getElementById('app-view').classList.remove('hidden');
+                  const nm = (check.user && (check.user.full_name || check.user.username)) || 'Admin';
+                  document.getElementById('user-badge-name').innerText = nm;
+                  return true;
+                }
+              }
+            } catch(netErr) {
+              // Vaqtincha oflayn/tarmoq holatida: oxirgi 24 soatlik bo'lsa qoldirish
+              if (parsed.ts && (Date.now() - parsed.ts < 24 * 3600 * 1000)) {
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('hidden');
+                return true;
+              }
+            }
+          }
         } catch(e) {}
       }
+
+      // Sessiya yo'q yoki eskirgan -> Login oynasini ko'rsatish
+      localStorage.removeItem('softy_token');
+      sessionStorage.removeItem('softy_token');
+      _authToken = null;
+      _userInfo = null;
       document.getElementById('login-view').classList.remove('hidden');
       document.getElementById('app-view').classList.add('hidden');
       return false;
@@ -2518,7 +2511,6 @@
         });
         const data = await resp.json();
 
-        // 1. To'g'ridan-to'g'ri muvaffaqiyatli kirish (login va parol to'g'ri bo'lganda)
         if (data.success && data.token) {
           const remember = document.getElementById('login-remember') && document.getElementById('login-remember').checked;
           const saved = JSON.stringify({ token: data.token, user: data.user, ts: Date.now() });
@@ -2529,86 +2521,25 @@
           }
           _authToken = data.token;
           _userInfo = data.user;
-          checkAuth();
+          document.getElementById('login-view').classList.add('hidden');
+          document.getElementById('app-view').classList.remove('hidden');
+          const nm = (_userInfo && (_userInfo.full_name || _userInfo.username)) || 'Admin';
+          document.getElementById('user-badge-name').innerText = nm;
+          applyExportFilters();
+          initCompetitors();
+          loadSentTasks();
           return;
-        }
-
-        // 2. Agar OTP talab qilinsa (zaxira holat)
-        if (data.success && data.step === 'otp_required') {
-          _pendingUsername = data.username || user;
-          document.getElementById('login-form').classList.add('hidden');
-          document.getElementById('otp-form-block').classList.remove('hidden');
-          document.getElementById('otp-code').value = '';
-          document.getElementById('otp-code').focus();
-        } else if (!data.success) {
+        } else {
           errEl.classList.remove('hidden');
-          document.getElementById('login-error-msg').innerText = data.error || "Login yoki parol noto'g'ri!";
+          document.getElementById('login-error-msg').innerText = data.error || "Login yoki parol noto'g'ri kiritildi!";
         }
       } catch(err) {
         errEl.classList.remove('hidden');
-        document.getElementById('login-error-msg').innerText = "Server xatosi. Iltimos qaytadan urinib ko'ring.";
+        document.getElementById('login-error-msg').innerText = "Server bilan aloqa xatosi. Iltimos, qaytadan urinib ko'ring.";
       } finally {
         btnTxt.innerText = 'Tizimga Kirish →';
         btn.disabled = false;
       }
-    }
-
-    async function handleOtpVerify() {
-      const code = (document.getElementById('otp-code').value || '').trim();
-      const otpErr = document.getElementById('otp-error');
-      otpErr.classList.add('hidden');
-
-      if (!code || code.length < 4) {
-        otpErr.classList.remove('hidden');
-        return;
-      }
-
-      try {
-        const resp = await fetch(API + '/api/auth/verify-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: _pendingUsername, code: code })
-        });
-        const data = await resp.json();
-
-        if (data.success && data.token) {
-          const remember = document.getElementById('login-remember') && document.getElementById('login-remember').checked;
-          const saved = JSON.stringify({ token: data.token, user: data.user, ts: Date.now() });
-          if (remember) {
-            localStorage.setItem('softy_token', saved);
-          } else {
-            sessionStorage.setItem('softy_token', saved);
-          }
-          _authToken = data.token;
-          _userInfo = data.user;
-          cancelOtp();
-          checkAuth();
-        } else {
-          otpErr.classList.remove('hidden');
-        }
-      } catch(err) {
-        otpErr.classList.remove('hidden');
-      }
-    }
-
-    function cancelOtp() {
-      document.getElementById('login-form').classList.remove('hidden');
-      document.getElementById('otp-form-block').classList.add('hidden');
-      _pendingUsername = '';
-    }
-
-    async function resendOtp() {
-      if (!_pendingUsername) return;
-      const user = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value;
-      try {
-        await fetch(API + '/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user, password: pass })
-        });
-        alert('✅ Yangi kod yuborildi! umrbaxt93@gmail.com pochtangizni tekshiring.');
-      } catch(e) { alert('Xatolik yuz berdi.'); }
     }
 
     async function handleLogout() {
@@ -2624,8 +2555,12 @@
       }
       localStorage.removeItem('softy_token');
       sessionStorage.removeItem('softy_token');
-      _authToken = null; _userInfo = null;
-      checkAuth();
+      _authToken = null;
+      _userInfo = null;
+      document.getElementById('login-view').classList.remove('hidden');
+      document.getElementById('app-view').classList.add('hidden');
+      document.getElementById('login-user').value = '';
+      document.getElementById('login-pass').value = '';
     }
 
     function getAuthHeaders() {
@@ -3780,11 +3715,13 @@
     }
 
     // INITIALIZATION ON LOAD
-    window.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
-      applyExportFilters();
-      initCompetitors();
-      loadSentTasks();
+    window.addEventListener('DOMContentLoaded', async () => {
+      const isAuthed = await checkAuth();
+      if (isAuthed) {
+        applyExportFilters();
+        initCompetitors();
+        loadSentTasks();
+      }
     });
   </script>
 </body>
