@@ -175,3 +175,71 @@ def test_import_ebirja_records_idempotency(memory_session: Session) -> None:
 
     total_procs = memory_session.scalars(select(Procedure)).all()
     assert len(total_procs) == 1
+
+
+def test_parse_ebirja_auction_keeps_live_auctions_out_of_the_renewal_radar() -> None:
+    """An open auction is a lead, not a finished contract, and must not look like one."""
+    rec = parse_ebirja_auction(
+        {
+            "id": 1328,
+            "lot": "26521007051072",
+            "title": "Maxsus kiyim va anjomlari.",
+            "company": {
+                "title": "TELECOM SOFT MCHJ",
+                "tin": "310778664",
+                # Contact, banking and personal details travel in this payload; the parser
+                # must leave every one of them where it found them (docs/PRIVACY.md).
+                # These three values are invented -- a test that proves contact details are
+                # not stored must not be the thing that stores a real one.
+                "phone": "998900000000",
+                "account": "00000000000000000000",
+                "director": "SINOV FAMILIYA SINOVOVICH",
+            },
+            "region": {"title_uz": "Toshkent shahri"},
+            "begin_date": "2026-11-10 11:52:03",
+            "auction_end": "2026-11-17 11:52:03",
+            "position_count": 12,
+            "total_sum": 134273050,
+            "current_price": 134273050,
+        }
+    )
+    assert rec is not None
+    # No award and no completion date: compute_renewals only ever sees finished contracts.
+    assert rec.award is None
+    assert rec.completed_at is None
+    assert rec.status == "ACTIVE"
+    assert rec.deadline_at is not None
+    assert rec.customer_region == "Toshkent shahri"
+
+    # position_count counts the auction's positions and total_sum is the auction total, so
+    # neither may be stored as a quantity, a unit or a unit price.
+    (item,) = rec.items
+    assert item.raw_name == "Maxsus kiyim va anjomlari."
+    assert item.quantity is None
+    assert item.unit is None
+    assert item.unit_price_raw is None
+
+    blob = rec.model_dump_json()
+    for secret in ("998900000000", "00000000000000000000", "SINOV FAMILIYA"):
+        assert secret not in blob
+
+
+def test_parse_ebirja_auction_skips_a_row_with_no_title() -> None:
+    """A placeholder title would be noise in the one field classification reads."""
+    assert parse_ebirja_auction({"id": 77, "lot": "265210", "total_sum": 1000}) is None
+    assert parse_ebirja_auction({"id": 77, "lot": "265210", "title": "   "}) is None
+
+
+def test_fetch_active_auctions_pages_on_the_parameters_the_endpoint_reads() -> None:
+    """page/size were accepted and ignored, so every call used to return page 0."""
+    from radar.source.ebirja import EbirjaClient
+
+    seen: dict[str, object] = {}
+    client = EbirjaClient()
+    client._request = lambda endpoint, params=None: seen.update(  # type: ignore[method-assign]
+        endpoint=endpoint, params=params
+    ) or {"result": {"data": [], "meta": {}}}
+
+    client.fetch_active_auctions(page=2, per_page=50)
+    assert seen["endpoint"] == "/auction/auction/active"
+    assert seen["params"] == {"currentPage": 2, "perPage": 50}

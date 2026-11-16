@@ -159,3 +159,82 @@ def test_the_cycle_recomputes_the_radar(monkeypatch):
 def test_refresh_renewals_rebuilds_from_current_classifications(wired, monkeypatch):
     monkeypatch.setattr(worker, "compute_renewals", lambda session: 5)
     assert worker.refresh_renewals() == 5
+
+
+def test_collect_treats_a_refused_endpoint_as_no_page_not_an_empty_one():
+    """A CAPTCHA wall or a withdrawn route must stop paging, not read as the last page."""
+    records: list = []
+    meta = worker._collect(
+        records,
+        "auctions p0",
+        lambda: {
+            "error": "HTTP 403",
+            "http_status": 403,
+            "message": "Captcha tekshiruvi muvaffaqiyatsiz",
+            "result": {"data": [], "meta": {"totalCount": 0}},
+        },
+        lambda it: it,
+    )
+    assert meta == {}
+    assert records == []
+
+
+def test_sync_ebirja_pages_through_the_auction_list(monkeypatch):
+    pages = {
+        0: {"result": {"data": [{"id": 1}, {"id": 2}], "meta": {"pageCount": 2}}},
+        1: {"result": {"data": [{"id": 3}], "meta": {"pageCount": 2}}},
+    }
+    asked: list[int] = []
+
+    class Client:
+        def fetch_active_auctions(self, page=0, per_page=20, search=None):
+            asked.append(page)
+            return pages.get(page, {"result": {"data": [], "meta": {"pageCount": 2}}})
+
+    monkeypatch.setattr(worker, "EbirjaClient", Client)
+    monkeypatch.setattr(worker, "parse_ebirja_auction", lambda row: row)
+    imported: list = []
+    monkeypatch.setattr(
+        worker,
+        "import_ebirja_records",
+        lambda s, r: (imported.extend(r), {"inserted": len(r)})[1],
+    )
+
+    assert worker.sync_ebirja() == 3
+    assert asked == [0, 1]
+    assert [r["id"] for r in imported] == [1, 2, 3]
+
+
+def test_sync_ebirja_writes_nothing_when_the_endpoint_refuses(monkeypatch):
+    class Blocked:
+        def fetch_active_auctions(self, page=0, per_page=20, search=None):
+            return {
+                "error": "HTTP 404",
+                "http_status": 404,
+                "message": "Page not found.",
+                "result": {"data": [], "meta": {"totalCount": 0}},
+            }
+
+    monkeypatch.setattr(worker, "EbirjaClient", Blocked)
+    called: list = []
+    monkeypatch.setattr(worker, "import_ebirja_records", lambda *a, **k: called.append(a) or {})
+
+    assert worker.sync_ebirja() == 0
+    assert called == []
+
+
+def test_deploy_error_reports_scp_stderr_with_the_remediation():
+    """The old check=True hid scp's reason, leaving only "exit status 1" in the log."""
+    import subprocess
+
+    failed = subprocess.CompletedProcess(
+        args=["scp"], returncode=1, stdout="", stderr="scp: Connection closed\n"
+    )
+    msg = worker._deploy_error(failed)
+    assert "Connection closed" in msg
+    assert "SSH Access" in msg
+
+    other = subprocess.CompletedProcess(
+        args=["scp"], returncode=1, stdout="", stderr="No such file or directory"
+    )
+    assert "SSH Access" not in worker._deploy_error(other)

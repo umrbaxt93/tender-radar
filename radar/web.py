@@ -658,7 +658,7 @@ async def api_ebirja_sync(
     from radar.source.ebirja import (
         EbirjaClient,
         import_ebirja_records,
-        parse_ebirja_contract,
+        parse_ebirja_auction,
     )
 
     is_json = request.headers.get("content-type", "").startswith("application/json")
@@ -669,11 +669,22 @@ async def api_ebirja_sync(
     client = EbirjaClient()
     records = []
 
-    shop_res = client.fetch_shop_contracts(
-        page=0, per_page=min(limit, 50), search=search_term, shop_type="e-shop"
-    )
-    for item in shop_res.get("result", {}).get("data", []):
-        records.append(parse_ebirja_contract(item, contract_type="Shop"))
+    # Reads live auctions, not the shop contract list: that route was withdrawn and its
+    # neighbours now sit behind a CAPTCHA, so this button used to import nothing and say "ok".
+    res = client.fetch_active_auctions(page=0, per_page=min(limit, 50), search=search_term)
+    if res.get("http_status"):
+        return JSONResponse(
+            {
+                "status": "unavailable",
+                "detail": res.get("message") or res.get("error") or "source refused the request",
+                "fetched_count": 0,
+            },
+            status_code=502,
+        )
+    for item in res.get("result", {}).get("data", []):
+        rec = parse_ebirja_auction(item)
+        if rec is not None:
+            records.append(rec)
 
     with session_scope() as session:
         stats = import_ebirja_records(session, records)

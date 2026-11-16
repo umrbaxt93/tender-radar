@@ -26,7 +26,7 @@ from radar.search import (
 from radar.source.ebirja import (
     EbirjaClient,
     import_ebirja_records,
-    parse_ebirja_contract,
+    parse_ebirja_auction,
 )
 from radar.source.uzex import (
     UzexClient,
@@ -56,56 +56,72 @@ logging.basicConfig(
 log = logging.getLogger("radar.worker")
 
 
-def _collect(records: list, label: str, fetch, parse) -> None:
-    """Fetch one E-Birja page and parse it. A failure here skips the page, never the run."""
+def _collect(records: list, label: str, fetch, parse) -> dict:
+    """Fetch one E-Birja page and parse it. A failure here skips the page, never the run.
+
+    Returns the page's `meta` so the caller can page, and an empty dict when the page did not
+    arrive -- a fetch that raised, or an endpoint that refused us. Paging on that empty dict
+    stops, which is why a refusal can never be mistaken for the last page.
+    """
     try:
-        items = fetch().get("result", {}).get("data", [])
+        res = fetch()
     except Exception as exc:
         log.warning("E-Birja %s fetch failed: %s", label, exc)
-        return
-    for it in items:
+        return {}
+    if res.get("http_status"):
+        log.error(
+            "E-Birja %s refused: HTTP %s%s",
+            label,
+            res["http_status"],
+            f" ({res['message']})" if res.get("message") else "",
+        )
+        return {}
+    result = res.get("result") or {}
+    for it in result.get("data") or []:
         try:
-            records.append(parse(it))
+            rec = parse(it)
         except Exception as exc:
             log.warning("E-Birja %s: skipping malformed record: %s", label, exc)
+            continue
+        if rec is not None:
+            records.append(rec)
+    return result.get("meta") or {}
+
+
+# One live auction page is 10 rows by default and the whole list has held ~14, so this ceiling
+# only exists to stop a paging bug from walking the source forever.
+EBIRJA_AUCTION_PER_PAGE = 50
+EBIRJA_AUCTION_MAX_PAGES = 10
 
 
 def sync_ebirja() -> int:
-    log.info("Starting E-Birja synchronization...")
+    """Import E-Birja auctions that are still open for bidding.
+
+    E-Birja's contract list stopped being a usable public source (radar/source/ebirja.py records
+    the status measured for each endpoint): one route was withdrawn and the other two now sit
+    behind a CAPTCHA, which CLAUDE.md forbids working around. Calling them every cycle only
+    produced 404s, 403s and a zero, so this step reads the auction endpoint, which is still
+    served. Completed E-Birja contracts now arrive only through a cabinet export file.
+    """
+    log.info("Starting E-Birja synchronization (live auctions)...")
     client = EbirjaClient()
     records: list = []
 
-    # 1. Recent E-Shop (pages 0..2)
-    for p in range(3):
-        _collect(
+    page = 0
+    pages = 1
+    while page < min(pages, EBIRJA_AUCTION_MAX_PAGES):
+        meta = _collect(
             records,
-            f"e-shop p{p}",
-            lambda p=p: client.fetch_shop_contracts(page=p, per_page=50, shop_type="e-shop"),
-            lambda it: parse_ebirja_contract(it, contract_type="Shop"),
+            f"auctions p{page}",
+            lambda p=page: client.fetch_active_auctions(
+                page=p, per_page=EBIRJA_AUCTION_PER_PAGE
+            ),
+            parse_ebirja_auction,
         )
-
-    # 2. Recent National-Shop (pages 0..1)
-    for p in range(2):
-        _collect(
-            records,
-            f"national-shop p{p}",
-            lambda p=p: client.fetch_shop_contracts(page=p, per_page=50, shop_type="national-shop"),
-            lambda it: parse_ebirja_contract(it, contract_type="National-Shop"),
-        )
-
-    # 3. Recent Tanlov & Taklif
-    _collect(
-        records,
-        "tanlov",
-        lambda: client.fetch_tender_contracts(page=0, per_page=30, tender_type=2),
-        lambda it: parse_ebirja_contract(it, contract_type="Tanlov"),
-    )
-    _collect(
-        records,
-        "taklif",
-        lambda: client.fetch_offer_requests(page=0, per_page=30),
-        lambda it: parse_ebirja_contract(it, contract_type="Taklif"),
-    )
+        if not meta:
+            break
+        pages = int(meta.get("pageCount") or 1)
+        page += 1
 
     if not records:
         log.warning("E-Birja returned no usable records this cycle.")
@@ -113,7 +129,7 @@ def sync_ebirja() -> int:
 
     with session_scope() as session:
         stats = import_ebirja_records(session, records)
-        log.info("E-Birja import result: %s", stats)
+        log.info("E-Birja auction import result: %s", stats)
         return stats.get("inserted", 0)
 
 
@@ -217,6 +233,27 @@ def refresh_renewals() -> int:
         count = compute_renewals(session)
     log.info("Renewal opportunities recomputed: %d", count)
     return count
+
+
+# What "Connection closed" means here, confirmed against the host on 2026-11-16: the deploy key
+# still authenticates, but the account's login shell is /sbin/nologin (a path that does not even
+# exist on that server) and the sftp subsystem is closed too, so neither scp protocol can start
+# a remote process. That is the shape of a Hostinger plan with SSH access switched off, and no
+# change in this repository can work around it -- it is re-enabled in hPanel, under
+# Advanced -> SSH Access.
+_SHELLLESS_HINT = (
+    " The key authenticates but the account has no usable shell and no sftp subsystem, which is "
+    "how a Hostinger plan looks when SSH access is switched off. Re-enable it in hPanel "
+    "(Advanced -> SSH Access); nothing in this repository can work around it."
+)
+
+
+def _deploy_error(proc: subprocess.CompletedProcess) -> str:
+    """scp's own reason for failing, plus the remediation when we recognise the reason."""
+    stderr = " ".join((proc.stderr or "").split()) or f"scp exited {proc.returncode}"
+    if "Connection closed" in stderr or "Permission denied" in stderr:
+        return stderr + _SHELLLESS_HINT
+    return stderr
 
 
 def rebuild_and_deploy():
@@ -383,6 +420,8 @@ def rebuild_and_deploy():
 
     scp_cmd = [
         "scp",
+        "-o",
+        "BatchMode=yes",
         "-P",
         settings.deploy_ssh_port,
         "-i",
@@ -390,8 +429,12 @@ def rebuild_and_deploy():
         os.path.expanduser(settings.dashboard_html_path),
         settings.deploy_target,
     ]
-    subprocess.run(scp_cmd, check=True, timeout=300)
-    log.info("Successfully deployed updated dashboard to tender.softy.uz!")
+    # check=True raised CalledProcessError without scp's own stderr, so the worker log said only
+    # "exit status 1" and the reason sat in a separate stream. Capture it and report it.
+    proc = subprocess.run(scp_cmd, capture_output=True, text=True, timeout=300)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Dashboard upload failed: {_deploy_error(proc)}")
+    log.info("Successfully deployed the updated dashboard.")
 
 
 def dispatch_alerts() -> dict[str, object]:

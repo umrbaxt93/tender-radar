@@ -34,6 +34,15 @@ log = logging.getLogger(__name__)
 
 EBIRJA_BASE_URL = "https://xarid-api.ebirja.uz"
 
+# Measured status of the public endpoints on 2026-11-16:
+#   /auction/auction/active                 200, usable, pages on currentPage/perPage
+#   /common/contract/shop-list              404 "Unable to resolve the request" (route withdrawn)
+#   /common/contract/external-tender        403 "Captcha tekshiruvi muvaffaqiyatsiz"
+#   /common/contract/external-offer-request 403, the same CAPTCHA wall
+# The two 403s are a CAPTCHA gate and CLAUDE.md forbids working around one, so the contract list
+# is not a source any more; the authorised route to that data is a cabinet export file. The
+# fetchers below are kept so the failure stays visible and named rather than disappearing.
+
 
 class EbirjaClient:
     """HTTP Client for interacting with E-Birja contract and auction endpoints."""
@@ -96,9 +105,23 @@ class EbirjaClient:
                     )
                     time.sleep(wait_time)
                     continue
-                log.warning("HTTP error %d from %s", exc.code, url)
+                # A 403 here is E-Birja's CAPTCHA wall and a 404 a withdrawn route. Neither is
+                # retryable and neither may be worked around, so report what the server said:
+                # "HTTP 403" alone cost a live probe to interpret once already.
+                detail = ""
+                try:
+                    body = json.loads(exc.read().decode("utf-8"))
+                    detail = str(body.get("message") or "") if isinstance(body, dict) else ""
+                except Exception:
+                    detail = ""
+                log.warning(
+                    "HTTP error %d from %s%s", exc.code, url, f": {detail}" if detail else ""
+                )
                 return {
                     "error": f"HTTP {exc.code}",
+                    # Callers page on meta, so a refusal must not read as a last page.
+                    "http_status": exc.code,
+                    "message": detail,
                     "result": {"data": [], "meta": {"totalCount": 0}},
                 }
             except Exception as exc:
@@ -165,14 +188,18 @@ class EbirjaClient:
 
     def fetch_active_auctions(
         self,
-        page: int = 1,
-        size: int = 20,
+        page: int = 0,
+        per_page: int = 20,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """Fetch active/ongoing auctions."""
-        params = {
-            "page": page,
-            "size": size,
+        """Fetch auctions still open for bidding -- the one public endpoint still served.
+
+        Pages on currentPage/perPage like the rest of this API. The page/size pair this method
+        sent before was accepted and silently ignored, so every call returned page 0.
+        """
+        params: dict[str, Any] = {
+            "currentPage": page,
+            "perPage": per_page,
         }
         if search:
             params["search"] = search
@@ -250,11 +277,24 @@ def parse_ebirja_contract(raw: dict[str, Any], contract_type: str = "Shartnoma")
     )
 
 
-def parse_ebirja_auction(raw: dict[str, Any]) -> ProcedureRecord:
-    """Convert raw E-Birja auction dictionary into normalized ProcedureRecord."""
-    auction_id = str(raw.get("id") or "")
-    lot_num = str(raw.get("lot") or auction_id)
-    title = raw.get("title") or f"E-Birja Auksion {lot_num}"
+def parse_ebirja_auction(raw: dict[str, Any]) -> ProcedureRecord | None:
+    """Convert one /auction/auction/active row into a ProcedureRecord (None if unusable).
+
+    These are auctions still open for bidding, not finished contracts: they carry no award and
+    no completion date, so they can never enter the renewal radar or the awarded-contract
+    export, but they are classified and searchable as live leads.
+
+    The payload also carries `company.phone`, `company.account` and `company.director` --
+    contact, banking and personal details under docs/PRIVACY.md -- which are deliberately not
+    read here, and nothing stores a raw snapshot of the row.
+    """
+    auction_id = str(raw.get("id") or "").strip()
+    lot_num = str(raw.get("lot") or "").strip()
+    title = str(raw.get("title") or "").strip()
+    if not (auction_id or lot_num) or not title:
+        # A row with no real title is unclassifiable, and a placeholder title would be noise
+        # in the one field classification reads.
+        return None
 
     begin_date = parse_datetime(raw.get("begin_date"))
     end_date = parse_datetime(raw.get("auction_end"))
@@ -266,20 +306,20 @@ def parse_ebirja_auction(raw: dict[str, Any]) -> ProcedureRecord:
     region_info = raw.get("region") or company.get("region") or {}
     region_name = region_info.get("title_uz") if isinstance(region_info, dict) else None
 
-    items = [
-        LotItemRecord(
-            raw_name=title,
-            quantity=parse_decimal(raw.get("position_count") or 1),
-            unit="dona",
-            unit_price_raw=str(total_sum) if total_sum else None,
-        )
-    ]
+    # One item for the whole auction: the public list gives an aggregate title only, never the
+    # individual positions. `position_count` counts those positions, not units of a product, and
+    # `total_sum` is the auction total, not a unit price -- storing either in quantity/unit or
+    # unit_price_raw would be a wrong number rather than a missing one.
+    items = [LotItemRecord(raw_name=title[:1000])]
 
     return ProcedureRecord(
-        source_id=f"ebirja_a_{auction_id or lot_num}",
-        source_url=f"https://ebirja.uz/uz/auction/{auction_id}",
+        source_id=f"ebirja_a_{auction_id or lot_num}"[:64],
+        # Route shape taken from the site's own links. It cannot be verified from here: the
+        # public site is a single-page app that answers 200 for any path, a nonexistent auction
+        # id included. Worst case the link opens an empty page; no stored figure depends on it.
+        source_url=f"https://ebirja.uz/uz/auction/{auction_id}" if auction_id else None,
         procedure_type="E-Birja Auksion",
-        title=title,
+        title=title[:500],
         status="ACTIVE",
         published_at=begin_date,
         deadline_at=end_date,
