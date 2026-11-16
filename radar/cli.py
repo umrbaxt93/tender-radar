@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
 from radar.config import ROOT, load_settings
 from radar.db import get_engine, session_scope
@@ -189,6 +191,26 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     load_settings().require_database()
     cfg = Config(str(ROOT / "alembic.ini"))
     command.upgrade(cfg, "head")
+    return 0
+
+
+def cmd_import_cooperation(args: argparse.Namespace) -> int:
+    from radar.source.cooperation import import_cooperation, json_path, load_cooperation_json
+
+    path = Path(os.path.expanduser(args.json)) if args.json else json_path()
+    records = load_cooperation_json(path)
+    if args.dry_run:
+        print(
+            f"import-cooperation (dry-run): {path} -> {len(records)} plans parsed, "
+            "nothing written"
+        )
+        return 0
+    with session_scope() as session:
+        stats = import_cooperation(session, records)
+    print(
+        f"import-cooperation: plans={len(records)} inserted={stats['inserted']} "
+        f"updated={stats['updated']} items={stats['items']} classified_it={stats['classified_it']}"
+    )
     return 0
 
 
@@ -458,6 +480,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("migrate", help="apply Alembic migrations")
     s.set_defaults(func=cmd_migrate)
+
+    s = sub.add_parser(
+        "import-cooperation",
+        help="import cooperation.uz purchase plans from the weekly scrape JSON",
+    )
+    s.add_argument("--json", default=None, help="path to cooperation_latest.json")
+    s.add_argument("--dry-run", action="store_true", help="parse only, write nothing")
+    s.set_defaults(func=cmd_import_cooperation)
 
     s = sub.add_parser("migrate-xt", help="migrate verified real XT-Xarid lots from SQLite")
     s.add_argument("--sqlite-path", default=None, help="path to SQLite softy_procurement.db")

@@ -117,6 +117,41 @@ def sync_ebirja() -> int:
         return stats.get("inserted", 0)
 
 
+COOP_MARKER = Path(__file__).resolve().parents[1] / "out" / ".cooperation_imported_mtime"
+
+
+def sync_cooperation() -> int:
+    """Import the weekly cooperation.uz plans JSON when it is newer than the last import.
+
+    The scrape itself runs on the owner's Mac (cooperation.uz blocks foreign IPs); this step
+    only reads the file it leaves behind. Disable with COOPERATION_IMPORT=0.
+    """
+    if os.environ.get("COOPERATION_IMPORT", "1").strip() == "0":
+        log.info("cooperation: import disabled (COOPERATION_IMPORT=0)")
+        return 0
+    from radar.source.cooperation import import_cooperation, json_path, load_cooperation_json
+
+    path = json_path()
+    if not path.is_file():
+        log.info("cooperation: %s not found; skipping", path)
+        return 0
+    mtime = path.stat().st_mtime
+    try:
+        last = float(COOP_MARKER.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        last = 0.0
+    if mtime <= last:
+        log.info("cooperation: no new plans file since the last import")
+        return 0
+    records = load_cooperation_json(path)
+    with session_scope() as session:
+        stats = import_cooperation(session, records)
+    COOP_MARKER.parent.mkdir(parents=True, exist_ok=True)
+    COOP_MARKER.write_text(str(mtime), encoding="utf-8")
+    log.info("cooperation import result: %s (plans=%d)", stats, len(records))
+    return int(stats.get("inserted", 0))
+
+
 def sync_uzex(limit_per_module: int = 100) -> int:
     log.info("Starting UZEX synchronization across all modules...")
     client = UzexClient()
@@ -384,6 +419,7 @@ def run_once() -> dict[str, object]:
     started = datetime.datetime.now(datetime.UTC)
     ins_eb = _step("sync_ebirja", sync_ebirja, default=0)
     ins_uz = _step("sync_uzex", sync_uzex, default=0)
+    ins_coop = _step("sync_cooperation", sync_cooperation, default=0)
     renewals = _step("refresh_renewals", refresh_renewals, default=0)
     alerts = _step("dispatch_alerts", dispatch_alerts, default={"sent": 0})
     deployed = _step("rebuild_and_deploy", lambda: (rebuild_and_deploy(), True)[1], default=False)
@@ -392,6 +428,7 @@ def run_once() -> dict[str, object]:
         "started_at": started.isoformat(),
         "ebirja_inserted": ins_eb,
         "uzex_inserted": ins_uz,
+        "cooperation_inserted": ins_coop,
         "renewal_opportunities": renewals,
         "alerts_sent": alerts_sent,
         "deployed": deployed,

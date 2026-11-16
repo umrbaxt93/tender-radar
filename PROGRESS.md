@@ -83,3 +83,9 @@ make web test lint validate
 - At least 90 days of real completed lots imported, resumable, without duplicates.
 - One real classification run inside the $10 cap with a reviewed model price.
 - Deployment to Hostinger VPS (93.127.213.246) and execution of docs/DEPLOYMENT.md.
+
+
+## 2026-10-06
+- DONE: dashboard build script and data moved out of the Antigravity conversation folder into `dashboard/`; `.env` DASHBOARD_* paths updated; verified by two worker cycles (14:30, 16:48) deploying from the new path.
+- DONE: cooperation.uz purchase plans as a source (`radar/source/cooperation.py`, `radar import-cooperation`, worker step `sync_cooperation`, reads the weekly Mac scrape JSON; COOPERATION_IMPORT=0 disables). Plans are stored as status PLANNED with no completion date and no award. Verified: tests/test_cooperation.py (SQLite in memory) and a full import of the real 3 818-row file in SQLite (3 818 inserted, 0 on re-run, 76 IT); full suite shows no new failures versus HEAD. Not yet verified against the production PostgreSQL.
+- DECISION: do NOT run `radar migrate-sqlite` against production — the old SQLite reuses lot_number ids that tender-radar does not recognise (~100k duplicates). Only `migrate-xt` (187 real XT-Xarid lots) is merged; see ../BIRLASHTIRISH_REJASI.md.

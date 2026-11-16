@@ -50,6 +50,10 @@ select = ["E", "F", "I", "B", "UP", "W"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/gen_synthetic_fixtures.py" = ["E501"]
+# The dashboard generator embeds the page's SQL, HTML, CSS and JS as string literals.
+# Their line length and trailing whitespace belong to the generated page, not to Python,
+# so reformatting them would edit the dashboard's own markup.
+"dashboard/build_dashboard.py" = ["E501", "W291", "W293"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

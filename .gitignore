@@ -26,3 +26,6 @@ data/
 .idea/
 .vscode/
 *.egg-info/
+# Dashboard: skript repoda, generatsiya qilingan ma'lumot va HTML emas (2026-10-06)
+dashboard/dashboard_data.json
+dashboard/index.html

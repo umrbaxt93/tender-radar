@@ -341,14 +341,20 @@ def _get_or_create_org(
     return org
 
 
-def import_ebirja_records(session: Session, records: list[ProcedureRecord]) -> dict[str, int]:
-    """Upsert ProcedureRecords from E-Birja with normalization and classification."""
+def import_ebirja_records(
+    session: Session, records: list[ProcedureRecord], source: str = "ebirja"
+) -> dict[str, int]:
+    """Upsert ProcedureRecords with normalization and classification.
+
+    Written for E-Birja; `source` lets other list-style sources (cooperation.uz plans)
+    reuse the same idempotent upsert keyed on (source, source_id).
+    """
     stats = {"inserted": 0, "updated": 0, "items": 0, "classified_it": 0}
 
     for rec in records:
         existing = session.scalar(
             select(Procedure).where(
-                Procedure.source == "ebirja", Procedure.source_id == rec.source_id
+                Procedure.source == source, Procedure.source_id == rec.source_id
             )
         )
 
@@ -358,7 +364,7 @@ def import_ebirja_records(session: Session, records: list[ProcedureRecord]) -> d
 
         if existing is None:
             proc = Procedure(
-                source="ebirja",
+                source=source,
                 source_id=rec.source_id,
                 source_url=rec.source_url,
                 procedure_type=rec.procedure_type,
