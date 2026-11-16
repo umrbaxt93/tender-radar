@@ -133,6 +133,88 @@ def sync_ebirja() -> int:
         return stats.get("inserted", 0)
 
 
+EBIRJA_EXPORT_MARKER = BASE_DIR / "out" / ".ebirja_export_imported_mtime"
+EBIRJA_EXPORT_DIR = BASE_DIR / "data" / "ebirja"
+EBIRJA_EXPORT_SUFFIXES = (".xlsx", ".xlsm", ".csv", ".tsv")
+
+
+def ebirja_export_path() -> Path | None:
+    """The cabinet export to import, or None when the owner has not left one.
+
+    `EBIRJA_EXPORT_PATH` names an exact file. With it unset the newest export-shaped file in
+    data/ebirja/ is taken, so dropping the cabinet download into that folder is enough whatever
+    the cabinet chose to call it. Excel's own `~$` lock files are not export files.
+    """
+    explicit = os.environ.get("EBIRJA_EXPORT_PATH", "").strip()
+    if explicit:
+        path = Path(os.path.expanduser(explicit))
+        return path if path.is_file() else None
+    if not EBIRJA_EXPORT_DIR.is_dir():
+        return None
+    files = [
+        f
+        for f in EBIRJA_EXPORT_DIR.iterdir()
+        if f.is_file()
+        and f.suffix.lower() in EBIRJA_EXPORT_SUFFIXES
+        and not f.name.startswith("~$")
+    ]
+    return max(files, key=lambda f: f.stat().st_mtime) if files else None
+
+
+def sync_ebirja_export() -> int:
+    """Import an E-Birja cabinet export when the owner has left a newer one.
+
+    E-Birja's contract endpoints are closed -- one withdrawn, two behind a CAPTCHA -- so this
+    file is the only authorised route to contract history (CLAUDE.md). The download is manual;
+    this step only reads what it finds. Disable with EBIRJA_EXPORT_IMPORT=0.
+    """
+    if os.environ.get("EBIRJA_EXPORT_IMPORT", "1").strip() == "0":
+        log.info("ebirja-export: import disabled (EBIRJA_EXPORT_IMPORT=0)")
+        return 0
+    from radar.source.ebirja_export import import_ebirja_export, load_ebirja_export
+
+    path = ebirja_export_path()
+    if path is None:
+        log.info("ebirja-export: no export file in %s; nothing to import", EBIRJA_EXPORT_DIR)
+        return 0
+    mtime = path.stat().st_mtime
+    try:
+        last = float(EBIRJA_EXPORT_MARKER.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        last = 0.0
+    if mtime <= last:
+        log.info("ebirja-export: %s unchanged since the last import", path.name)
+        return 0
+
+    try:
+        records, report, _match = load_ebirja_export(path)
+    except ValueError as exc:
+        # A required column is missing, so nothing is written and the marker is left alone: the
+        # next cycle retries, and the message carries the file's own headers so the mapping in
+        # ebirja_export_mapping.yaml can be corrected. Repeating it every cycle is the point --
+        # the column wordings were never verified against a real export.
+        log.error("ebirja-export: %s", exc)
+        return 0
+    except Exception as exc:
+        log.error("ebirja-export: could not read %s: %s", path, exc)
+        return 0
+
+    for line in report.summary().splitlines():
+        log.info("ebirja-export: %s", line.strip())
+
+    inserted = 0
+    if records:
+        with session_scope() as session:
+            stats = import_ebirja_export(session, records)
+        log.info("ebirja-export import result: %s", stats)
+        inserted = stats.get("inserted", 0)
+    # Written after a successful read even when the file held nothing usable: it has given all
+    # it will give until the owner replaces it.
+    EBIRJA_EXPORT_MARKER.parent.mkdir(parents=True, exist_ok=True)
+    EBIRJA_EXPORT_MARKER.write_text(str(mtime), encoding="utf-8")
+    return inserted
+
+
 COOP_MARKER = Path(__file__).resolve().parents[1] / "out" / ".cooperation_imported_mtime"
 
 
@@ -471,6 +553,7 @@ def run_once() -> dict[str, object]:
     """Run one full cycle. Never raises: a broken stage must not kill the daemon."""
     started = datetime.datetime.now(datetime.UTC)
     ins_eb = _step("sync_ebirja", sync_ebirja, default=0)
+    ins_ebx = _step("sync_ebirja_export", sync_ebirja_export, default=0)
     ins_uz = _step("sync_uzex", sync_uzex, default=0)
     ins_coop = _step("sync_cooperation", sync_cooperation, default=0)
     renewals = _step("refresh_renewals", refresh_renewals, default=0)
@@ -480,6 +563,7 @@ def run_once() -> dict[str, object]:
     result = {
         "started_at": started.isoformat(),
         "ebirja_inserted": ins_eb,
+        "ebirja_export_inserted": ins_ebx,
         "uzex_inserted": ins_uz,
         "cooperation_inserted": ins_coop,
         "renewal_opportunities": renewals,

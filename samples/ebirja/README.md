@@ -12,3 +12,14 @@ are **candidates, not observed headers**. Run this against a real export first:
 
 It prints the file's own headers and what each field matched. Add any real wording the mapping
 missed to that YAML -- no code change is needed.
+
+## Automatic import
+
+Drop the cabinet download into **`data/ebirja/`** (any name, `.xlsx` or `.csv`) and the worker
+imports it within its next cycle: the newest export-shaped file there is taken, and an
+`out/.ebirja_export_imported_mtime` marker stops it being re-imported until you replace it.
+`EBIRJA_EXPORT_PATH` names an exact file instead; `EBIRJA_EXPORT_IMPORT=0` switches the stage
+off. `data/` is gitignored, so a real export can never be committed.
+
+Never put a synthetic file in `data/ebirja/` — the worker would import it into the live
+database as if it were real procurement data.

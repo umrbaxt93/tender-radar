@@ -106,3 +106,109 @@ def test_export_contracts_keep_their_own_source_and_the_number_in_the_key():
     assert SOURCE == "ebirja_export"
     records, _report, _match = load_ebirja_export(SAMPLE)
     assert all(r.source_id.startswith("ebirja_x_") for r in records)
+
+
+# --- worker stage -----------------------------------------------------------------------
+
+
+@pytest.fixture
+def staged(tmp_path, monkeypatch):
+    """Point the worker's export folder and marker at a temp directory."""
+    from radar import worker
+
+    folder = tmp_path / "ebirja"
+    folder.mkdir()
+    monkeypatch.setattr(worker, "EBIRJA_EXPORT_DIR", folder)
+    monkeypatch.setattr(worker, "EBIRJA_EXPORT_MARKER", tmp_path / "marker")
+    monkeypatch.delenv("EBIRJA_EXPORT_PATH", raising=False)
+    monkeypatch.delenv("EBIRJA_EXPORT_IMPORT", raising=False)
+
+    import contextlib
+
+    monkeypatch.setattr(worker, "session_scope", lambda: contextlib.nullcontext(object()))
+    return worker, folder
+
+
+def test_stage_does_nothing_when_no_export_has_been_left(staged):
+    worker, _folder = staged
+    assert worker.sync_ebirja_export() == 0
+    assert not worker.EBIRJA_EXPORT_MARKER.exists()
+
+
+def test_stage_imports_a_new_export_and_records_its_mtime(staged, monkeypatch):
+    worker, folder = staged
+    target = folder / "shartnomalar.csv"
+    target.write_text(SAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+
+    seen = []
+    monkeypatch.setattr(
+        "radar.source.ebirja_export.import_ebirja_export",
+        lambda s, r: (seen.append(r), {"inserted": len(r), "updated": 0, "items": 0})[1],
+    )
+
+    assert worker.sync_ebirja_export() == 3
+    assert len(seen[0]) == 3
+    assert worker.EBIRJA_EXPORT_MARKER.exists()
+
+    # Second cycle, same file: the marker must stop it re-importing.
+    seen.clear()
+    assert worker.sync_ebirja_export() == 0
+    assert seen == []
+
+
+def test_stage_leaves_the_marker_alone_when_a_required_column_is_missing(staged, monkeypatch):
+    """Nothing is written, so the next cycle must retry once the mapping is corrected."""
+    worker, folder = staged
+    (folder / "wrong.csv").write_text("Shartnoma raqami,Summa\nXD-1,100\n", encoding="utf-8")
+
+    called = []
+    monkeypatch.setattr(
+        "radar.source.ebirja_export.import_ebirja_export",
+        lambda s, r: called.append(r) or {},
+    )
+
+    assert worker.sync_ebirja_export() == 0
+    assert called == []
+    assert not worker.EBIRJA_EXPORT_MARKER.exists()
+
+
+def test_stage_can_be_switched_off(staged, monkeypatch):
+    worker, folder = staged
+    (folder / "shartnomalar.csv").write_text(SAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setenv("EBIRJA_EXPORT_IMPORT", "0")
+    assert worker.sync_ebirja_export() == 0
+    assert not worker.EBIRJA_EXPORT_MARKER.exists()
+
+
+def test_export_path_takes_the_newest_file_and_ignores_excel_lock_files(staged):
+    worker, folder = staged
+    old = folder / "oktyabr.xlsx"
+    new = folder / "noyabr.xlsx"
+    lock = folder / "~$noyabr.xlsx"
+    for f in (old, new, lock):
+        f.write_bytes(b"x")
+    import os as _os
+
+    _os.utime(old, (1_700_000_000, 1_700_000_000))
+    _os.utime(new, (1_800_000_000, 1_800_000_000))
+    _os.utime(lock, (1_900_000_000, 1_900_000_000))
+
+    assert worker.ebirja_export_path() == new
+
+
+def test_run_once_reports_the_export_stage(monkeypatch):
+    from radar import worker
+
+    for name in (
+        "sync_ebirja",
+        "sync_uzex",
+        "sync_cooperation",
+        "refresh_renewals",
+        "rebuild_and_deploy",
+    ):
+        monkeypatch.setattr(worker, name, lambda: 0)
+    monkeypatch.setattr(worker, "dispatch_alerts", lambda: {"sent": 0})
+    monkeypatch.setattr(worker, "sync_ebirja_export", lambda: 11)
+
+    result = worker.run_once()
+    assert result["ebirja_export_inserted"] == 11
