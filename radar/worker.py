@@ -249,8 +249,18 @@ _SHELLLESS_HINT = (
 
 
 def _deploy_error(proc: subprocess.CompletedProcess) -> str:
-    """scp's own reason for failing, plus the remediation when we recognise the reason."""
-    stderr = " ".join((proc.stderr or "").split()) or f"scp exited {proc.returncode}"
+    """scp's own reason for failing, plus the remediation when we recognise the reason.
+
+    OpenSSH 10 prints a three-line post-quantum advisory to stderr on every connection to an
+    older server. It is not this failure and it is four times longer than the reason, so it is
+    dropped rather than left to bury the one line a reader came for.
+    """
+    lines = [
+        ln.strip()
+        for ln in (proc.stderr or "").splitlines()
+        if ln.strip() and not ln.lstrip().startswith("**")
+    ]
+    stderr = " ".join(lines) or f"scp exited {proc.returncode}"
     if "Connection closed" in stderr or "Permission denied" in stderr:
         return stderr + _SHELLLESS_HINT
     return stderr

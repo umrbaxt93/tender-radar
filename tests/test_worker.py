@@ -238,3 +238,24 @@ def test_deploy_error_reports_scp_stderr_with_the_remediation():
         args=["scp"], returncode=1, stdout="", stderr="No such file or directory"
     )
     assert "SSH Access" not in worker._deploy_error(other)
+
+
+def test_deploy_error_drops_the_openssh_post_quantum_advisory():
+    """OpenSSH 10 prints it on every connection to an older server; it is not the failure."""
+    import subprocess
+
+    proc = subprocess.CompletedProcess(
+        args=["scp"],
+        returncode=255,
+        stdout="",
+        stderr=(
+            "** WARNING: connection is not using a post-quantum key exchange algorithm.\n"
+            '** This session may be vulnerable to "store now, decrypt later" attacks.\n'
+            "** The server may need to be upgraded. See https://openssh.com/pq.html\n"
+            "scp: Connection closed\n"
+        ),
+    )
+    msg = worker._deploy_error(proc)
+    assert msg.startswith("scp: Connection closed")
+    assert "post-quantum" not in msg
+    assert "SSH Access" in msg
