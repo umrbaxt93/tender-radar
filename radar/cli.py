@@ -214,6 +214,48 @@ def cmd_import_cooperation(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import_ebirja_export(args: argparse.Namespace) -> int:
+    from radar.source.ebirja_export import (
+        describe_columns,
+        import_ebirja_export,
+        load_ebirja_export,
+        match_columns,
+        read_table,
+    )
+
+    path = Path(os.path.expanduser(args.file))
+    if not path.is_file():
+        print(f"import-ebirja-export: no such file: {path}")
+        return 1
+
+    # --inspect is the first thing to run against a real export: the column wordings in
+    # ebirja_export_mapping.yaml are candidates, and this is what reports the truth.
+    if args.inspect:
+        headers, rows = read_table(path)
+        match = match_columns(headers)
+        print(f"{path}  ({len(rows)} data row(s))")
+        print(describe_columns(match))
+        return 0 if not match.missing_required else 1
+
+    try:
+        records, report, _match = load_ebirja_export(path)
+    except ValueError as exc:
+        print(f"import-ebirja-export: {exc}")
+        return 1
+
+    print(report.summary())
+    if args.dry_run:
+        print("import-ebirja-export (dry-run): nothing written")
+        return 0
+    with session_scope() as session:
+        stats = import_ebirja_export(session, records)
+    print(
+        f"import-ebirja-export: contracts={len(records)} inserted={stats['inserted']} "
+        f"updated={stats['updated']} items={stats['items']} classified_it={stats['classified_it']}"
+    )
+    return 0
+
+
 def cmd_migrate_xt(args: argparse.Namespace) -> int:
     from radar.migrate_xt import migrate_xt_lots
 
@@ -488,6 +530,19 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--json", default=None, help="path to cooperation_latest.json")
     s.add_argument("--dry-run", action="store_true", help="parse only, write nothing")
     s.set_defaults(func=cmd_import_cooperation)
+
+    s = sub.add_parser(
+        "import-ebirja-export",
+        help="import completed contracts from an E-Birja cabinet export (.xlsx/.csv)",
+    )
+    s.add_argument("file", help="path to the export file downloaded from the E-Birja cabinet")
+    s.add_argument(
+        "--inspect",
+        action="store_true",
+        help="print the file's headers and what each field matched, then stop (run this first)",
+    )
+    s.add_argument("--dry-run", action="store_true", help="parse and report, write nothing")
+    s.set_defaults(func=cmd_import_ebirja_export)
 
     s = sub.add_parser("migrate-xt", help="migrate verified real XT-Xarid lots from SQLite")
     s.add_argument("--sqlite-path", default=None, help="path to SQLite softy_procurement.db")

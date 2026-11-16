@@ -1,0 +1,141 @@
+# Column mapping for an E-Birja cabinet export file (.xlsx / .csv).
+#
+# UNVERIFIED. No real export file was available when this was written, and CLAUDE.md forbids
+# logging in to ebirja.uz to fetch one, so every synonym below is a candidate wording rather
+# than an observed header. The importer is built around that: run
+#
+#     radar import-ebirja-export --inspect <file>
+#
+# against a real export and it prints the file's own headers, what each target field matched,
+# and what it could not match. Add the real wording to the list below -- no code change.
+#
+# Matching is case-insensitive and punctuation-insensitive, and prefers the longest synonym,
+# so "buyurtmachi inn" claims the STIR column before "buyurtmachi" claims it as a name.
+# `required` fields decide whether a row can be used at all.
+
+required:
+  - contract_number
+  - product_name
+
+columns:
+  contract_number:
+    - shartnoma raqami
+    - shartnoma nomeri
+    - shartnoma raqam
+    - shartnoma
+    - nomer dogovora
+    - номер договора
+    - договор
+    - contract number
+    - contract no
+  contract_date:
+    - shartnoma sanasi
+    - shartnoma tuzilgan sana
+    - tuzilgan sana
+    - дата договора
+    - дата заключения
+    - contract date
+    - sana
+    - дата
+  customer_name:
+    - buyurtmachi nomi
+    - buyurtmachi
+    - xaridor nomi
+    - xaridor
+    - заказчик
+    - покупатель
+    - customer
+    - buyer
+  customer_stir:
+    - buyurtmachi stir
+    - buyurtmachi inn
+    - xaridor inn
+    - xaridor stir
+    - инн заказчика
+    - инн покупателя
+    - customer tin
+  supplier_name:
+    - yetkazib beruvchi nomi
+    - yetkazib beruvchi
+    - taminotchi
+    - ta'minotchi
+    - sotuvchi nomi
+    - sotuvchi
+    - поставщик
+    - продавец
+    - supplier
+    - winner
+  supplier_stir:
+    - yetkazib beruvchi stir
+    - yetkazib beruvchi inn
+    - sotuvchi inn
+    - sotuvchi stir
+    - инн поставщика
+    - инн продавца
+    - supplier tin
+  amount:
+    - shartnoma summasi
+    - umumiy summa
+    - jami summa
+    - summa
+    - сумма договора
+    - общая сумма
+    - сумма
+    - total
+    - amount
+  product_name:
+    - mahsulot nomi
+    - tovar nomi
+    - mahsulot
+    - tovar
+    - xizmat nomi
+    - nomlanishi
+    - наименование товара
+    - наименование
+    - товар
+    - product name
+    - product
+  quantity:
+    - miqdori
+    - miqdor
+    - soni
+    - количество
+    - quantity
+  unit:
+    - olchov birligi
+    - o'lchov birligi
+    - birligi
+    - единица измерения
+    - ед изм
+    - unit
+  unit_price:
+    - birlik narxi
+    - bir dona narxi
+    - narxi
+    - цена за единицу
+    - цена
+    - unit price
+    - price
+  currency:
+    - valyuta
+    - валюта
+    - currency
+  lot_number:
+    - lot raqami
+    - lot nomeri
+    - номер лота
+    - лот
+    - lot
+  region:
+    - viloyat
+    - hudud
+    - область
+    - регион
+    - region
+  procedure_type:
+    - xarid turi
+    - shartnoma turi
+    - savdo turi
+    - вид закупки
+    - тип договора
+    - turi
